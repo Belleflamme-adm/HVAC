@@ -16,5 +16,9 @@ begin
   if exists (select 1 from public.produits where not fictif) then raise exception 'produit non marqué FICTIF'; end if;
   if not exists (select 1 from public.devis_lignes where type_ligne = 'installation' and prix_unitaire_cents = 86667) then
     raise exception 'installation de démo attendue : 650 $ avec marge 25 %% = 866,67 $'; end if;
+  if not exists (select 1 from public.bons_travail where numero = 'RV001 ROV-JUL-TRE-001' and statut = 'brouillon') then
+    raise exception 'BT RV001 brouillon attendu'; end if;
+  if not exists (select 1 from public.bons_commande where numero = 'ROV-JUL-TRE-100' and statut = 'brouillon') then
+    raise exception 'BC ROV-JUL-TRE-100 brouillon attendu (fournisseur de la marque)'; end if;
   raise notice 'ok | seed de démo cohérent';
 end $$;

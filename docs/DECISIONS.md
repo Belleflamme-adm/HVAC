@@ -328,3 +328,18 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - La planification est permise une fois le dépôt payé ou le financement approuvé (ADR-037).
   - Le solde est dû 72 h avant l'installation (ADR-009).
   - Les alertes passent par l'app, le SMS et le courriel. Les fournisseurs de SMS et de courriel restent à choisir : en attendant, les envois sont mis en file sans être expédiés.
+
+## ADR-048 | Lot B, partie base de données
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local), écrans à venir
+- **À l'acceptation d'un devis**, la base crée elle-même, sans dépendre du front :
+  - le **projet** ;
+  - le **BT `RV001 <code projet>`** en brouillon : produits (kits dépliés en composantes), installation et services, avec le sous-traitant du devis ;
+  - un **BC en brouillon par fournisseur** pour les produits à commander, au coût, avec le fournisseur du produit ou, à défaut, celui de sa marque. Le BC est en ramassage par le sous-traitant s'il y en a un, sinon livré à l'entrepôt.
+- **BC** :
+  - Numéro `préfixe-100`, puis 101..., attribué par un compteur sans trou.
+  - Statuts permis : brouillon -> envoyé -> confirmé -> reçu, et annulation possible avant la réception.
+  - Lignes figées dès l'envoi, totaux et taxes calculés par la base, aucune suppression.
+- **Planification** (`hvac_planifier_bt`) : réservée à la planification. Elle exige un sous-traitant assigné, une journée **disponible** de ce sous-traitant, et un dépôt payé **ou** un financement approuvé. La date est confirmée automatiquement, le projet reçoit la date d'installation (le solde est dû 72 h avant), et une notification avec un courriel et un SMS est mise en file.
+- **Jobs du sous-traitant** (`hvac_mes_jobs`) : seulement les jobs planifiées. Il voit le nom et le téléphone du client, l'adresse, les lignes, et où ramasser le matériel. Chaque accès est journalisé (Loi 25). Il fait passer la job à « en cours », puis « terminée ».
+- **Fournisseurs** : ajout de l'adresse (lieu de ramassage).
+- **Données de démo** : le devis accepté produit automatiquement le projet, le BT RV001 et le BC `ROV-JUL-TRE-100`.

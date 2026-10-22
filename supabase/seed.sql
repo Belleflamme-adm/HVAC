@@ -129,22 +129,15 @@ insert into public.devis (id, succursale_code, client_id, site_id, vendeur_id, n
 insert into public.devis_lignes (devis_id, position, produit_id, description, quantite, prix_unitaire_cents, rabais_bp) values
   ('d3000000-0000-0000-0000-000000000002',1,'b1000000-0000-0000-0000-000000000004','Thermopompe centrale 36 000 BTU',1,900000,1000);  -- 10 % > plafond 8 %
 
--- Projet issu du devis accepté ---------------------------------------------
-insert into public.projets (id, succursale_code, client_id, site_id, devis_id, vendeur_id, statut, installation_prevue_le) values
-  ('d4000000-0000-0000-0000-000000000001','RO','d1000000-0000-0000-0000-000000000001','d2000000-0000-0000-0000-000000000001',
-   'd3000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-000000000003','planifie', date_trunc('day', now()) + interval '14 days 8 hours');
-
-insert into public.bons_travail (succursale_code, projet_id, assigne_employe_id, prevu_le, travaux) values
-  ('RO','d4000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-000000000008',
-   date_trunc('day', now()) + interval '14 days 8 hours','Installation thermopompe murale 24k (FICTIF)');
-
+-- Projet, BT (brouillon) et BC (brouillons) : créés automatiquement à l'acceptation du devis 1.
+-- Le BT reste « à planifier » : la date se place dans une journée disponible du sous-traitant.
 insert into public.subventions (succursale_code, client_id, projet_id, mode_depot, montant_estime_cents) values
-  ('RO','d1000000-0000-0000-0000-000000000001','d4000000-0000-0000-0000-000000000001','client', 242400);
+  ('RO','d1000000-0000-0000-0000-000000000001',(select id from public.projets where devis_id = 'd3000000-0000-0000-0000-000000000001'),'client', 242400);
 
 -- Facture de dépôt 40 % émise et payée --------------------------------------
 insert into public.factures (id, type, succursale_code, client_id, projet_id, devis_id) values
   ('d5000000-0000-0000-0000-000000000001','depot','RO','d1000000-0000-0000-0000-000000000001',
-   'd4000000-0000-0000-0000-000000000001','d3000000-0000-0000-0000-000000000001');
+   (select id from public.projets where devis_id = 'd3000000-0000-0000-0000-000000000001'),'d3000000-0000-0000-0000-000000000001');
 insert into public.facture_lignes (facture_id, description, prix_unitaire_cents)
   select 'd5000000-0000-0000-0000-000000000001', 'Dépôt 40 % sur devis ' || numero,
          round(sous_total_cents * 0.4)::bigint

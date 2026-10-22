@@ -84,7 +84,26 @@
 - Totaux avec les numéros de TPS et de TVQ. Blocs « Information supplémentaire » et « Termes de paiement ».
 - Bandeau **« DATE DE LIVRAISON : TBD »**, logo CMMTQ et licence RBQ.
 
-## 5. Ce que ça change pour l'app HVAC
+## 5. Formulaire « Pré-install Ventilation » (captures fournies le 22 oct. 2026)
+
+Hébergé dans l'app **Pointage** de Mike (`belleflammetime`). En-tête « VENTILATION », nom de l'employé connecté. Sections (OPT = optionnelle) :
+
+| # | Section | Champs |
+|---|---|---|
+| 1-2 | (non vues) | ... Type d'habitation : Maison, Condo, Commercial, Multi-logement |
+| 3 | Machine(s) (OPT) | Type : Monozone, Multizone, Centrale, Hybride. BTU/tonnage total (texte). Marque + modèle (texte). Voltage requis : 120 V, 240 V, À vérifier. |
+| 4 | Raccord électrique (OPT) | On fait le raccord électrique ? Oui, Non, Déjà en place |
+| 5 | Réfrigérant + drain (OPT) | Total pieds de ligne réfrigérante. Capping aluminium ? Oui/Non. Pompe à drain ? Oui (requise) / Non (gravité). Longueur du drain de condensat (pi). |
+| 6 | Extérieur (OPT) | Sortie extérieure (percement) : Neuf, Existant, À vérifier. Revêtement du mur (texte). Support du condenseur : Sol, Mural, Toit, Autre. Espace du condenseur (L x P, po). |
+| 7 | Produits à installer (**vendu au devis**) | Liste des produits du devis : cocher ce que l'installation prend vraiment, ajuster les quantités (- / +), ajouter du catalogue ou à la main. |
+| 8 | Pièces supplémentaires à apporter (OPT) | Ce qu'il faut réserver **et charger** en plus du devis. Le vendeur reçoit un bouton pour créer un « bon de réservation overstock » (rien n'est créé depuis le formulaire). |
+| 9 | Photos / vidéos (recommandé) | Zones : machine intérieure (emplacement), machine extérieure (condenseur), panneau électrique, trajet de la ligne réfrigérante. Photo **ou** vidéo, vidéo compressée sur le téléphone puis **transcrite automatiquement**. |
+| 10 | Notes + particularités (OPT) | Texte libre, **dictée vocale**. Les transcriptions des vidéos sont ajoutées dessous. |
+| | | Bouton « Envoyer le rapport » |
+
+**Constat important** : la section 7 part des produits **vendus au devis**, et le devis de Mike contient la clause « Visite pré-installation sans frais [...] dans la semaine suivant la signature ». La visite pré-installation a donc lieu **après l'acceptation**, pour valider et ajuster. Ça contredit l'ADR-007 (« avant le devis »), à trancher.
+
+## 6. Ce que ça change pour l'app HVAC
 
 | Constat | Impact |
 |---|---|
