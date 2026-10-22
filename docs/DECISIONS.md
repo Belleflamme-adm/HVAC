@@ -224,3 +224,13 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - **Accès des sous-traitants** : un compte limité à l'app (rôle « Sous-traitant »), qui voit seulement ses jobs, ses disponibilités et ses produits. Une entente de confidentialité est requise (Loi 25), puisqu'il voit le nom, l'adresse et le téléphone du client. À valider par un professionnel.
   - **Secteurs** : chaque sous-traitant choisit, par ville du Québec, entre **accepte**, **accepte avec supplément** ou **refuse**.
   - **Planification** permise une fois le **dépôt payé** ou le **financement approuvé** (Financeit). Le solde reste dû 72 h avant l'installation.
+
+## ADR-038 | Secteurs des sous-traitants, supplément, carte, alertes
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Décisions** (Simon) :
+  1. **Ville acceptée par plusieurs sous-traitants** : Simon ou Mike désigne un **sous-traitant principal** par ville, les autres servent de remplacement. Le devis prend le principal par défaut.
+  2. **Supplément de ville** : montant fixe par sous-traitant et par ville, **ajouté au coût avant la marge**. Le client paie le supplément et la marge dessus. Exemple : 650 $ + 150 $ = 800 $ de coût, donc 1 066,67 $ avec 25 %.
+  3. **Carte cliquable du Québec dès la première version** (pas de liste d'abord).
+  4. **Alertes** : notification de l'app, SMS et courriel.
+- **Source des limites municipales** : jeu « Découpages administratifs » du MRNF sur Données Québec, licence CC-BY 4.0 (attribution obligatoire), offert en SHP, FGDB et GPKG, sans GeoJSON provincial. Il faudra le convertir et le simplifier pour le web. Le MRNF précise que ces limites n'ont pas de valeur légale. Vérifié le 22 oct. 2026.
+- **Conséquences** : la carte est le morceau le plus long du module. Le SMS demande un compte payant (Twilio ou un autre fournisseur, prix à vérifier), au nom de Simon. Le courriel demande un service d'envoi, à choisir.
