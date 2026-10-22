@@ -153,3 +153,8 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Contexte** : `CLAUDE.md` désignait `Belleflamme-adm's Org` comme l'org de Mike. Le connecteur Supabase de la session ne voit que cette org (plan Free, projets « Belleflamme-adm's Project » et « Signature-courriel », tous deux en `us-east-1`).
 - **Décision** : Simon confirme que `Belleflamme-adm's Org` lui appartient. `CLAUDE.md` est corrigé. Le nom de l'org Supabase de Mike reste à confirmer.
 - **Conséquences** : le plan Free permet seulement 2 projets actifs (doc Supabase, Billing FAQ), et la limite est déjà atteinte. Pour créer le projet HVAC dédié, il faut mettre un projet en pause ou passer à un plan payant. C'est la décision de Simon.
+
+## ADR-030 | Pas de projet Supabase pour l'instant
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Décision** : Simon préfère attendre. Le développement continue sur le Postgres local et la CI. Aucun projet n'est mis en pause et aucun plan n'est acheté.
+- **Conséquences** : les modules de la Phase 3 sont testés en local et en CI. Le projet `ca-central-1` sera créé plus tard, après une nouvelle vérification du compte et l'OK de Simon.
