@@ -1,8 +1,8 @@
 // Grille des sous-traitants et taux de marge. Lecture : rôles commerciaux. Écriture : Simon et Mike (RLS).
-import { initPage } from './bf-page.js?v=0.3.0';
-import { api } from './bf-api.js?v=0.3.0';
-import { remplir, h, message, dateFr, pct } from './bf-dom.js?v=0.3.0';
-import { formatCents } from './bf-money.js?v=0.3.0';
+import { initPage } from './bf-page.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
+import { remplir, h, message, dateFr, pct } from './bf-dom.js?v=0.4.0';
+import { formatCents } from './bf-money.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {

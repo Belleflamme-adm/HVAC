@@ -129,3 +129,16 @@ Ces règles tiennent même si le front ou une fonction a un bogue :
 | Ligne `rabais` (rabais global) | En $ ou en % du sous-total, toujours approuvée par Simon ou Mike, montant négatif calculé par la base (ADR-042) |
 | `devis.devis_origine_id` | Lien d'une extension (-E01) vers son devis d'origine (ADR-041) |
 
+## 8. Ajouts Lot A (sous-traitants)
+
+| Objet | Rôle |
+|---|---|
+| Rôle `Sous-traitant` (`employes.fournisseur_id`) | Accès limité à son territoire, ses disponibilités et sa grille ; rien d'autre |
+| `municipalites` | Liste officielle (code géographique, nom, MRC, région) |
+| `sites.municipalite_code` | Municipalité du lieu d'installation |
+| `territoires_sous_traitants` | Accepte / supplément / refuse, par municipalité |
+| `principaux_municipalites` | Sous-traitant principal d'une municipalité (planification) |
+| `disponibilites_sous_traitants` | Journées disponibles ou non, saisies par le sous-traitant |
+| `hvac_sous_traitants_pour(code)` | Sous-traitants qui desservent une ville, principal en premier |
+| `devis_lignes.supplement_cents` | Supplément de ville figé sur la ligne d'installation (ajouté au coût avant la marge) |
+

@@ -1,9 +1,9 @@
 // Devis imprimable : le navigateur l'enregistre en PDF (aucune dépendance de génération PDF).
-import { exigerSession } from './bf-session.js?v=0.3.0';
-import { api } from './bf-api.js?v=0.3.0';
-import { remplir, h, param, dateFr, pct, LIBELLES_STATUT } from './bf-dom.js?v=0.3.0';
-import { formatCents } from './bf-money.js?v=0.3.0';
-import { ENTREPRISE, MODE_DEMO } from './bf-entreprise.js?v=0.3.0';
+import { exigerSession } from './bf-session.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
+import { remplir, h, param, dateFr, pct, LIBELLES_STATUT } from './bf-dom.js?v=0.4.0';
+import { formatCents } from './bf-money.js?v=0.4.0';
+import { ENTREPRISE, MODE_DEMO } from './bf-entreprise.js?v=0.4.0';
 
 document.getElementById('imprimer').addEventListener('click', () => window.print());
 const doc = document.getElementById('doc');

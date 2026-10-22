@@ -35,6 +35,12 @@ insert into public.fournisseurs (id, nom, type, telephone) values
   ('f0000000-0000-0000-0000-000000000002', 'Nordika Canada (FICTIF)', 'fournisseur', '514 555-0102'),
   ('f0000000-0000-0000-0000-000000000003', 'Réfrigération Laurentides (FICTIF)', 'sous-traitant', '450 555-0103');
 
+-- Compte limité du sous-traitant de démo (Lot A) : territoire et disponibilités seulement.
+-- Son territoire se remplit une fois les limites municipales officielles chargées.
+insert into public.employes (id, email, prenom, nom, role, succursale_code, fournisseur_id) values
+  ('e0000000-0000-0000-0000-000000000011', 'st.laurentides@exemple.invalid', 'Éric', 'Paquette (FICTIF)', 'Sous-traitant', 'HO',
+   'f0000000-0000-0000-0000-000000000003');
+
 insert into public.marques (id, nom, fournisseur_id, escompte_fournisseur_bp, plafond_rabais_exception_bp) values
   ('a1000000-0000-0000-0000-000000000001', 'Boréal Climat (FICTIF)', 'f0000000-0000-0000-0000-000000000001', 4000, null),  -- plafond 5 %
   ('a1000000-0000-0000-0000-000000000002', 'Nordika (FICTIF)',       'f0000000-0000-0000-0000-000000000002', 4500, 800),   -- exception : 8 %

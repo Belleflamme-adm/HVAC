@@ -45,7 +45,7 @@ test('session-login : contrat de Mike + cookies HttpOnly', async () => {
   assert.equal(r.statusCode, 200);
   const b = corps(r);
   assert.equal(b.token, 'acc');
-  assert.deepEqual(Object.keys(b.user).sort(), ['email', 'id', 'itemId', 'masterImpersonation', 'name', 'peutApprouverRabais', 'role', 'succursale'].sort());
+  assert.deepEqual(Object.keys(b.user).sort(), ['email', 'id', 'itemId', 'masterImpersonation', 'name', 'peutApprouverRabais', 'role', 'sousTraitantId', 'succursale'].sort());
   assert.equal(b.user.name, 'Simon Cardinal');
   assert.equal(b.user.itemId, 123);
   assert.equal(b.user.masterImpersonation, null);

@@ -1,7 +1,7 @@
-import { initPage, estApprobateur } from './bf-page.js?v=0.3.0';
-import { api } from './bf-api.js?v=0.3.0';
-import { remplir, h, message, dateFr, pct, pastilleStatut, LIBELLES_STATUT } from './bf-dom.js?v=0.3.0';
-import { formatCents } from './bf-money.js?v=0.3.0';
+import { initPage, estApprobateur } from './bf-page.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
+import { remplir, h, message, dateFr, pct, pastilleStatut, LIBELLES_STATUT } from './bf-dom.js?v=0.4.0';
+import { formatCents } from './bf-money.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {

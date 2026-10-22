@@ -1,5 +1,5 @@
 // Appels aux fonctions métier. Le cookie HttpOnly porte la session.
-import { appel } from './bf-session.js?v=0.3.0';
+import { appel } from './bf-session.js?v=0.4.0';
 
 const qs = (o = {}) => {
   const p = new URLSearchParams(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== ''));

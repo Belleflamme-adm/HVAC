@@ -101,3 +101,34 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 @media print { .bf-interne { display: none; } }
 .bf-form--compact .bf-filtres select, .bf-form--compact .bf-filtres input:not([type="checkbox"]) { width: auto; flex: 1 1 200px; }
 .bf-form--compact .bf-filtres .bf-court { flex: 0 1 9em; }
+
+/* Lot A : carte, calendrier (v0.4.0) */
+.bf-carte-mise { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+@media (max-width: 860px) { .bf-carte-mise { grid-template-columns: 1fr; } }
+.bf-carte-zone { background: #eef3f8; border: 1px solid var(--line); border-radius: var(--r); height: min(70vh, 640px); overflow: hidden; touch-action: none; }
+.bf-carte { width: 100%; height: 100%; display: block; cursor: grab; }
+.bf-carte path { stroke: #ffffff; stroke-width: .6; }
+.bf-carte path:hover { stroke: var(--ink); stroke-width: 1.4; }
+.bf-carte path.selection { stroke: var(--ink); stroke-width: 2.5; }
+.bf-carte-panneau { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.bf-legende { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--muted); }
+.bf-legende__item { display: inline-flex; align-items: center; gap: 6px; }
+.bf-pastille-couleur { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.bf-c-accepte, .bf-cal-disponible { background: #2e9d63; }
+.bf-c-supplement { background: #e2a01b; }
+.bf-c-refuse, .bf-cal-indisponible { background: #c9483f; }
+.bf-c-aucun { background: #d9dee6; }
+.bf-attribution { font-size: 12px; margin-top: 8px; }
+.bf-calendrier { display: grid; gap: 6px; margin: 12px 0; }
+.bf-cal-entete, .bf-cal-semaine { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.bf-cal-entete span { text-align: center; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+.bf-cal-jour { min-height: 58px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink);
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 6px 8px; font: inherit; cursor: pointer; }
+.bf-cal-jour small { font-size: 11px; font-weight: 700; }
+.bf-cal-disponible, .bf-cal-indisponible { color: #fff; border-color: transparent; }
+.bf-cal-aucun { background: var(--surface); }
+.bf-cal-passe { opacity: .45; cursor: default; }
+.bf-cal-jour[disabled] { cursor: default; }
+.bf-cal-jour.bf-cal-disponible { background: #2e9d63; color: #fff; }
+.bf-cal-jour.bf-cal-indisponible { background: #c9483f; color: #fff; }
+.bf-carte-panneau .bf-bouton[disabled] { opacity: .45; cursor: not-allowed; }

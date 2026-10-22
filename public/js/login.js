@@ -1,4 +1,4 @@
-import { login, me } from './bf-session.js?v=0.3.0';
+import { login, me } from './bf-session.js?v=0.4.0';
 
 const retour = new URLSearchParams(location.search).get('retour');
 const destination = retour && retour.startsWith('/') && !retour.startsWith('//') ? retour : '/';

@@ -1,7 +1,8 @@
-import { initPage } from './bf-page.js?v=0.3.0';
-import { api } from './bf-api.js?v=0.3.0';
-import { remplir, h, message, param, dateFr, pastilleStatut } from './bf-dom.js?v=0.3.0';
-import { formatCents } from './bf-money.js?v=0.3.0';
+import { initPage } from './bf-page.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
+import { remplir, h, message, param, dateFr, pastilleStatut } from './bf-dom.js?v=0.4.0';
+import { formatCents } from './bf-money.js?v=0.4.0';
+import { champMunicipalite } from './bf-municipalite.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {
@@ -22,10 +23,11 @@ if (user) {
       } catch (e) { message(msg, e.message); }
     };
 
+    const muni = champMunicipalite({ requis: true });
     const formSite = h('form', { class: 'bf-form', hidden: true },
       h('div', { class: 'bf-grille2' },
         h('label', {}, 'Adresse *', h('input', { name: 'adresse', required: true })),
-        h('label', {}, 'Ville *', h('input', { name: 'ville', required: true })),
+        h('label', {}, 'Municipalité *', muni.el),
         h('label', {}, 'Code postal', h('input', { name: 'code_postal' })),
         h('label', {}, 'Type', h('select', { name: 'type_habitation' }, ['', 'maison', 'condo', 'multiplex', 'immeuble', 'commercial', 'autre'].map((t) => h('option', { value: t }, t || '(choisir)'))))),
       h('label', { class: 'bf-case' }, h('input', { type: 'checkbox', name: 'a_geothermie' }), 'Système géothermique présent'),
@@ -34,7 +36,7 @@ if (user) {
       ev.preventDefault();
       const f = new FormData(formSite);
       try {
-        await api.post('sites-save', { client_id: c.id, adresse: f.get('adresse'), ville: f.get('ville'),
+        await api.post('sites-save', { client_id: c.id, adresse: f.get('adresse'), ...muni.valeur(),
           code_postal: f.get('code_postal') || undefined, type_habitation: f.get('type_habitation') || undefined,
           a_geothermie: f.get('a_geothermie') === 'on' });
         charger();
@@ -62,7 +64,8 @@ if (user) {
         h('div', { class: 'bf-titre' }, h('h2', {}, 'Lieux d\'installation'),
           h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => { formSite.hidden = !formSite.hidden; } }, 'Ajouter')),
         sites.length ? h('ul', { class: 'bf-simple' }, sites.map((s) => h('li', {},
-          `${s.adresse}, ${s.ville} ${s.code_postal || ''}`, s.a_geothermie ? h('span', { class: 'bf-muet' }, ' | géothermie') : null,
+          `${s.adresse}, ${s.ville} ${s.code_postal || ''}`,
+          s.municipalite_code ? null : h('span', { class: 'bf-pastille bf-pastille--attente' }, 'Municipalité à préciser'), s.a_geothermie ? h('span', { class: 'bf-muet' }, ' | géothermie') : null,
           ' ', h('button', { class: 'bf-lien', type: 'button', onclick: () => nouveauDevis(s.id) }, 'Devis pour ce lieu'))))
           : h('p', { class: 'bf-muet' }, 'Aucun lieu.'),
         formSite),

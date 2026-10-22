@@ -1,7 +1,8 @@
-import { initPage } from './bf-page.js?v=0.3.0';
-import { api } from './bf-api.js?v=0.3.0';
-import { remplir, h, message } from './bf-dom.js?v=0.3.0';
-import { SUCCURSALES } from './bf-project-code.js?v=0.3.0';
+import { initPage } from './bf-page.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
+import { remplir, h, message } from './bf-dom.js?v=0.4.0';
+import { SUCCURSALES } from './bf-project-code.js?v=0.4.0';
+import { champMunicipalite } from './bf-municipalite.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {
@@ -23,6 +24,7 @@ if (user) {
 
   // Création
   const champ = (label, nom, attrs = {}) => h('label', {}, label, h('input', { name: nom, ...attrs }));
+  const muni = champMunicipalite();
   const form = h('form', { class: 'bf-form', hidden: true },
     h('h2', {}, 'Nouveau client'),
     h('div', { class: 'bf-grille2' },
@@ -30,7 +32,7 @@ if (user) {
       champ('Téléphone', 'telephone', { type: 'tel' }), champ('Courriel', 'courriel', { type: 'email' }),
       h('label', {}, 'Succursale *', h('select', { name: 'succursale_code', required: true },
         Object.entries(SUCCURSALES).map(([code, nom]) => h('option', { value: code, selected: code === user.succursale }, `${code} | ${nom}`)))),
-      champ('Adresse d\'installation', 'adresse'), champ('Ville', 'ville'), champ('Code postal', 'code_postal')),
+      champ('Adresse d\'installation', 'adresse'), h('label', {}, 'Municipalité', muni.el), champ('Code postal', 'code_postal')),
     h('label', { class: 'bf-case' }, h('input', { type: 'checkbox', name: 'est_proprietaire' }), 'Le client est propriétaire (LogisVert)'),
     champ('Nom sur la preuve de propriété (compte de taxes ou acte de vente)', 'nom_preuve_propriete'),
     h('label', { class: 'bf-case' }, h('input', { type: 'checkbox', name: 'consentement_comm' }), 'Le client accepte de recevoir nos communications'),
@@ -48,7 +50,7 @@ if (user) {
         succursale_code: v('succursale_code'), vendeur_id: user.id,
         est_proprietaire: f.get('est_proprietaire') === 'on', nom_preuve_propriete: v('nom_preuve_propriete'),
         consentement_comm: f.get('consentement_comm') === 'on',
-        site: v('adresse') ? { adresse: v('adresse'), ville: v('ville') || '', code_postal: v('code_postal') } : undefined,
+        site: v('adresse') ? { adresse: v('adresse'), ...muni.valeur(), code_postal: v('code_postal') } : undefined,
       });
       location.href = `/client?id=${client.id}`;
     } catch (e) { message(msg, e.message); }

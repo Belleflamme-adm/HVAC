@@ -33,6 +33,8 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 | `produits` | Catalogue (~29,7k items) | 9677840877 | à confirmer. Champs HVAC (`ahri`, `energy_star`, `btu_nominal`, `btu_moins8`) : à confirmer. |
 | `kits`, `kit_items` | Kits | à confirmer | à confirmer. Les kits de thermopompes existent déjà chez Mike (selon Simon). |
 | `types_travaux`, `tarifs_sous_traitants` | BD - Fournisseurs ? (grilles de sous-traitants) | à confirmer | à confirmer. Chez Mike, les prix des sous-traitants sont peut-être dans des factures payables ou des documents, pas dans un board. |
+| `municipalites` | (aucun board connu) | | Nouveau. Source : Découpages administratifs, MRNF (CC-BY 4.0). |
+| `territoires_sous_traitants`, `principaux_municipalites`, `disponibilites_sous_traitants` | (aucun board connu) | | Nouveau (Lot A). À confirmer : Mike gère-t-il les disponibilités dans Pointage (`belleflammetime`) ? |
 | `devis`, `devis_lignes` | Ventes et Devis 2.0 | à confirmer | à confirmer. Format du numéro de devis de Mike : à confirmer (ADR-004). |
 | `approbations_rabais`, `delegations_rabais` | (aucun board connu) | | Probablement nouveau. À confirmer : comment Mike trace les approbations aujourd'hui. |
 | `projets` | Plan de charge - Macro | à confirmer | `code_projet` = code Macro `[SUCC][DIV]-[PRÉ]-[NOM]-[NNN]` (ADR-040), identique à celui du devis d'origine. Autres colonnes : à confirmer. |

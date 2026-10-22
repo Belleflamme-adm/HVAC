@@ -35,6 +35,12 @@ npm run test:sql    # Postgres 16 local requis (crée et détruit des bases hvac
 2. Supabase Dashboard > Authentication > invite ce courriel.
 3. Au premier login, `hvac_session()` lie le compte à la fiche.
 
+## Limites municipales (carte des territoires)
+
+1. Télécharger la couche des municipalités du jeu « Découpages administratifs » (MRNF, Données Québec, CC-BY 4.0), en SHP.
+2. `node scripts/municipalites/convertir.mjs <municipalites.shp>`
+3. Le script écrit `public/data/municipalites.geojson` et une migration SQL des municipalités. Vérifier, tester (`npm run test:sql`), puis committer.
+
 ## Garde-fous
 
 Voir `CLAUDE.md` §2. Résumé : rien dans l'infra de Mike, aucun secret dans le repo, pas de provisionnement sans OK de Simon.

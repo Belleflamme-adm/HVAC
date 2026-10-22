@@ -29,5 +29,7 @@
 
 ## Fonctions livrées (Phase 3, Clients + Devis)
 
-`clients-list`, `clients-get`, `clients-create`, `clients-update`, `sites-save`, `catalogue-search`, `devis-list`, `devis-get`, `devis-create`, `devis-update`, `devis-lignes`, `devis-statut`, `devis-renouveler`, `approbations`, `installation-options`, `installation-tarifs`.
+`clients-list`, `clients-get`, `clients-create`, `clients-update`, `sites-save`, `catalogue-search`, `devis-list`, `devis-get`, `devis-create`, `devis-update`, `devis-lignes`, `devis-statut`, `devis-renouveler`, `approbations`, `installation-options`, `installation-tarifs`, `sous-traitants`, `territoire`, `principaux`, `disponibilites`, `municipalites`.
+| Comptes sous-traitants dans l'app de Mike | Mike n'a peut-être pas de rôle externe. Il faut décider si les sous-traitants entrent dans SON app (avec des droits limités) ou dans un portail séparé. Ils voient des renseignements de clients en Lot B : entente de confidentialité requise. |
+| Disponibilités vs Pointage (`belleflammetime`) | Vérifier si le calendrier de Mike peut accueillir les disponibilités des sous-traitants, pour éviter deux calendriers. |
 

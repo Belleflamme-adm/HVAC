@@ -14,6 +14,24 @@ export const TUILES_HVAC = [
   { cle: 'assistant',   titre: 'Assistant ventilation', href: '/assistant-ventilation', etat: 'phase3' },
 ];
 
+const TUILES_SOUS_TRAITANT = [
+  { cle: 'territoire', titre: 'Mon territoire', href: '/territoire', etat: 'actif' },
+  { cle: 'disponibilites', titre: 'Mes disponibilités', href: '/disponibilites', etat: 'actif' },
+  { cle: 'jobs', titre: 'Mes jobs', href: '/jobs', etat: 'phase3' },
+];
+
+const TUILES_PLANIFICATION = [
+  { cle: 'sous-traitants', titre: 'Sous-traitants', href: '/sous-traitants', etat: 'actif' },
+  { cle: 'territoires', titre: 'Territoires', href: '/territoire', etat: 'actif' },
+  { cle: 'disponibilites', titre: 'Disponibilités', href: '/disponibilites', etat: 'actif' },
+];
+
+export function tuilesPour(user) {
+  if (user?.sousTraitantId) return TUILES_SOUS_TRAITANT;
+  const planif = ['Admin tout', 'Direction', 'Coordonnateur'].includes(user?.role);
+  return planif ? [...TUILES_HVAC, ...TUILES_PLANIFICATION] : TUILES_HVAC;
+}
+
 export function rendreTuiles(conteneur, tuiles = TUILES_HVAC) {
   conteneur.replaceChildren(...tuiles.map((t) => {
     const a = document.createElement(t.etat === 'actif' ? 'a' : 'div');

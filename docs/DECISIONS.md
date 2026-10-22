@@ -283,3 +283,25 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Décision** (Simon) : même série que l'app de Mike : un entier global, sans préfixe, affiché `#120815`.
 - **Précaution de Claude** : tant que l'app HVAC est autonome et sur données fictives, le compteur commence à **900001**. Sinon, un devis de démonstration pourrait porter le même numéro qu'un vrai devis de Mike. À la greffe, le compteur est aligné sur le prochain numéro réel de Mike (sans jamais reculer).
 - **Conséquences** : à la greffe, c'est l'app de Mike qui attribue les numéros. Les devis de démonstration (900001 et plus) ne migrent pas.
+
+---
+
+# Phase 3 | Lot A : sous-traitants
+
+## ADR-044 | Compte sous-traitant, territoire, principal, disponibilités
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Décisions d'implémentation** :
+  - Nouveau rôle **« Sous-traitant »**, rattaché à un fournisseur. Il voit **seulement** sa fiche, son entreprise, sa grille de prix, les municipalités, son territoire et ses disponibilités. Il ne voit ni produits, ni coûts, ni marge, ni clients, ni devis, ni autres employés (RLS, testée).
+  - **Territoire** : par municipalité, `accepte`, `supplement` (montant obligatoire) ou `refuse`. Le sous-traitant le remplit lui-même, et la coordination peut le corriger. Chaque changement est journalisé.
+  - **Principal** par municipalité : désigné par la planification (Admin tout, Direction, Coordonnateur), seulement parmi les sous-traitants qui desservent la ville. Si le principal refuse ensuite la ville, la ville perd son principal et l'app le signale.
+  - **Disponibilités** : par journée, saisies par le sous-traitant lui-même. Les journées passées ne se modifient pas. Les vendeurs et la planification les consultent.
+  - **Devis** : la liste des sous-traitants est filtrée selon la municipalité du lieu d'installation, avec le principal en premier et sélectionné. Le **supplément de ville** est ajouté au coût avant la marge (grille seulement : une soumission inclut le déplacement). Un sous-traitant qui refuse la ville est bloqué par la base.
+  - Le lieu d'installation a maintenant une **municipalité officielle** (`sites.municipalite_code`). Sans elle, le territoire ne peut pas être vérifié et l'app l'indique.
+- **Création d'un compte sous-traitant** : la planification crée l'entreprise et la fiche du contact, puis Simon l'invite dans Supabase Auth (ADR-026). **Avant l'accès, une entente de confidentialité doit être signée (Loi 25)**, à valider par un professionnel.
+
+## ADR-045 | Carte du territoire en SVG maison
+- **Date** : 2026-10-22 | **Statut** : Livrée (en attente des données officielles)
+- **Décision** : carte dessinée en SVG à partir d'un GeoJSON local (`public/data/municipalites.geojson`), avec zoom à la molette ou au pincement, déplacement, clic pour sélectionner et recherche d'une ville. **Aucune librairie ni tuile externe** : aucune donnée ne sort vers un tiers, la politique de sécurité du site (CSP) reste stricte, et la carte fonctionne hors ligne dans la PWA.
+- **Données** : `scripts/municipalites/convertir.mjs` convertit la couche officielle (SHP, « Découpages administratifs », MRNF, CC-BY 4.0), la simplifie avec mapshaper 0.7.71 et produit le GeoJSON et une migration SQL des municipalités. Les champs sont détectés, sinon le script s'arrête et les affiche (on ne devine pas).
+- **Blocage** : le réseau de l'environnement cloud refuse `www.donneesquebec.ca`. Il faut que Simon autorise ce domaine, ou qu'il fournisse le fichier SHP. Aucune limite inventée n'est versée au repo.
+- **Conséquences** : la carte se teste aujourd'hui avec une grille synthétique (hors repo). L'attribution CC-BY est affichée sous la carte.

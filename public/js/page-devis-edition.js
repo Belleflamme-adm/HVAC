@@ -1,7 +1,7 @@
-import { initPage, estApprobateur } from './bf-page.js?v=0.3.0';
-import { api } from './bf-api.js?v=0.3.0';
-import { remplir, h, message, param, dateFr, pct, pastilleStatut } from './bf-dom.js?v=0.3.0';
-import { formatCents } from './bf-money.js?v=0.3.0';
+import { initPage, estApprobateur } from './bf-page.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
+import { remplir, h, message, param, dateFr, pct, pastilleStatut } from './bf-dom.js?v=0.4.0';
+import { formatCents } from './bf-money.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {
@@ -71,6 +71,7 @@ if (user) {
         h('td', {}, l.description, l.kit_id ? h('span', { class: 'bf-muet' }, ' (kit)') : null,
           l.type_ligne === 'installation' ? h('div', { class: 'bf-muet bf-interne' },
             `Interne : coût ${formatCents(l.cout_cents)} (${l.source_cout === 'soumission' ? `soumission ${l.reference_soumission}` : 'grille'})`,
+            l.supplement_cents ? ` + supplément de ville ${formatCents(l.supplement_cents)}` : '',
             ` + marge ${pct(l.marge_bp)}`) : null),
         h('td', { class: 'num' }, qte),
         h('td', { class: 'num' }, formatCents(l.prix_unitaire_cents)),
@@ -102,23 +103,33 @@ if (user) {
     // Installation : coût du sous-traitant + marge, calculés par la base
     const formInst = h('form', { class: 'bf-form bf-form--compact' });
     if (brouillon) {
-      api.get('installation-options').then(({ types, sousTraitants, grille, margeBp }) => {
+      Promise.all([api.get('installation-options'),
+        site?.municipalite_code ? api.get('municipalites', { pour: site.municipalite_code }) : Promise.resolve(null)])
+      .then(([{ types, sousTraitants: tous, grille, margeBp }, desservent]) => {
         const coutGrille = (st, ty) => grille.find((g) => g.fournisseur_id === st && g.type_travail_id === ty)?.cout_cents;
+        // Sous-traitants qui desservent la municipalité du lieu, principal en premier (ADR-038)
+        const sousTraitants = desservent ? desservent.map((d) => ({ id: d.fournisseur_id, nom: d.nom, principal: d.principal, supplement: d.supplement_cents || 0 }))
+          : tous.map((f) => ({ ...f, supplement: 0 }));
+        const supplementDe = (st) => sousTraitants.find((x) => x.id === st)?.supplement || 0;
         const selType = h('select', { name: 'type', required: true, 'aria-label': 'Type de travail' },
           h('option', { value: '' }, 'Type de travail…'), types.map((t) => h('option', { value: t.id }, t.nom)));
         const selSt = h('select', { name: 'st', required: true, 'aria-label': 'Sous-traitant' },
-          h('option', { value: '' }, 'Sous-traitant…'), sousTraitants.map((f) => h('option', { value: f.id }, f.nom)));
+          h('option', { value: '' }, 'Sous-traitant…'), sousTraitants.map((f, i) => h('option', { value: f.id, selected: Boolean(desservent) && i === 0 && f.principal },
+            `${f.nom}${f.principal ? ' (principal)' : ''}${f.supplement ? ` | +${formatCents(f.supplement)}` : ''}`)));
         const soum = h('input', { type: 'checkbox', name: 'soumission' });
         const cout = h('input', { name: 'cout', inputmode: 'decimal', placeholder: 'Coût soumission $', class: 'bf-court', hidden: true, 'aria-label': 'Coût de la soumission' });
         const ref = h('input', { name: 'ref', placeholder: 'No de soumission', hidden: true, 'aria-label': 'Numéro de soumission' });
         const apercu = h('span', { class: 'bf-muet' });
         const majApercu = () => {
-          const c = soum.checked ? Math.round(Number(String(cout.value).replace(',', '.').replace(/\s/g, '')) * 100) : coutGrille(selSt.value, selType.value);
-          apercu.textContent = c > 0 ? `Coût ${formatCents(c)} | prix client ${formatCents(Math.round(c * 10000 / (10000 - margeBp)))} (marge ${pct(margeBp)})`
+          const base = soum.checked ? Math.round(Number(String(cout.value).replace(',', '.').replace(/\s/g, '')) * 100) : coutGrille(selSt.value, selType.value);
+          const sup = soum.checked ? 0 : supplementDe(selSt.value);
+          const c = base > 0 ? base + sup : base;
+          apercu.textContent = c > 0 ? `Coût ${formatCents(base)}${sup ? ` + supplément ${formatCents(sup)}` : ''} | prix client ${formatCents(Math.round(c * 10000 / (10000 - margeBp)))} (marge ${pct(margeBp)})`
             : (selSt.value && selType.value && !soum.checked ? 'Aucun prix dans la grille : coche « Soumission »' : '');
         };
         soum.addEventListener('change', () => { cout.hidden = ref.hidden = !soum.checked; majApercu(); });
         [selType, selSt, cout].forEach((el) => el.addEventListener('input', majApercu));
+        majApercu();
         formInst.addEventListener('submit', (ev) => {
           ev.preventDefault();
           const corps = { devis_id: dv.id, type_ligne: 'installation', type_travail_id: selType.value, sous_traitant_id: selSt.value, quantite: 1 };
@@ -126,7 +137,11 @@ if (user) {
             cout_cents: Math.round(Number(String(cout.value).replace(',', '.').replace(/\s/g, '')) * 100) });
           action(() => api.post('devis-lignes', corps));
         });
+        const avisVille = !site ? 'Aucun lieu d\'installation : choisis-en un pour vérifier le territoire du sous-traitant.'
+          : !site.municipalite_code ? 'Le lieu n\'a pas de municipalité officielle : le territoire et le supplément ne peuvent pas être vérifiés.'
+          : !sousTraitants.length ? 'Aucun sous-traitant ne dessert cette municipalité.' : null;
         remplir(formInst, h('strong', {}, 'Installation (sous-traitant + marge)'),
+          avisVille ? h('p', { class: 'bf-message bf-message--alerte' }, avisVille) : null,
           h('div', { class: 'bf-filtres' }, selType, selSt, h('label', { class: 'bf-case' }, soum, 'Soumission pour ce job'), cout, ref,
             h('button', { class: 'bf-bouton bf-bouton--discret', type: 'submit' }, 'Ajouter l\'installation')),
           apercu);
