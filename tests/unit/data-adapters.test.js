@@ -52,3 +52,21 @@ test('drapeaux booléens', () => {
   assert.equal(config({}).mondayEnabled, false);
   assert.equal(config({}).fridaySyncEnabled, false);
 });
+
+test('recherche Supabase : ilike sur plusieurs colonnes, caractères spéciaux neutralisés', async () => {
+  const chaine = [];
+  const builder = new Proxy({}, {
+    get(_, op) {
+      if (op === 'then') return (res) => res({ data: [], error: null });
+      return (...args) => { chaine.push([op, ...args]); return builder; };
+    },
+  });
+  const faux = () => ({ from: (t) => { chaine.push(['from', t]); return builder; } });
+  const cfg = config({ SUPABASE_URL: 'https://x.supabase.co', SUPABASE_ANON_KEY: 'anon' });
+  const repo = creerAdapterSupabase(cfg, { createClientImpl: faux }).repo('jwt');
+  await repo.list('clients', { filtre: { actif: true, valide_jusqu: { op: 'lt', val: '2026-01-01' } },
+    recherche: { colonnes: ['nom', 'courriel'], terme: 'tr,em(*)%' }, limite: 9999 });
+  assert.deepEqual(chaine.find(([op]) => op === 'or'), ['or', 'nom.ilike.*tr em*,courriel.ilike.*tr em*']);
+  assert.deepEqual(chaine.find(([op]) => op === 'lt'), ['lt', 'valide_jusqu', '2026-01-01']);
+  assert.deepEqual(chaine.find(([op]) => op === 'limit'), ['limit', 500]);
+});

@@ -1,7 +1,7 @@
 // Tuiles d'accueil (équivalent bf-tuiles chez Mike). Ordre de livraison : ADR-013 et Phase 3.
 export const TUILES_HVAC = [
-  { cle: 'clients',     titre: 'Clients',              href: '/clients',     etat: 'phase3' },
-  { cle: 'devis',       titre: 'Devis',                href: '/devis',       etat: 'phase3' },
+  { cle: 'clients',     titre: 'Clients',              href: '/clients',     etat: 'actif' },
+  { cle: 'devis',       titre: 'Devis',                href: '/devis',       etat: 'actif' },
   { cle: 'leads',       titre: 'Leads',                href: '/leads',       etat: 'phase3' },
   { cle: 'inspections', titre: 'Inspections',          href: '/inspections', etat: 'phase3' },
   { cle: 'projets',     titre: 'Projets (Macro)',      href: '/projets',     etat: 'phase3' },

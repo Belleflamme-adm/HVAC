@@ -47,6 +47,6 @@ test('aucune clé service_role ni secret dans le front', () => {
 
 test('aucun tiret cadratin dans les textes', () => {
   for (const f of [...HTML, ...JS, ...fichiers('docs', ['.md']), ...fichiers('netlify', ['.mjs']), ...fichiers('lib', ['.js'])]) {
-    assert.doesNotMatch(readFileSync(f, 'utf8'), /—/, f);
+    assert.doesNotMatch(readFileSync(f, 'utf8'), /\u2014/, f);
   }
 });

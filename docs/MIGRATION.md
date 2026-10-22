@@ -1,6 +1,6 @@
 # Migration | Greffer la division HVAC dans l'app de Mike
 
-> Document vivant. Mis à jour à chaque livraison. Statut : **Phase 2, squelette prêt, rien n'est déployé.**
+> Document vivant. Mis à jour à chaque livraison. Statut : **Phase 3, module Clients + Devis livré en local, rien n'est déployé.**
 
 ## Ordre prévu (à valider avec Mike le moment venu)
 
@@ -24,3 +24,10 @@
 | Auth : Mike utilise peut-être son propre token, pas Supabase Auth | Le contrat `session-*` reste identique côté front, on adapte seulement `lib/session.js` et l'adapter |
 | Collision de noms de fonctions (`session-login`, `health`...) avec les ~430 fonctions de Mike | Ne pas copier les `session-*` : utiliser celles de Mike, qui ont le même contrat. Renommer `health` en `hvac-health`. |
 | Composants `bf-*` homonymes chez Mike (`bf-tuiles`, `bf-bandeau`) | Les nôtres sont minimaux : utiliser ceux de Mike et ne greffer que nos tuiles |
+| Collision avec le module devis de Mike (~25 fonctions `devis-*`, board Ventes et Devis 2.0) | Décision à prendre avec Mike : (a) nos devis HVAC deviennent la division Ventilation de SON module devis, ou (b) on garde un module séparé préfixé (`hvac-devis-*`). L'option (a) est plus propre mais demande de porter nos règles (plafond, kits, validité) dans son code. |
+| Séries de numéros de devis | Nos devis de démo consomment `D-AAAA-0000x`. Avant la greffe, aligner `compteurs` sur la série réelle de Mike (jamais de décrément). |
+
+## Fonctions livrées (Phase 3, Clients + Devis)
+
+`clients-list`, `clients-get`, `clients-create`, `clients-update`, `sites-save`, `catalogue-search`, `devis-list`, `devis-get`, `devis-create`, `devis-update`, `devis-lignes`, `devis-statut`, `devis-renouveler`, `approbations`.
+

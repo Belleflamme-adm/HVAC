@@ -1,6 +1,6 @@
 {
   "name": "belleflamme-hvac",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Division Ventilation/Climatisation (HVAC) du Groupe Belleflamme, app autonome greffable dans l'app de Mike.",
   "type": "module",

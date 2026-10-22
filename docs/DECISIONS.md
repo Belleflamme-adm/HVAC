@@ -158,3 +158,31 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Date** : 2026-10-22 | **Statut** : Acceptée
 - **Décision** : Simon préfère attendre. Le développement continue sur le Postgres local et la CI. Aucun projet n'est mis en pause et aucun plan n'est acheté.
 - **Conséquences** : les modules de la Phase 3 sont testés en local et en CI. Le projet `ca-central-1` sera créé plus tard, après une nouvelle vérification du compte et l'OK de Simon.
+
+---
+
+# Phase 3 | Module Clients + Devis
+
+## ADR-031 | Règles du devis confirmées par Simon
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Décision** :
+  1. **Rabais sur un kit** : aucun plafond automatique ni délégué. Simon ou Mike décide au cas par cas (approbation obligatoire dès 0,01 %).
+  2. **Taxes** : calculées sur le montant global du devis (confirme ADR-018).
+  3. **Validité** : 30 jours à partir de l'**envoi** (paramètre `validite_devis_jours`). Ensuite, le devis est expiré : impossible de l'accepter, il faut le renouveler (nouveau numéro, mêmes lignes, rabais hors plafond à réapprouver).
+- **Conséquences** : l'expiration est calculée à la lecture (vue `devis_v`, colonne `statut_effectif`), sans tâche planifiée ni clé `service_role`.
+
+## ADR-032 | Prix imposé par le catalogue
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Contexte** : si le vendeur peut saisir le prix d'un produit, il peut baisser le prix au lieu de donner un rabais, et contourner le plafond.
+- **Décision** : pour une ligne liée à un produit ou à un kit, la base impose le prix du catalogue (trigger). Seules les lignes libres ont un prix saisi.
+- **Conséquences** : **risque résiduel** : une ligne libre peut servir à contourner le contrôle (ex. « crédit » saisi comme ligne libre). Le prix d'une ligne libre ne peut pas être négatif. À surveiller avec un rapport des lignes libres par vendeur. Plus tard, on pourra exiger une approbation pour les lignes libres au-dessus d'un montant.
+
+## ADR-033 | Devis en PDF par le navigateur
+- **Date** : 2026-10-22 | **Statut** : Proposée
+- **Décision** : `/devis-imprimer?id=` produit une page imprimable que le navigateur enregistre en PDF. Aucune librairie PDF, aucune fonction serverless. Un bandeau « DOCUMENT DE DÉMONSTRATION » s'affiche tant que `MODE_DEMO` est vrai (`public/js/bf-entreprise.js`).
+- **Conséquences** : l'envoi automatique du PDF par courriel n'est pas couvert. Chez Mike, il existe des fonctions `generate` (8) et des modèles de courriel : à réutiliser lors de la greffe.
+
+## ADR-034 | Demandes d'approbation
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Décision** : le vendeur demande l'approbation ligne par ligne, avec un motif obligatoire. Le rabais et le plafond sont recopiés de la ligne par la base, jamais du formulaire. Simon et Mike voient les demandes en attente en haut de la page Devis.
+- **Conséquences** : aucune notification push ni courriel pour l'instant (la cloche `notif-bell-unified` de Mike servira lors de la greffe).

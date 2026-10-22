@@ -2,11 +2,15 @@
 // Les réponses des fonctions (/.netlify/functions/*) ne sont JAMAIS mises en cache :
 // elles contiennent des données personnelles et des jetons.
 // La file de synchronisation hors ligne des BT (IndexedDB) arrive avec le module BT (ADR-011).
-const VERSION = 'hvac-0.2.0';
+const VERSION = 'hvac-0.3.0';
 const COQUILLE = [
-  '/', '/login', '/css/bf.css?v=0.2.0', '/js/bf-theme-init.js?v=0.2.0', '/js/bf-session.js?v=0.2.0',
-  '/js/bf-tuiles.js?v=0.2.0', '/js/bf-bandeau.js?v=0.2.0', '/js/accueil.js?v=0.2.0', '/js/login.js?v=0.2.0',
-  '/manifest.webmanifest', '/icons/icon.svg',
+  '/', '/login', '/css/bf.css?v=0.3.0', '/js/bf-theme-init.js?v=0.3.0', '/js/bf-session.js?v=0.3.0',
+  '/js/bf-tuiles.js?v=0.3.0', '/js/bf-bandeau.js?v=0.3.0', '/js/accueil.js?v=0.3.0', '/js/login.js?v=0.3.0',
+  '/clients', '/client', '/devis', '/devis-edition', '/devis-imprimer', '/css/bf-imprimer.css?v=0.3.0',
+  '/js/bf-page.js?v=0.3.0', '/js/bf-api.js?v=0.3.0', '/js/bf-dom.js?v=0.3.0', '/js/bf-money.js?v=0.3.0',
+  '/js/bf-project-code.js?v=0.3.0', '/js/bf-entreprise.js?v=0.3.0', '/js/page-clients.js?v=0.3.0',
+  '/js/page-client.js?v=0.3.0', '/js/page-devis.js?v=0.3.0', '/js/page-devis-edition.js?v=0.3.0',
+  '/js/page-devis-imprimer.js?v=0.3.0', '/manifest.webmanifest', '/icons/icon.svg',
 ];
 
 self.addEventListener('install', (e) => {

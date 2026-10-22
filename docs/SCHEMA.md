@@ -110,3 +110,15 @@ Ces règles tiennent même si le front ou une fonction a un bogue :
 5. **Taxes** : je calcule la TPS et la TVQ sur le sous-total taxable du document, et non ligne par ligne. Est-ce aussi la méthode de Mike ?
 6. **Financeit** : à quel moment Financeit verse-t-il l'argent, et qu'est-ce que ça change au dépôt de 40 % et au solde de 60 % ?
 7. **Inventaire** (emplacements, stock, BC, réception) : pas modélisé. Ça viendra avec le module catalogue et inventaire, en Phase 3.
+
+## 7. Ajouts Phase 3 (module Clients + Devis)
+
+| Objet | Rôle |
+|---|---|
+| `devis_v` (vue, `security_invoker`) | Devis + client + vendeur + `statut_effectif` (inclut « expire ») + `bloque_par_rabais`. Respecte la RLS de l'appelant. |
+| `hvac_prix_kit(kit)` | Prix fixe du kit, sinon la somme des composantes |
+| `hvac_dupliquer_devis(devis)` | Renouvellement : nouveau numéro, mêmes lignes, en brouillon |
+| Paramètre `validite_devis_jours` | 30 jours à partir de l'envoi |
+| Trigger de ligne | Prix imposé par le catalogue, plafond 0 % sur les kits |
+| Trigger de statut | Brouillon -> envoyé -> accepté ou refusé ; devis vide refusé ; devis expiré non acceptable |
+
