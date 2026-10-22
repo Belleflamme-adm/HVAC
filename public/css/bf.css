@@ -236,3 +236,21 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-fiche dd { margin: 0; overflow-wrap: anywhere; }
 .bf-pastille--type { background: var(--menthe); color: var(--vert-texte); }
 .bf-centre-cel { text-align: center; }
+
+/* Liste de prix des sous-traitants (ADR-060), au style de la liste de prix de Mike */
+.bf-prix-section { display: grid; gap: 8px; margin: 18px 0; }
+.bf-prix-section__titre { color: var(--vert-texte); font-size: 20px; margin: 0; }
+.bf-prix { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: center;
+  padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.bf-prix__texte { display: grid; gap: 2px; min-width: 0; font-size: 15px; }
+.bf-prix__inclus { font-size: 13px; color: var(--muted); }
+.bf-prix__meta { font-size: 13px; }
+.bf-prix__client { font-weight: 600; }
+.bf-prix__saisie { display: flex; align-items: center; gap: 8px; }
+.bf-prix__champ { width: 7.5em; text-align: right; font: 16px var(--f); padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums; }
+.bf-prix__champ--modifie { border-color: var(--vert); background: var(--menthe); }
+.bf-prix__unite { font-size: 12px; color: var(--muted); min-width: 5.5em; }
+.bf-prix-barre { position: sticky; bottom: calc(70px + env(safe-area-inset-bottom)); z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--ombre); }
+@media (max-width: 560px) { .bf-prix { grid-template-columns: 1fr; } }

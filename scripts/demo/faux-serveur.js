@@ -36,15 +36,12 @@
       { id: 'f-outa', nom: 'Thermo Outaouais (FICTIF)', type: 'sous-traitant', telephone: '819-555-0144', courriel: 'thermo@exemple.invalid', licence_rbq: '0000-0000-01', actif: true },
     ],
     territoire: [], principaux: [], dispos: [],
-    types: [
-      { id: 't-mural', code: 'MURAL', nom: 'Thermopompe murale (1 tête)', description: 'Installation standard, 25 pi de ligne' },
-      { id: 't-multi', code: 'MULTI', nom: 'Multizone (par tête)', description: 'Par tête intérieure supplémentaire' },
-      { id: 't-central', code: 'CENTRAL', nom: 'Thermopompe centrale', description: 'Raccord au réseau de conduits existant' },
-    ],
+    types: (window.__demoTypesTravaux || []).map((x, i) => ({ id: `t-${x.code}`, code: x.code, nom: x.nom, description: x.inclus, categorie: x.categorie, unite: x.unite, ordre: i })),
+    categories: (window.__demoCategories || []).map(([code, nom], i) => ({ code, nom, ordre: i + 1 })),
     tarifs: [
-      { fournisseur_id: 'f-clim', type_travail_id: 't-mural', cout_cents: 120000, en_vigueur_du: '2026-01-01' },
-      { fournisseur_id: 'f-clim', type_travail_id: 't-multi', cout_cents: 55000, en_vigueur_du: '2026-01-01' },
-      { fournisseur_id: 'f-outa', type_travail_id: 't-mural', cout_cents: 115000, en_vigueur_du: '2026-01-01' },
+      { fournisseur_id: 'f-clim', type_travail_id: 't-INST-MURAL-1T-12', cout_cents: 120000, en_vigueur_du: '2026-01-01' },
+      { fournisseur_id: 'f-clim', type_travail_id: 't-INST-TETE-MULTI', cout_cents: 60000, en_vigueur_du: '2026-01-01' },
+      { fournisseur_id: 'f-outa', type_travail_id: 't-INST-MURAL-1T-12', cout_cents: 115000, en_vigueur_du: '2026-01-01' },
     ],
     margeBp: 2500,
     municipalites: [],
@@ -273,11 +270,21 @@
         return { ok: true };
       },
     },
-    'installation-options': { GET: () => ({ types: etat.types, sousTraitants: etat.fournisseurs, grille: etat.tarifs, margeBp: etat.margeBp }) },
+    'installation-options': { GET: () => ({ types: etat.types, categories: etat.categories, sousTraitants: etat.fournisseurs, grille: etat.tarifs, margeBp: etat.margeBp }) },
     'installation-tarifs': {
-      POST: (_q, b) => { const t = { en_vigueur_du: new Date().toISOString().slice(0, 10), ...b }; etat.tarifs = etat.tarifs.filter((x) => !(x.fournisseur_id === t.fournisseur_id && x.type_travail_id === t.type_travail_id)); etat.tarifs.push(t); return t; },
+      POST: (_q, b) => {
+        if (user().role !== 'Admin tout') throw new Erreur(403, 'Modification refusée (Simon ou Mike seulement)');
+        exiger(Number.isInteger(b.cout_cents) && b.cout_cents > 0, 'Coût en cents requis');
+        const t = { en_vigueur_du: new Date().toISOString().slice(0, 10), ...b };
+        etat.tarifs = etat.tarifs.filter((x) => !(x.fournisseur_id === t.fournisseur_id && x.type_travail_id === t.type_travail_id)); etat.tarifs.push(t); return t;
+      },
       PATCH: (_q, b) => { etat.margeBp = Number(b.marge_bp); return { ok: true }; },
-      PUT: (_q, b) => { const t = { id: `t-${etat.types.length + 1}`, ...b }; etat.types.push(t); return t; },
+      PUT: (_q, b) => {
+        const code = String(b.code || '').trim().toUpperCase();
+        exiger(/^[A-Z0-9-]{3,40}$/.test(code), 'Code : lettres, chiffres et tirets (ex. INST-MURAL-1T-12)');
+        exiger(!etat.types.some((t) => t.code === code), 'Ce code existe déjà');
+        const t = { id: `t-${code}`, code, nom: b.nom, categorie: b.categorie, unite: b.unite || 'forfait', ordre: etat.types.length }; etat.types.push(t); return t;
+      },
     },
   };
 

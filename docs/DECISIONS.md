@@ -481,3 +481,29 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - faire arriver un lead de Monday.
 - **Le faux serveur** imite les règles de la base (tour de rôle par type, horodatage, cotes, visibilité). Les vraies règles restent celles de la base, couvertes par les tests SQL. Le faux serveur sert seulement à tester les écrans.
 - Après chaque modification, on le régénère et on le republie au même lien.
+
+## ADR-060 | Liste de prix des sous-traitants : tous les travaux à chiffrer
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Contexte** : la liste de prix de Mike (section « HVAC | Installation ») ne contient qu'un seul item, `INST-TETE-MULTI`, l'installation additionnelle par tête multizone (prix client de 800 $). Simon veut chaque travail énuméré un par un, avec un prix au bout de la ligne.
+- **Liste** : 68 travaux dans 13 catégories, avec une source unique, `scripts/reference/types-travaux.mjs`. Elle génère la migration `20261024000700` et alimente le HTML de test. Les catégories :
+  - Thermopompe murale : 1 tête (3 tailles), multizone 2 à 5 têtes, tête additionnelle.
+  - Têtes spéciales : cassette, console, gainable.
+  - Système central neuf, add-on, climatiseur central.
+  - Remplacements : murale, multizone, centrale, fournaises.
+  - Biénergie : remplacement d'une fournaise au gaz avec add-on, add-on sur gaz, huile ou propane, contrôle biénergie.
+  - Conversion de l'huile, avec retrait du réservoir.
+  - Ventilation : échangeur d'air.
+  - Extras : ligne au pied, couvre-ligne, supports, pompe, percements, hauteur, accès difficile, thermostat.
+  - Conduits : sorties, retours, plenum.
+  - Électricité (licence CMEQ) et gaz (licence gaz).
+  - Retrait et récupération du réfrigérant.
+  - Service et entretien.
+- **Unités** : forfait, par tête, par pied, par sortie, par heure, par unité, par livre.
+- **Code repris de Mike** : `INST-TETE-MULTI`, pour la correspondance à la greffe.
+- **Écran** (Grille d'installation) :
+  - On choisit le sous-traitant. Chaque ligne affiche le code, le nom et ce qui est inclus, avec le **coût du sous-traitant au bout** et le **prix client calculé** : coût / (1 - marge).
+  - Une recherche filtre les travaux.
+  - « Enregistrer les prix » ajoute des tarifs datés, et l'historique est conservé.
+  - Simon et Mike peuvent ajouter un travail, avec sa catégorie et son unité.
+- **À valider par un professionnel** : ce qui est réservé aux licences (électricité, gaz, halocarbures) et ce qui est inclus dans chaque forfait.
+- **Suite prévue** : le sous-traitant remplira lui-même sa liste dans son portail (« Ma liste de prix »), et Simon approuvera.

@@ -7,6 +7,7 @@
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { TYPES_TRAVAUX, CATEGORIES } from '../reference/types-travaux.mjs';
 
 const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'installation-grille'];
 const lire = (f) => readFileSync(f, 'utf8');
@@ -82,7 +83,7 @@ try { commit = execFileSync('git', ['log', '-1', '--format=%h']).toString().trim
 const quand = new Date().toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' });
 
 const coquille = lire('scripts/demo/coquille.html')
-  .replace('/*__SERVEUR__*/', () => lire('scripts/demo/faux-serveur.js'))
+  .replace('/*__SERVEUR__*/', () => `window.__demoTypesTravaux = ${versJs(TYPES_TRAVAUX)};\nwindow.__demoCategories = ${versJs(CATEGORIES)};\n${lire('scripts/demo/faux-serveur.js')}`)
   .replace('/*__PAGES__*/', () => `window.__demoPages = ${versJs(pages)};`)
   .replace('/*__DONNEES__*/', () => `window.__demoDonnees = ${versJs(donnees)};`)
   .replace('__VERSION__', () => `${quand} | ${commit.replace(/[<>&]/g, '')}`);
