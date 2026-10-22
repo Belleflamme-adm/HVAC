@@ -28,6 +28,20 @@ Deux objectifs simultanés :
 
 ---
 
+## 1 bis. Recentrage du 22 oct. 2026 (ADR-055) | À LIRE EN PREMIER
+
+On ne refait **pas** ce qui existe déjà chez Mike : devis et soumission, taxes (QC, ON, autochtone), facturation, formulaire de pré-installation, calendrier Pointage. Notre app construit **deux choses** :
+
+1. **CRM des leads** : Google ou Facebook, puis Monday (CRM actuel), puis notre app.
+   - Le vendeur prend le lead en charge et contacte le client (appel, courriel ou texto, tout est tracé). On mesure sa **rapidité d'exécution**.
+   - Le vendeur planifie la visite dans **Pointage de Mike**.
+   - La suite se passe dans l'app de Mike.
+2. **Espace sous-traitants** (directeur des opérations) : création des sous-traitants et de leurs accès, carte du territoire par sous-traitant, **liste de prix** remplie par le sous-traitant dans l'app, approuvée et versionnée.
+
+Les modules déjà bâtis qui doublent Mike sont **en veille** : visibles, grisés, inactifs, code conservé. Ne pas les effacer, ne pas les faire évoluer sans demande de Simon.
+
+---
+
 ## 2. Règles non négociables (garde-fous)
 
 1. **Infra perso seulement** : mon GitHub, mon Netlify, un projet Supabase NEUF et dédié dans mon compte.

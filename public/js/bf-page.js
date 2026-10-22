@@ -6,7 +6,8 @@ import { h } from './bf-dom.js?v=0.4.0';
 // Menu selon le rôle : un sous-traitant ne voit que son territoire et ses disponibilités.
 export function liensPour(user) {
   if (user?.sousTraitantId) return [['/', 'Accueil'], ['/territoire', 'Mon territoire'], ['/disponibilites', 'Mes disponibilités']];
-  const liens = [['/', 'Accueil'], ['/clients', 'Clients'], ['/devis', 'Devis']];
+  // Devis : en veille (app de Mike, ADR-055), retiré du menu ; la tuile grisée reste à l'accueil
+  const liens = [['/', 'Accueil'], ['/clients', 'Clients']];
   if (['Admin tout', 'Direction', 'Coordonnateur'].includes(user?.role)) liens.push(['/sous-traitants', 'Sous-traitants']);
   return liens;
 }

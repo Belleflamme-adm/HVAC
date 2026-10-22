@@ -398,3 +398,30 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Exemption autochtone par une case aussi, comme dans l'app de Mike.
   - LogisVert pour le Québec seulement, et les programmes ontariens s'il y en a.
   - App bilingue français-anglais pour les sous-traitants.
+
+## ADR-054 | Taxes TVH Ontario et client autochtone (en veille)
+- **Date** : 2026-10-22 | **Statut** : Livrée en local, **en veille** (ADR-055) : l'app de Mike a déjà ces deux cases sur son devis.
+- Deux cases sur le devis, comme chez Mike :
+  - « Vente Ontario », pour la TVH à 13 % (taux `TVH_ON` daté du 2010-07-01). Elle est précochée quand le chantier est en Ontario.
+  - « Client autochtone », pour une vente sans taxes. Elle est précochée quand le client a l'exemption `autochtone`.
+- Les taxes sont figées après le brouillon. Un devis n'est pas envoyé si la case Ontario ne correspond pas à la province du chantier. La facture reprend les cases du devis.
+- **À valider par le comptable** : la TVH pour un client autochtone et les pièces à conserver.
+- Migration `20261024000400_taxes_ontario_autochtone.sql`, tests `90_taxes.test.sql`.
+
+## ADR-055 | Recentrage : CRM des leads et espace sous-traitants
+- **Date** : 2026-10-22 | **Statut** : Acceptée (Simon)
+- **Constat** : la soumission, le devis, les taxes (Québec, Ontario, autochtone), la facturation, le formulaire de pré-installation et le calendrier (Pointage) **existent déjà dans l'app de Mike**. On ne les refait pas.
+- **Ce que NOTRE app construit** :
+  1. **CRM des leads**. Parcours : Google ou Facebook, puis Monday (CRM actuel), puis notre app.
+     - Le vendeur voit le lead arriver et le prend en charge.
+     - Chaque contact est tracé (appel, courriel, texto) et la **rapidité d'exécution est mesurée** : délai avant la prise en charge, délai avant le premier contact, et canal de ce contact.
+     - Après la conversation, le vendeur planifie la visite **dans Pointage de Mike**.
+     - La suite se passe chez Mike : formulaire de pré-installation, devis, acceptation.
+  2. **Espace sous-traitants**, géré par le directeur des opérations :
+     - il crée les sous-traitants et leur donne accès ;
+     - chaque sous-traitant a **sa carte** : villes acceptées, refusées, avec supplément ;
+     - chaque sous-traitant a **sa liste de prix**. Simon définit les types de travaux, le sous-traitant remplit ses prix dans l'app, Simon approuve, et chaque version est conservée avec sa date.
+- **Modules en veille** : devis, pré-installation, projets, BT et BC, catalogue, appels de service, subventions, facturation, assistant, jobs du sous-traitant.
+  - Ils restent **visibles, grisés et inactifs** (« En veille | app de Mike »), regroupés à la fin.
+  - Leur code et leurs tests sont **conservés**. Pour en réactiver un, on remet `etat: 'actif'` dans `public/js/bf-tuiles.js`.
+  - Rien n'est supprimé sans l'accord écrit de Simon (garde-fou 5).

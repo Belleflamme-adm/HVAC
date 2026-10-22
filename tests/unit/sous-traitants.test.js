@@ -125,6 +125,16 @@ test('carte : villes repères valides (1 ou 2), sans doublon', () => {
   assert.ok(!brut.includes('\u2014') && !brut.includes('—'), 'jamais de tiret cadratin');
 });
 
+test('recentrage CRM : modules de Mike visibles mais en veille, à la fin', () => {
+  const t = tuilesPour({ role: 'Vendeur' });
+  const devis = t.find((x) => x.cle === 'devis');
+  assert.equal(devis.etat, 'veille', 'le devis reste visible, en veille');
+  assert.equal(t.find((x) => x.cle === 'leads').etat, 'construction');
+  const premiereVeille = t.findIndex((x) => x.etat === 'veille');
+  assert.ok(t.slice(premiereVeille).every((x) => x.etat === 'veille'), 'les tuiles en veille sont regroupées à la fin');
+  assert.ok(!liensPour({ role: 'Vendeur' }).some(([h]) => h === '/devis'), 'le devis sort du menu');
+});
+
 test('menu et tuiles selon le rôle', () => {
   const st = { sousTraitantId: F, role: 'Sous-traitant' };
   assert.deepEqual(liensPour(st).map(([h]) => h), ['/', '/territoire', '/disponibilites']);
