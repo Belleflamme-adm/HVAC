@@ -42,6 +42,8 @@ Deux objectifs simultanés :
 7. La clé `service_role` de Supabase ne sort **jamais** des fonctions serverless. Le navigateur n'utilise que la clé publique + RLS.
 8. Pas de `git push --force`, pas de réécriture d'historique sur `main`.
 
+**Exception autorisée par Simon (22 oct. 2026, par écrit dans la session) :** Claude peut **lire** Monday directement (`belleflamme-team.monday.com`) pour étudier le catalogue, les kits et la structure des boards, en priorité les boards Catalogue et Kits. **Lecture seule** : aucune création, modification ou suppression dans Monday. Rien n'est lu dans Netlify ni dans le Supabase de Mike. Les données réelles lues (prix, clients) ne sont jamais copiées telles quelles dans le repo : on ne garde que la structure et des données rendues fictives.
+
 ---
 
 ## 3. Ce que je sais de l'app de Mike (référence pour copier ses conventions)
