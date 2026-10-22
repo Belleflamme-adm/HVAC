@@ -600,3 +600,23 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Couleurs foncées choisies pour que le texte blanc reste lisible (contraste 4,5:1). Le vert Belleflamme pâle de l'app ne passe pas ce seuil avec du texte blanc : « Vendu » utilise un vert plus foncé.
 - **Fiche du lead perdu** : grande étampe « PERDU » rouge, inclinée, par-dessus la fiche. Le texte et les liens dessous restent lisibles et cliquables.
 - Les étampes remplacent les pastilles aux mêmes endroits : liste des leads et titre de la fiche (où le type s'ajoute à côté du statut).
+
+## ADR-067 | Contact du client et historique des communications (appels enregistrés, textos, courriels)
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local), branchement à l'app de Mike à faire à la greffe
+- **Demande** (Simon) : sur la fiche client, en haut à droite comme chez Mike, des boutons téléphone, texto, courriel et carte (épingle). À la greffe, ils passent par la téléphonie, les textos, les courriels et la carte de l'app de Mike. Chaque appel, texto et courriel est inscrit dans la fiche, avec l'heure, la durée et l'enregistrement de l'appel.
+- **Choix de Simon** :
+  - Boutons et historique sur la fiche client ET la fiche lead. L'historique du client comprend les communications de ses leads.
+  - Appels : enregistrement + transcription + résumé (produits par l'app de Mike).
+  - Accès : tous les employés, sauf les sous-traitants. Chaque écoute est journalisée (qui, quand, quel appel).
+  - Conservation des enregistrements : la même règle que l'app de Mike, à confirmer avec lui. Tant qu'elle n'est pas inscrite, rien n'est effacé.
+- **Conception** :
+  - Table `communications`, écrite seulement par le serveur (webhook de Mike), jamais par le navigateur. Vue `communications_v` : le lien lead -> client se résout même si l'employé ne voit pas ce lead, avec la même règle d'accès que la table.
+  - L'audio reste chez Mike : on ne garde qu'une référence. L'écoute passe par `hvac_ecouter_enregistrement` (accès + journal), puis par une URL d'écoute de courte durée fournie par Mike.
+  - Effacement selon la règle : la référence audio disparaît. L'heure, la durée, la transcription et le résumé restent.
+  - Drapeau `MIKE_COMM_ENABLED=false` : les boutons ouvrent le téléphone, les textos ou le courriel de l'appareil (rien n'est enregistré), et le webhook répond 503.
+  - Carte : lien Google Maps officiel (« Maps URLs », sans clé), avec la position exacte si connue, sinon l'adresse. Remplacée par la carte de Mike à la greffe.
+  - HTML de test : simule l'app de Mike branchée. Un clic sur Appeler ajoute un appel simulé avec enregistrement (tonalités, aucune vraie voix) et transcription fictive, et compte pour la rapidité du vendeur sur un lead.
+- **À valider par un professionnel** :
+  - L'avis d'enregistrement au client (message au début de l'appel) et la façon d'informer le client des fins de la collecte (Loi 25).
+  - La transcription par un fournisseur d'IA hors Québec (AssemblyAI, Whisper chez Mike) : évaluation des facteurs relatifs à la vie privée exigée pour une communication hors Québec.
+  - La durée de conservation.

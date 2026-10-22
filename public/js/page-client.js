@@ -3,6 +3,7 @@ import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param, dateFr, pastilleStatut } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
 import { champMunicipalite } from './bf-municipalite.js?v=0.4.0';
+import { barreContact, historiqueComms } from './bf-contact.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {
@@ -49,7 +50,10 @@ if (user) {
 
     remplir(zone, 
       h('p', {}, h('a', { href: '/clients' }, '← Clients')),
-      h('div', { class: 'bf-titre' }, h('h1', {}, nom), h('button', { class: 'bf-bouton', type: 'button', onclick: () => nouveauDevis() }, 'Nouveau devis')),
+      h('div', { class: 'bf-titre' }, h('h1', {}, nom),
+        h('div', { class: 'bf-titre__droite' },
+          barreContact({ tel: c.telephone, courriel: c.courriel, site: sites[0], client_id: c.id, msg }),
+          h('button', { class: 'bf-bouton', type: 'button', onclick: () => nouveauDevis() }, 'Nouveau devis'))),
       msg,
       ...avertissements.map((a) => h('p', { class: 'bf-message bf-message--alerte' }, a)),
       h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Coordonnées'),
@@ -60,6 +64,7 @@ if (user) {
           h('dt', {}, 'Propriétaire'), h('dd', {}, c.est_proprietaire === null ? 'À confirmer' : c.est_proprietaire ? 'Oui' : 'Non'),
           h('dt', {}, 'Preuve de propriété'), h('dd', {}, c.nom_preuve_propriete || 'Non indiqué'),
           h('dt', {}, 'Exemption de taxes'), h('dd', {}, c.exemption_taxes === 'aucune' ? 'Aucune' : c.exemption_taxes))),
+      historiqueComms({ client_id: c.id }),
       h('section', { class: 'bf-carte-section' },
         h('div', { class: 'bf-titre' }, h('h2', {}, 'Lieux d\'installation'),
           h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => { formSite.hidden = !formSite.hidden; } }, 'Ajouter')),

@@ -44,3 +44,13 @@
 - Fonctions : `hvac_maj_mes_prix`, `hvac_confier_travaux`, `hvac_versionner_liste`. Tout chemin qui modifie un tarif ou un travail confié chez Mike doit appeler `hvac_versionner_liste`, sinon le registre aura des trous.
 - PDF produit dans le navigateur avec `public/js/vendor/pdf-lib-1.17.1.esm.min.js` (MIT). Chez Mike, on peut le remplacer par une fonction `generate-*` côté serveur, à condition de partir de la même copie figée.
 - Paramètre `seuil_versions_liste_30j` (3 par défaut).
+
+## Communications : téléphonie, textos, courriels, carte (ADR-067)
+À fixer avec Mike avant d'activer `MIKE_COMM_ENABLED=true` :
+1. **Lancer** (`communication-lancer`) : l'appel à la fonction de Mike qui place l'appel (téléphonie Twilio chez Mike), ouvre sa fenêtre de textos ou envoie le courriel, avec l'employé connecté.
+2. **Recevoir** (`communications-webhook`) : le format que Mike envoie pour chaque appel, texto et courriel, et sa signature (secret partagé en variable d'environnement). Pour chaque communication : trouver le client ou le lead par le numéro ou le courriel, l'insérer dans `communications` (par `externe_id`, sans doublon) et, pour un lead, ajouter l'activité `appel`, `texto` ou `courriel` qui compte pour la rapidité du vendeur.
+3. **Écouter** (`communication-audio`) : l'audio reste chez Mike. Après la vérification et la journalisation par `hvac_ecouter_enregistrement`, demander à Mike une URL d'écoute de courte durée. Jamais d'URL publique permanente.
+4. **Conservation** : inscrire la durée de Mike dans le paramètre `conservation_enregistrements_jours` et planifier `app.purger_enregistrements()` chaque nuit.
+5. **Carte** : remplacer le lien Google Maps par la carte du client de l'app de Mike, et remplir `sites.latitude` / `sites.longitude` depuis ses données.
+6. **Avis d'enregistrement** : vérifier que la téléphonie de Mike annonce l'enregistrement au début de chaque appel, entrant et sortant (à valider par un professionnel).
+7. Une fois les communications automatiques en place, mettre en veille les boutons manuels Appel, Courriel et Texto de la fiche du lead, pour éviter les doublons.

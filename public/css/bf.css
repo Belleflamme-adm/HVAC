@@ -317,3 +317,33 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
   background: color-mix(in srgb, var(--surface) 55%, transparent); opacity: .88; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bf-filigrane-perdu span { color: #f05252; border-color: #f05252; } }
 :root[data-theme="dark"] .bf-filigrane-perdu span { color: #f05252; border-color: #f05252; }
+
+/* Contact du client (ADR-067) : boutons ronds en haut à droite, comme l'app de Mike */
+.bf-titre__droite { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+.bf-contact { display: inline-flex; gap: 8px; }
+.bf-contact__bouton { --c: #1fa64a; width: 40px; height: 40px; border-radius: 10px; border: 0; display: inline-grid; place-items: center;
+  background: var(--c); color: #ffffff; cursor: pointer; box-shadow: 0 2px 4px rgba(0, 0, 0, .18), inset 0 0 0 1.5px rgba(255, 255, 255, .25); }
+.bf-contact__bouton svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bf-contact__bouton--courriel, .bf-contact__bouton--texto { --c: #15803d; }
+.bf-contact__bouton--appel { --c: #0369a1; }
+.bf-contact__bouton--carte { --c: #c62828; }
+.bf-contact__bouton:hover:not(:disabled) { filter: brightness(1.1); }
+.bf-contact__bouton:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.bf-contact__bouton:disabled { --c: #9ca3af; cursor: not-allowed; box-shadow: none; }
+
+/* Historique des communications */
+.bf-comms__filtres { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.bf-puce { font: inherit; font-size: 14px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.bf-puce--active { background: var(--vert); border-color: var(--vert); color: #ffffff; font-weight: 700; }
+.bf-comms .bf-filtres input[type="search"] { flex: 1 1 240px; }
+.bf-comms__liste { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.bf-comms__item { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: grid; gap: 6px; background: var(--surface); }
+.bf-comms__tete { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.bf-comms__icone { width: 28px; height: 28px; border-radius: 8px; display: inline-grid; place-items: center; color: #ffffff; background: #15803d; }
+.bf-comms__icone--appel { background: #0369a1; }
+.bf-comms__icone svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bf-comms__resume { margin: 0; }
+.bf-comms__texte { white-space: pre-wrap; margin: 6px 0 0; }
+.bf-comms__bulle { margin: 0; padding: 8px 12px; border-radius: 14px; max-width: 60ch; background: var(--menthe); }
+.bf-comms__bulle--entrant { background: color-mix(in srgb, var(--line) 60%, var(--surface)); }
+.bf-comms__audio audio { width: 100%; max-width: 480px; }

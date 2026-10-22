@@ -47,7 +47,7 @@
     ],
     margeBp: 2500,
     demandes: [], dernierLien: null,
-    confies: [], versions: [],
+    confies: [], versions: [], comms: [],
     // Soumissions actives fictives (devis faits dans l'app de Mike) qui utilisent les prix de Clim Laurentides
     engagements: [],
     municipalites: [],
@@ -148,6 +148,75 @@
   creerLead({}, etat.maintenant - 6 * M);
   etat.clients.push({ id: 'c-1', type: 'residentiel', prenom: 'Julie', nom: 'Tremblay (FICTIF)', courriel: 'julie@exemple.invalid', telephone: '450-555-0110', succursale_code: 'RO', vendeur_id: 'e-marc', est_proprietaire: true, actif: true });
   etat.sites.push({ id: 's-1', client_id: 'c-1', adresse: '12 rue des Érables (FICTIF)', ville: 'Saint-Jérôme', province: 'QC', code_postal: 'J7Z 0A0' });
+
+  // Communications (ADR-067) : ce que l'app de Mike enverra après la greffe (heure, durée, enregistrement, transcription)
+  const TRANSCRIPTIONS = [
+    ['Vendeur : Bonjour, ici {v} de Belleflamme, je vous appelle pour votre demande de thermopompe.\nClient : Oui, bonjour. On a une maison de deux étages, environ 1 800 pieds carrés.\nVendeur : Parfait. Vous chauffez à quoi présentement?\nClient : Plinthes électriques partout.\nVendeur : Une murale multizone serait un bon choix. Je peux passer jeudi à 10 h pour voir les lieux?\nClient : Jeudi 10 h, c\'est correct.',
+     'Maison 2 étages, ~1 800 pi², plinthes électriques. Intéressé par une multizone. Visite jeudi 10 h.'],
+    ['Vendeur : Bonjour, {v} de Belleflamme. Je fais suite à votre demande en ligne.\nClient : Oui, je voulais un prix pour une murale dans le salon.\nVendeur : Le salon fait quelle grandeur à peu près?\nClient : Une vingtaine de pieds par quinze.\nVendeur : Une 12 000 BTU va suffire. Je vous envoie une soumission par courriel aujourd\'hui.',
+     'Murale 1 tête pour le salon (20 x 15 pi). Soumission à envoyer par courriel.'],
+    ['Vendeur : Bonjour, {v} de Belleflamme.\nClient : Bonjour. Ma fournaise au gaz a 18 ans, je pense à la biénergie.\nVendeur : Bonne idée, avec LogisVert il y a une subvention. Êtes-vous propriétaire?\nClient : Oui.\nVendeur : Je vous propose une visite pour mesurer et vérifier les conduits.',
+     'Fournaise au gaz de 18 ans, veut la biénergie. Propriétaire, admissible LogisVert à vérifier. Visite à planifier.'],
+  ];
+  // Audio de démonstration : tonalités douces (aucune vraie voix), WAV 8 kHz généré dans le navigateur
+  let wavCache = null;
+  function wavDemo() {
+    if (wavCache) return wavCache;
+    const taux = 8000; const n = taux * 4;
+    const octets = new Uint8Array(44 + n);
+    const v = new DataView(octets.buffer);
+    const ecrire = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+    ecrire(0, 'RIFF'); v.setUint32(4, 36 + n, true); ecrire(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+    v.setUint16(22, 1, true); v.setUint32(24, taux, true); v.setUint32(28, taux, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true);
+    ecrire(36, 'data'); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) {
+      const t = i / taux; const syll = Math.floor(t * 3); const f = syll % 2 ? 196 : 262;
+      const env = Math.sin(Math.PI * ((t * 3) % 1)) * (syll % 4 === 3 ? 0 : 1);
+      octets[44 + i] = 128 + Math.round(40 * env * Math.sin(2 * Math.PI * f * t));
+    }
+    let bin = ''; for (let i = 0; i < octets.length; i++) bin += String.fromCharCode(octets[i]);
+    wavCache = `data:audio/wav;base64,${btoa(bin)}`;
+    return wavCache;
+  }
+  const nomEmploye = (id) => Object.values(UTILISATEURS).find((u) => u.id === id)?.name || null;
+  function ajouterComm(c) {
+    const comm = { id: `com-${etat.comms.length + 1}`, statut: 'termine', duree_s: null, sujet: null, contenu: null, transcription: null, resume: null,
+      enregistrement_duree_s: null, a_enregistrement: false, enregistrement_efface_le: null, client_id: null, lead_id: null, source: 'hvac', ...c };
+    comm.employe_nom = nomEmploye(comm.employe_id);
+    etat.comms.push(comm);
+    return comm;
+  }
+  function appelSimule(cible, { quand, employe, resultat = 'joint', n = etat.comms.length }) {
+    const joint = resultat === 'joint';
+    const [tr, res] = TRANSCRIPTIONS[n % TRANSCRIPTIONS.length];
+    const duree = joint ? 180 + (n * 97) % 600 : resultat === 'message_laisse' ? 38 : 0;
+    return ajouterComm({ ...cible, canal: 'appel', direction: 'sortant', employe_id: employe, debut: iso(quand), duree_s: duree,
+      statut: joint ? 'termine' : resultat === 'message_laisse' ? 'messagerie' : 'manque',
+      a_enregistrement: duree > 0, enregistrement_duree_s: duree || null,
+      transcription: joint ? tr.replaceAll('{v}', (nomEmploye(employe) || 'votre conseiller').replace(' (FICTIF)', '')) : resultat === 'message_laisse' ? 'Vendeur : Bonjour, ici Belleflamme. Je vous rappelle pour votre demande de thermopompe. Vous pouvez me joindre au 450-555-0100. Merci!' : null,
+      resume: joint ? res : resultat === 'message_laisse' ? 'Message laissé dans la boîte vocale.' : 'Pas de réponse.' });
+  }
+
+  // Historique fictif : chaque contact déjà fait sur un lead a sa communication ; le client Julie Tremblay a les siennes
+  for (const a of etat.activites.filter((x) => ['appel', 'texto', 'courriel'].includes(x.type))) {
+    const cible = { lead_id: a.lead_id };
+    if (a.type === 'appel') appelSimule(cible, { quand: a.fait_le, employe: a.employe_id, resultat: a.resultat });
+    else if (a.type === 'texto') ajouterComm({ ...cible, canal: 'texto', direction: 'sortant', employe_id: a.employe_id, debut: iso(a.fait_le), statut: 'envoye',
+      contenu: 'Bonjour, ici Belleflamme pour votre demande de thermopompe. Quand puis-je vous appeler? Répondez à ce texto ou appelez le 450-555-0100.' });
+    else ajouterComm({ ...cible, canal: 'courriel', direction: 'sortant', employe_id: a.employe_id, debut: iso(a.fait_le), statut: 'envoye',
+      sujet: 'Votre demande de thermopompe | Groupe Belleflamme', contenu: 'Bonjour,\n\nMerci pour votre demande. Je vous propose une visite gratuite pour évaluer vos besoins. Quelles sont vos disponibilités cette semaine?\n\nAu plaisir,\nVotre conseiller Belleflamme' });
+  }
+  {
+    const J = 24 * H; const c = { client_id: 'c-1' };
+    appelSimule(c, { quand: etat.maintenant - 9 * J - 2 * H, employe: 'e-marc', n: 1 });
+    ajouterComm({ ...c, canal: 'courriel', direction: 'sortant', employe_id: 'e-marc', debut: iso(etat.maintenant - 9 * J), statut: 'envoye',
+      sujet: 'Soumission #122431 | Thermopompe murale', contenu: 'Bonjour Julie,\n\nVoici la soumission pour la thermopompe murale du salon, comme discuté au téléphone.\nElle est valide 30 jours.\n\nMarc' });
+    ajouterComm({ ...c, canal: 'texto', direction: 'entrant', employe_id: null, debut: iso(etat.maintenant - 2 * J - 5 * H), statut: 'recu',
+      contenu: 'Bonjour Marc, on accepte la soumission. Vous pouvez installer quand?' });
+    ajouterComm({ ...c, canal: 'texto', direction: 'sortant', employe_id: 'e-marc', debut: iso(etat.maintenant - 2 * J - 4 * H), statut: 'envoye',
+      contenu: 'Excellent! Je vous appelle demain matin pour fixer la date.' });
+    appelSimule(c, { quand: etat.maintenant - 1 * J - 22 * H, employe: 'e-marc', n: 0 });
+  }
 
   // Travaux confiés et soumissions actives (fictifs)
   const tid = (code) => `t-${code}`;
@@ -320,6 +389,40 @@
     'clients-list': { GET: (q) => {
       const t = String(q.q || '').toLowerCase();
       return etat.clients.filter((c) => !t || [c.nom, c.prenom, c.courriel, c.telephone].some((v) => String(v || '').toLowerCase().includes(t)));
+    } },
+    communications: { GET: (q) => {
+      exiger(!user().sousTraitantId, 'Accès refusé');
+      exiger(q.client_id || q.lead_id, 'client_id ou lead_id requis');
+      const liste = etat.comms.filter((c) => (q.client_id ? c.client_id === q.client_id || (c.lead_id && etat.leads.find((l) => l.id === c.lead_id)?.client_id === q.client_id)
+        : c.lead_id === q.lead_id) && (!q.canal || c.canal === q.canal));
+      return liste.slice().sort((a, b) => b.debut.localeCompare(a.debut));
+    } },
+    'communication-audio': { GET: (q) => {
+      exiger(!user().sousTraitantId, 'Accès refusé');
+      const c = etat.comms.find((x) => x.id === q.id && x.a_enregistrement);
+      if (!c) throw new Erreur(404, 'Enregistrement introuvable ou effacé');
+      // Démo : tonalités à la place de la vraie voix. L'écoute serait journalisée (Loi 25).
+      return { url: wavDemo(), demo: true };
+    } },
+    // Démo : on simule l'app de Mike branchée. Le clic place l'appel, qui revient dans l'historique avec son enregistrement.
+    'communication-lancer': { POST: (_q, b) => {
+      exiger(['appel', 'texto', 'courriel'].includes(b.canal), 'Canal : appel, texto ou courriel');
+      exiger(String(b.coordonnee || '').trim(), 'Coordonnée du client manquante');
+      const cible = b.lead_id ? { lead_id: b.lead_id } : { client_id: b.client_id };
+      const l = b.lead_id && etat.leads.find((x) => x.id === b.lead_id);
+      if (b.canal === 'appel') {
+        appelSimule(cible, { quand: etat.maintenant, employe: user().id });
+        if (l) activite(l, { type: 'appel', resultat: 'joint' }, etat.maintenant);
+        return { mode: 'demo', message: `Appel simulé vers ${b.coordonnee}. Dans l'app greffée, la téléphonie de Mike place l'appel ; il apparaît ici avec son heure, sa durée, l'enregistrement et la transcription, et compte pour la rapidité du vendeur.` };
+      }
+      if (b.canal === 'texto') {
+        ajouterComm({ ...cible, canal: 'texto', direction: 'sortant', employe_id: user().id, debut: iso(etat.maintenant), statut: 'envoye', contenu: 'Bonjour, ici Belleflamme. (texto simulé)' });
+        if (l) activite(l, { type: 'texto' }, etat.maintenant);
+        return { mode: 'demo', message: `Texto simulé vers ${b.coordonnee}. Dans l'app greffée, la fenêtre de textos de Mike s'ouvre et le texto s'inscrit ici.` };
+      }
+      ajouterComm({ ...cible, canal: 'courriel', direction: 'sortant', employe_id: user().id, debut: iso(etat.maintenant), statut: 'envoye', sujet: 'Courriel simulé | Groupe Belleflamme', contenu: 'Bonjour,\n\n(courriel simulé)' });
+      if (l) activite(l, { type: 'courriel' }, etat.maintenant);
+      return { mode: 'demo', message: `Courriel simulé vers ${b.coordonnee}. Dans l'app greffée, le courriel part par l'app de Mike et s'inscrit ici.` };
     } },
     'clients-get': { GET: (q) => { const c = etat.clients.find((x) => x.id === q.id); if (!c) throw new Erreur(404, 'Client introuvable'); return { client: c, sites: etat.sites.filter((s) => s.client_id === c.id), devis: [] }; } },
     'clients-create': { POST: (_q, b) => {

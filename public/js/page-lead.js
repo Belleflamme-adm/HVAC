@@ -1,6 +1,7 @@
 // Fiche d'un lead (ADR-056) : prise en charge, appel / courriel / texto, visite planifiée dans Pointage, journal.
 // Chaque geste est horodaté par la base : c'est ce qui mesure la rapidité du vendeur.
 import { initPage } from './bf-page.js?v=0.4.0';
+import { barreContact, historiqueComms } from './bf-contact.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
 import { SOURCES_LEAD, ACTIVITES, RESULTATS, TYPES_DEMANDE, pastilleLead, pastilleType, filigranePerdu, delaiLead, heure, duree, voitBoard } from './bf-crm.js?v=0.4.0';
@@ -99,7 +100,9 @@ if (user) {
     remplir(zone,
       h('p', {}, h('a', { href: '/leads' }, '← Leads')),
       h('div', { class: 'bf-titre' }, h('h1', {}, l.contact_nom || 'Lead'),
-        h('span', { class: 'bf-etampes' }, pastilleLead(l.statut), pastilleType(l.type_demande))),
+        h('div', { class: 'bf-titre__droite' },
+          h('span', { class: 'bf-etampes' }, pastilleLead(l.statut), pastilleType(l.type_demande)),
+          barreContact({ tel: l.contact_tel, courriel: l.contact_courriel, site: l.ville ? { adresse: l.adresse, ville: l.ville } : null, lead_id: l.id, msg }))),
       h('section', { class: `bf-carte-section${l.statut === 'perdu' ? ' bf-fiche-perdue' : ''}` },
         l.statut === 'perdu' ? filigranePerdu() : null,
         h('dl', { class: 'bf-fiche' },
@@ -117,6 +120,7 @@ if (user) {
       h('div', { class: 'bf-actions' }, boutons),
       panneau,
       reattribution,
+      historiqueComms({ lead_id: l.id }),
       h('h2', {}, 'Journal'),
       h('ol', { class: 'bf-journal' }, [...activites].reverse().map((a) => h('li', {},
         h('strong', {}, ACTIVITES[a.type] || a.type),
@@ -126,4 +130,6 @@ if (user) {
         a.note ? h('div', {}, a.note) : null))));
   }
   charger();
+  // Un appel, texto ou courriel lancé de la fiche change le statut et la rapidité du lead : on recharge
+  document.addEventListener('bf:communications', () => charger());
 }
