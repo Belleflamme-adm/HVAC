@@ -13,6 +13,9 @@ export const ACTIVITES = {
   attribution: 'Attribué', prise_en_charge: 'Pris en charge', appel: 'Appel', courriel: 'Courriel', texto: 'Texto',
   note: 'Note', visite_planifiee: 'Visite planifiée', perdu: 'Perdu', reouvert: 'Réouvert',
 };
+// Types de demande : chaque vendeur est qualifié pour certains types (ADR-058)
+export const TYPES_DEMANDE = { mural_simple: 'Murale simple', mural_multi: 'Murale multi', central: 'Système central', bienergie: 'Biénergie' };
+export const pastilleType = (t) => h('span', { class: 'bf-pastille bf-pastille--type' }, t ? TYPES_DEMANDE[t] || t : 'Type à préciser');
 export const RESULTATS = { joint: 'joint', message_laisse: 'message laissé', pas_de_reponse: 'pas de réponse', envoye: 'envoyé' };
 export const COTES = { bon: 'Bon', moyen: 'Moyen', a_ameliorer: 'À améliorer', non_evalue: 'Non évalué' };
 

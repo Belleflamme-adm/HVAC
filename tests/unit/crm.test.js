@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { listerLeads, creerLead, ajouterActivite, majObjectifs, majVendeursBoard } from '../../lib/modules/crm.js';
+import { listerLeads, creerLead, ajouterActivite, majObjectifs, majVendeursBoard, reattribuer } from '../../lib/modules/crm.js';
 import { duree } from '../../public/js/bf-crm.js';
 
 const E = '11111111-1111-4111-8111-111111111111';
@@ -9,7 +9,7 @@ const L = '22222222-2222-4222-8222-222222222222';
 function fauxRepo() {
   const appels = [];
   const r = (op) => async (...a) => { appels.push([op, ...a]); return op === 'list' ? [] : { ok: true }; };
-  return { appels, list: r('list'), insert: r('insert'), update: r('update'), updateWhere: r('updateWhere'), upsert: r('upsert') };
+  return { appels, list: r('list'), insert: r('insert'), update: r('update'), updateWhere: r('updateWhere'), upsert: r('upsert'), removeWhere: r('removeWhere') };
 }
 
 test('CRM : « Mes leads » filtre sur le vendeur connecté ; « actifs » exclut vendus et perdus', async () => {
@@ -62,4 +62,24 @@ test('CRM : affichage des délais', () => {
   assert.equal(duree(7), '7 min');
   assert.equal(duree(75), '1 h 15');
   assert.equal(duree(60 * 24 * 2 + 90), '2 j 1 h');
+});
+
+test('CRM : qualifications des vendeurs par type de demande', async () => {
+  const repo = fauxRepo();
+  await majVendeursBoard(repo, { vendeurs: [{ employe_id: E, types: ['mural_simple', 'central'] }] });
+  const ajout = repo.appels.find(([op, t]) => op === 'upsert' && t === 'crm_vendeur_types');
+  const retrait = repo.appels.find(([op, t]) => op === 'removeWhere' && t === 'crm_vendeur_types');
+  assert.deepEqual(ajout[2].map((x) => x.type_demande), ['mural_simple', 'central']);
+  assert.deepEqual(retrait[2], { employe_id: E, type_demande: ['mural_multi', 'bienergie'] });
+  await assert.rejects(majVendeursBoard(repo, { vendeurs: [{ employe_id: E, types: ['piscine'] }] }), /Type de demande inconnu/);
+});
+
+test('CRM : type de demande à la saisie et correction par le board', async () => {
+  const repo = fauxRepo();
+  await assert.rejects(creerLead(repo, { succursale_code: 'RO', contact_nom: 'X', contact_tel: '1', type_demande: 'spa' }), /Type de demande/);
+  await creerLead(repo, { succursale_code: 'RO', contact_nom: 'X', contact_tel: '1', type_demande: 'bienergie' });
+  assert.equal(repo.appels.at(-1)[2].type_demande, 'bienergie');
+  await reattribuer(repo, L, { type_demande: 'central' });
+  assert.deepEqual(repo.appels.at(-1)[3], { type_demande: 'central' });
+  await assert.rejects(reattribuer(repo, L, {}), /Rien à modifier/);
 });

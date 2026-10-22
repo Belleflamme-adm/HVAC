@@ -234,3 +234,5 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-fiche { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0 0 8px; }
 .bf-fiche dt { color: var(--muted); font-size: 14px; }
 .bf-fiche dd { margin: 0; overflow-wrap: anywhere; }
+.bf-pastille--type { background: var(--menthe); color: var(--vert-texte); }
+.bf-centre-cel { text-align: center; }

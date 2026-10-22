@@ -3,7 +3,7 @@
 import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
-import { SOURCES_LEAD, ACTIVITES, RESULTATS, pastilleLead, delaiLead, heure, duree, voitBoard } from './bf-crm.js?v=0.4.0';
+import { SOURCES_LEAD, ACTIVITES, RESULTATS, TYPES_DEMANDE, pastilleLead, delaiLead, heure, duree, voitBoard } from './bf-crm.js?v=0.4.0';
 
 const URL_POINTAGE = 'https://belleflammetime.netlify.app';   // app de Mike : lien seulement
 
@@ -62,17 +62,38 @@ if (user) {
         h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => ouvrir('perdu') }, 'Perdu'),
       ];
 
-    // Réattribution : board principal seulement
+    // Board principal : type de demande et réattribution (avec les qualifications de chaque vendeur)
     let reattribution = null;
     if (voitBoard(user)) {
+      const choixType = h('select', { 'aria-label': 'Type de demande' }, h('option', { value: '' }, 'À préciser'),
+        Object.entries(TYPES_DEMANDE).map(([v, t]) => h('option', { value: v, selected: v === l.type_demande }, t)));
       const choix = h('select', { 'aria-label': 'Vendeur' });
-      api.get('crm-vendeurs').then(({ employes }) => choix.append(...employes.map((e) =>
-        h('option', { value: e.id, selected: e.id === l.assigne_a }, `${e.prenom} ${e.nom}`)))).catch(() => {});
-      reattribution = h('div', { class: 'bf-filtres' }, h('span', { class: 'bf-muet' }, 'Réattribuer à'), choix,
-        h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: async () => {
-          try { await api.patch('lead', { assigne_a: choix.value }, { id }); await charger(); message(msg, 'Lead réattribué.', 'ok'); }
-          catch (e) { message(msg, e.message); }
-        } }, 'Réattribuer'));
+      const avis = h('span', { class: 'bf-muet' });
+      let qualifs = {};
+      const majAvis = () => {
+        const t = choixType.value; const v = choix.value;
+        avis.textContent = t && v && !(qualifs[v] || []).includes(t) ? `⚠ ce vendeur n'est pas qualifié pour « ${TYPES_DEMANDE[t]} »` : '';
+        avis.className = avis.textContent ? 'bf-retard' : 'bf-muet';
+      };
+      api.get('crm-vendeurs').then(({ membres, employes }) => {
+        qualifs = Object.fromEntries(membres.map((m) => [m.employe_id, m.types || []]));
+        choix.append(...employes.map((e) => h('option', { value: e.id, selected: e.id === l.assigne_a },
+          `${e.prenom} ${e.nom}${qualifs[e.id] ? ` (${qualifs[e.id].map((t) => TYPES_DEMANDE[t]).join(', ') || 'aucun type'})` : ''}`)));
+        majAvis();
+      }).catch(() => {});
+      choixType.addEventListener('change', majAvis);
+      choix.addEventListener('change', majAvis);
+      reattribution = h('section', { class: 'bf-carte-section' },
+        h('h2', {}, 'Board principal'),
+        h('div', { class: 'bf-filtres' }, h('span', { class: 'bf-muet' }, 'Type de demande'), choixType,
+          h('span', { class: 'bf-muet' }, 'Vendeur'), choix,
+          h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: async () => {
+            try {
+              await api.patch('lead', { type_demande: choixType.value || null, ...(choix.value && choix.value !== l.assigne_a ? { assigne_a: choix.value } : {}) }, { id });
+              await charger(); message(msg, 'Lead mis à jour.', 'ok');
+            } catch (e) { message(msg, e.message); }
+          } }, 'Enregistrer')),
+        avis);
     }
 
     remplir(zone,
@@ -83,9 +104,10 @@ if (user) {
           h('dt', {}, 'Téléphone'), h('dd', {}, tel ? h('a', { href: `tel:${tel}` }, l.contact_tel) : 'n/d'),
           h('dt', {}, 'Courriel'), h('dd', {}, l.contact_courriel ? h('a', { href: `mailto:${l.contact_courriel}` }, l.contact_courriel) : 'n/d'),
           h('dt', {}, 'Ville'), h('dd', {}, l.ville || 'n/d'),
+          h('dt', {}, 'Type'), h('dd', {}, l.type_demande ? TYPES_DEMANDE[l.type_demande] : 'À préciser'),
           h('dt', {}, 'Source'), h('dd', {}, [SOURCES_LEAD[l.source], l.campagne].filter(Boolean).join(' | ')),
           h('dt', {}, 'Reçu'), h('dd', {}, heure(l.recu_le)),
-          h('dt', {}, 'Vendeur'), h('dd', {}, l.vendeur_nom || 'Non attribué'),
+          h('dt', {}, 'Vendeur'), h('dd', {}, l.vendeur_nom || 'Non attribué : aucun vendeur qualifié pour ce type'),
           h('dt', {}, 'Rapidité'), h('dd', {}, delaiLead(l) || 'n/d'),
           l.visite_prevue_le ? h('dt', {}, 'Visite') : null, l.visite_prevue_le ? h('dd', {}, heure(l.visite_prevue_le)) : null),
         l.besoin ? h('p', {}, l.besoin) : null),

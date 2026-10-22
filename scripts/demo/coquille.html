@@ -1,0 +1,81 @@
+<title>HVAC Belleflamme à tester</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Coquille du HTML de test : barre de test en haut, l'app réelle dans le cadre en dessous. */
+:root { --bg: #f3f5f4; --surface: #ffffff; --ink: #14201a; --muted: #56635b; --line: #e1e6e3; --vert: #1fa64a; --jaune: #fff5d6; --jaune-ink: #6b4e00; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0c1410; --surface: #141f19; --ink: #e6efe9; --muted: #9fb0a5; --line: #24332b; --vert: #22b452; --jaune: #3a2f08; --jaune-ink: #f3d77a; color-scheme: dark; } }
+:root[data-theme="dark"] { --bg: #0c1410; --surface: #141f19; --ink: #e6efe9; --muted: #9fb0a5; --line: #24332b; --vert: #22b452; --jaune: #3a2f08; --jaune-ink: #f3d77a; color-scheme: dark; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.4 "Segoe UI", Roboto, system-ui, sans-serif; display: flex; flex-direction: column; }
+.test { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding-block: 8px;
+  padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px));
+  background: var(--jaune); color: var(--jaune-ink); border-bottom: 1px solid var(--line); }
+.test strong { font-weight: 700; }
+.test label { display: inline-flex; gap: 6px; align-items: center; }
+.test select, .test button { font: inherit; padding: 5px 10px; border-radius: 999px; border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
+.test button.vert { background: var(--vert); border-color: var(--vert); color: #ffffff; font-weight: 700; }
+.test button:focus-visible, .test select:focus-visible { outline: 2px solid var(--vert); outline-offset: 2px; }
+.test .heure { font-variant-numeric: tabular-nums; font-weight: 700; }
+.test .version { margin-left: auto; font-size: 12px; opacity: .8; }
+#adresse { font-size: 12px; opacity: .8; }
+iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; }
+</style>
+
+<div class="test" role="region" aria-label="Contrôles de test">
+  <strong>HTML DE TEST</strong>
+  <label for="qui">Connecté comme
+    <select id="qui">
+      <option value="simon">Simon Cardinal | Admin tout (board principal)</option>
+      <option value="marc">Marc | Vendeur (murale simple et multi)</option>
+      <option value="sophie">Sophie | Vendeuse (tous les types)</option>
+      <option value="karim">Karim | Vendeur (inactif au board)</option>
+      <option value="clim">Clim Laurentides | Sous-traitant</option>
+    </select>
+  </label>
+  <span>Heure simulée <span class="heure" id="heure"></span></span>
+  <button type="button" id="plus5">+5 min</button>
+  <button type="button" id="plus30">+30 min</button>
+  <button type="button" class="vert" id="arrive">Un lead arrive de Monday</button>
+  <span id="adresse"></span>
+  <span class="version">Version __VERSION__ | données fictives, rien n'est enregistré</span>
+</div>
+<iframe id="app" title="Application HVAC"></iframe>
+
+<script>
+/*__SERVEUR__*/
+</script>
+<script>
+/*__PAGES__*/
+/*__DONNEES__*/
+(() => {
+  const S = window.__demoServeur;
+  // Municipalités pour la recherche (faux serveur), tirées des vraies limites
+  try {
+    for (const f of ['/data/municipalites.geojson', '/data/municipalites-on.geojson']) {
+      const g = window.__demoDonnees[f] && JSON.parse(window.__demoDonnees[f]);
+      if (g) S.etat.municipalites.push(...g.features.map((x) => x.properties));
+    }
+  } catch (e) { /* sans carte */ }
+  const cadre = document.getElementById('app');
+  window.__demoCourant = { path: '/', search: '' };
+  window.__naviguer = (url) => {
+    const u = new URL(url, 'https://demo.local' + window.__demoCourant.path);
+    let page = u.pathname.replace(/^\/|\.html$/g, '') || 'index';
+    if (page === 'login') page = 'index';
+    window.__demoCourant = { path: u.pathname === '/login' ? '/' : u.pathname, search: u.search };
+    document.getElementById('adresse').textContent = `Page : ${u.pathname}${u.search}`;
+    const html = window.__demoPages[page] || `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px">
+      <h1>Page en veille</h1><p>« ${u.pathname.replace(/[<>&]/g, '')} » n'est pas dans le HTML de test (module de l'app de Mike).</p>
+      <p><a href="#" onclick="parent.__naviguer('/');return false">Retour à l'accueil</a></p></body>`;
+    cadre.srcdoc = html;
+  };
+  const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search);
+  const heure = () => { document.getElementById('heure').textContent = S.heure().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }); };
+  document.getElementById('qui').addEventListener('change', (e) => { S.changerUtilisateur(e.target.value); window.__naviguer('/'); });
+  document.getElementById('plus5').addEventListener('click', () => { S.avancer(5); heure(); recharger(); });
+  document.getElementById('plus30').addEventListener('click', () => { S.avancer(30); heure(); recharger(); });
+  document.getElementById('arrive').addEventListener('click', () => { const l = S.leadArrive(); heure(); window.__naviguer(`/lead?id=${l.id}`); });
+  heure();
+  window.__naviguer('/');
+})();
+</script>

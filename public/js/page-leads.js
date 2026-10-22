@@ -3,7 +3,7 @@ import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
 import { SUCCURSALES } from './bf-project-code.js?v=0.4.0';
-import { STATUTS_LEAD, SOURCES_LEAD, pastilleLead, delaiLead, heure, voitBoard } from './bf-crm.js?v=0.4.0';
+import { STATUTS_LEAD, SOURCES_LEAD, TYPES_DEMANDE, pastilleLead, pastilleType, delaiLead, heure, voitBoard } from './bf-crm.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {
@@ -31,9 +31,10 @@ if (user) {
       const rang = (l) => (l.en_retard ? 0 : l.statut === 'nouveau' ? 1 : 2);
       leads.sort((a, b) => rang(a) - rang(b));   // tri stable : les plus récents restent en tête de chaque groupe
       remplir(liste, leads.length ? leads.map((l) => h('a', { class: `bf-ligne${l.en_retard ? ' bf-ligne--retard' : ''}`, href: `/lead?id=${l.id}` },
-        h('strong', {}, l.contact_nom || 'Sans nom'), pastilleLead(l.statut),
+        h('strong', {}, l.contact_nom || 'Sans nom'), pastilleLead(l.statut), pastilleType(l.type_demande),
         h('span', { class: 'bf-muet' }, [SOURCES_LEAD[l.source], l.campagne, l.ville].filter(Boolean).join(' | ')),
-        vue === 'board' ? h('span', {}, l.vendeur_nom || 'Non attribué') : null,
+        vue === 'board' ? h('span', { class: l.assigne_a ? '' : 'bf-retard' }, l.vendeur_nom || 'Non attribué : aucun vendeur qualifié') : null,
+        vue === 'board' && l.assigne_a && !l.vendeur_qualifie ? h('span', { class: 'bf-retard' }, '⚠ vendeur non qualifié pour ce type') : null,
         h('span', { class: 'bf-muet' }, `reçu ${heure(l.recu_le)}`),
         delaiLead(l))) : [h('p', { class: 'bf-muet' }, vue === 'mes' ? 'Aucun lead pour toi en ce moment.' : 'Aucun lead.')]);
     } catch (e) { message(msg, e.message); }
@@ -51,10 +52,12 @@ if (user) {
   const champ = (label, nom, attrs = {}) => h('label', {}, label, h('input', { name: nom, ...attrs }));
   const form = h('form', { class: 'bf-form', hidden: true },
     h('h2', {}, 'Nouveau lead'),
-    h('p', { class: 'bf-muet' }, 'Attribué automatiquement au prochain vendeur (tour de rôle).'),
+    h('p', { class: 'bf-muet' }, 'Attribué automatiquement au prochain vendeur qualifié pour ce type (tour de rôle).'),
     h('div', { class: 'bf-grille2' },
       champ('Nom du contact *', 'contact_nom', { required: true }), champ('Téléphone', 'contact_tel', { type: 'tel' }),
       champ('Courriel', 'contact_courriel', { type: 'email' }), champ('Ville', 'ville'),
+      h('label', {}, 'Type de demande', h('select', { name: 'type_demande' }, h('option', { value: '' }, 'À préciser (tous les vendeurs)'),
+        Object.entries(TYPES_DEMANDE).map(([v, t]) => h('option', { value: v }, t)))),
       h('label', {}, 'Source', h('select', { name: 'source' }, Object.entries(SOURCES_LEAD).map(([v, t]) => h('option', { value: v, selected: v === 'telephone' }, t)))),
       h('label', {}, 'Succursale *', h('select', { name: 'succursale_code', required: true },
         Object.entries(SUCCURSALES).map(([code, nom]) => h('option', { value: code, selected: code === user.succursale }, `${code} | ${nom}`))))),
@@ -68,7 +71,7 @@ if (user) {
     const v = (k) => (f.get(k) || '').toString().trim() || undefined;
     try {
       const lead = await api.post('leads', { contact_nom: v('contact_nom'), contact_tel: v('contact_tel'), contact_courriel: v('contact_courriel'),
-        ville: v('ville'), source: v('source'), succursale_code: v('succursale_code'), besoin: v('besoin') });
+        ville: v('ville'), source: v('source'), succursale_code: v('succursale_code'), besoin: v('besoin'), type_demande: v('type_demande') });
       location.href = `/lead?id=${lead.id}`;
     } catch (e) { message(msg, e.message); }
   });

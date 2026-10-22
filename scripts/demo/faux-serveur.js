@@ -1,0 +1,304 @@
+// Faux serveur en mémoire pour le HTML de test (npm run demo). Code navigateur, chargé par la coquille.
+// Il imite les fonctions Netlify et les règles de la base (tour de rôle, horodatage, cotes, RLS simplifiée).
+// Données 100 % fictives. Rien n'est envoyé nulle part ; tout repart à zéro au rechargement.
+/* global window */
+(function () {
+  const H = 3600e3, M = 60e3;
+  const UTILISATEURS = {
+    simon:  { id: 'e-simon',  itemId: null, email: 'simon@exemple.invalid', name: 'Simon Cardinal', role: 'Admin tout', succursale: 'HO', peutApprouverRabais: true, masterImpersonation: null, sousTraitantId: null },
+    marc:   { id: 'e-marc',   itemId: null, email: 'marc@exemple.invalid', name: 'Marc Vendeur (FICTIF)', role: 'Vendeur', succursale: 'RO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: null },
+    sophie: { id: 'e-sophie', itemId: null, email: 'sophie@exemple.invalid', name: 'Sophie Vente (FICTIF)', role: 'Vendeur', succursale: 'ST', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: null },
+    karim:  { id: 'e-karim',  itemId: null, email: 'karim@exemple.invalid', name: 'Karim Ventes (FICTIF)', role: 'Vendeur', succursale: 'GA', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: null },
+    clim:   { id: 'e-clim',   itemId: null, email: 'clim@exemple.invalid', name: 'Clim Laurentides (FICTIF)', role: 'Sous-traitant', succursale: 'HO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: 'f-clim' },
+  };
+  const EMPLOYES = Object.values(UTILISATEURS).filter((u) => !u.sousTraitantId).map((u) => {
+    const [prenom, ...reste] = u.name.split(' ');
+    return { id: u.id, prenom, nom: reste.join(' '), role: u.role, succursale_code: u.succursale, actif: true };
+  });
+  const nomEmp = (id) => { const e = EMPLOYES.find((x) => x.id === id); return e ? `${e.prenom} ${e.nom}` : null; };
+  const BOARD = ['Admin tout', 'Direction', 'Gérant de succursale', 'Coordonnateur'];
+
+  const etat = {
+    qui: 'simon',
+    maintenant: (() => { const d = new Date(); d.setHours(11, 0, 0, 0); return d.getTime(); })(),
+    leads: [], activites: [], compteur: 0, pointeurs: {},
+    vendeurs: [{ employe_id: 'e-marc', ordre: 1, actif: true, types: ['mural_simple', 'mural_multi'] }, { employe_id: 'e-sophie', ordre: 2, actif: true, types: ['mural_simple', 'mural_multi', 'central', 'bienergie'] }, { employe_id: 'e-karim', ordre: 3, actif: false, types: ['mural_simple'] }],
+    objectifs: [
+      { indicateur: 'minutes_prise_en_charge', libelle: 'Délai de prise en charge (médiane)', unite: 'minutes', sens: 'bas', seuil_bon: null, seuil_moyen: null, ordre: 1 },
+      { indicateur: 'minutes_premier_contact', libelle: 'Délai du premier contact (médiane)', unite: 'minutes', sens: 'bas', seuil_bon: null, seuil_moyen: null, ordre: 2 },
+      { indicateur: 'pct_contactes', libelle: 'Leads contactés', unite: 'pourcent', sens: 'haut', seuil_bon: null, seuil_moyen: null, ordre: 3 },
+      { indicateur: 'pct_premier_par_appel', libelle: 'Premier contact fait par appel téléphonique', unite: 'pourcent', sens: 'haut', seuil_bon: null, seuil_moyen: null, ordre: 4 },
+      { indicateur: 'pct_visites', libelle: 'Leads avec visite planifiée', unite: 'pourcent', sens: 'haut', seuil_bon: null, seuil_moyen: null, ordre: 5 },
+    ],
+    clients: [], sites: [],
+    fournisseurs: [
+      { id: 'f-clim', nom: 'Clim Laurentides (FICTIF)', type: 'sous-traitant', telephone: '450-555-0190', courriel: 'clim@exemple.invalid', licence_rbq: '0000-0000-00', actif: true },
+      { id: 'f-outa', nom: 'Thermo Outaouais (FICTIF)', type: 'sous-traitant', telephone: '819-555-0144', courriel: 'thermo@exemple.invalid', licence_rbq: '0000-0000-01', actif: true },
+    ],
+    territoire: [], principaux: [], dispos: [],
+    types: [
+      { id: 't-mural', code: 'MURAL', nom: 'Thermopompe murale (1 tête)', description: 'Installation standard, 25 pi de ligne' },
+      { id: 't-multi', code: 'MULTI', nom: 'Multizone (par tête)', description: 'Par tête intérieure supplémentaire' },
+      { id: 't-central', code: 'CENTRAL', nom: 'Thermopompe centrale', description: 'Raccord au réseau de conduits existant' },
+    ],
+    tarifs: [
+      { fournisseur_id: 'f-clim', type_travail_id: 't-mural', cout_cents: 120000, en_vigueur_du: '2026-01-01' },
+      { fournisseur_id: 'f-clim', type_travail_id: 't-multi', cout_cents: 55000, en_vigueur_du: '2026-01-01' },
+      { fournisseur_id: 'f-outa', type_travail_id: 't-mural', cout_cents: 115000, en_vigueur_du: '2026-01-01' },
+    ],
+    margeBp: 2500,
+    municipalites: [],
+  };
+  const user = () => UTILISATEURS[etat.qui];
+  const voitBoard = () => BOARD.includes(user().role);
+
+  // ---------- Leads ----------
+  const NOMS = ['Julie Tremblay', 'Éric Gagnon', 'Nadia Roy', 'Luc Bélanger', 'Chantal Côté', 'Patrick Lavoie', 'Isabelle Fortin', 'Martin Pelletier', 'Annie Bouchard', 'Simon-Pierre Morin', 'Karine Gauthier', 'Yves Ouellet'];
+  const VILLES = ['Saint-Jérôme', 'Rosemère', 'Blainville', 'Saint-Sauveur', 'Mirabel', 'Gatineau', 'Drummondville', 'Prévost', 'Sainte-Adèle', 'Terrebonne'];
+  const BESOINS = ['Thermopompe murale pour le salon', 'Climatisation centrale, maison 1990', 'Remplacement fournaise et thermopompe', 'Multizone 3 têtes, condo', 'Info subvention LogisVert'];
+  // Tour de rôle par type, entre les vendeurs actifs qualifiés (type inconnu : tous les actifs)
+  function prochainVendeur(type) {
+    const cle = type || 'tous';
+    const actifs = etat.vendeurs.filter((v) => v.actif && (!type || v.types.includes(type))).sort((a, b) => a.ordre - b.ordre).map((v) => v.employe_id);
+    if (!actifs.length) return null;
+    etat.pointeurs[cle] = actifs[(actifs.indexOf(etat.pointeurs[cle]) + 1) % actifs.length];
+    return etat.pointeurs[cle];
+  }
+  function creerLead(champs, recu = etat.maintenant) {
+    const n = etat.compteur++;
+    const l = { id: `lead-${n}`, recu_le: recu, source: n % 2 ? 'facebook' : 'google', campagne: n % 2 ? 'Thermopompe automne' : 'Climatisation',
+      statut: 'nouveau', contact_nom: `${NOMS[n % NOMS.length]} (FICTIF)`, contact_tel: `450-555-01${String(10 + n).slice(-2)}`,
+      contact_courriel: null, ville: VILLES[n % VILLES.length], besoin: BESOINS[n % BESOINS.length], succursale_code: 'RO',
+      type_demande: ['mural_simple', 'mural_multi', 'central', 'bienergie', null][n % 5],
+      assigne_a: null, attribue_le: null, pris_en_charge_le: null, premier_contact_le: null, premier_contact_canal: null, visite_prevue_le: null, raison_perte: null, ...champs };
+    l.assigne_a = prochainVendeur(l.type_demande);
+    if (l.assigne_a) { l.attribue_le = recu; activite(l, { type: 'attribution', note: 'Attribué automatiquement (tour de rôle)' }, recu, l.assigne_a); }
+    etat.leads.unshift(l);
+    return l;
+  }
+  function activite(l, a, t = etat.maintenant, par = user().id) {
+    if (['appel', 'courriel', 'texto'].includes(a.type) && !a.resultat) a.resultat = a.type === 'appel' ? 'joint' : 'envoye';
+    etat.activites.push({ id: `act-${etat.activites.length}`, lead_id: l.id, employe_id: par, fait_le: t, ...a });
+    if (['prise_en_charge', 'appel', 'courriel', 'texto', 'visite_planifiee'].includes(a.type) && !l.pris_en_charge_le) l.pris_en_charge_le = t;
+    if (['appel', 'courriel', 'texto'].includes(a.type) && !l.premier_contact_le) { l.premier_contact_le = t; l.premier_contact_canal = a.type; }
+    if (a.type === 'perdu') { l.statut = 'perdu'; l.raison_perte = a.note; }
+    else if (a.type === 'reouvert') l.statut = l.premier_contact_le ? 'contacte' : 'pris_en_charge';
+    else if (['converti', 'perdu'].includes(l.statut)) { /* fermé */ }
+    else if (a.type === 'visite_planifiee') { l.statut = 'inspection_planifiee'; l.visite_prevue_le = a.visite_le; }
+    else if (['appel', 'courriel', 'texto'].includes(a.type) && ['nouveau', 'pris_en_charge'].includes(l.statut)) l.statut = 'contacte';
+    else if (a.type === 'prise_en_charge' && l.statut === 'nouveau') l.statut = 'pris_en_charge';
+  }
+  const iso = (t) => (t ? new Date(t).toISOString() : null);
+  const minutes = (a, b) => (a && b ? (b - a) / M : null);
+  function seuilRetard() { const o = etat.objectifs.find((x) => x.indicateur === 'minutes_premier_contact'); return o.seuil_moyen ?? o.seuil_bon; }
+  function vueLead(l) {
+    const s = seuilRetard();
+    return { ...l, recu_le: iso(l.recu_le), attribue_le: iso(l.attribue_le), pris_en_charge_le: iso(l.pris_en_charge_le),
+      premier_contact_le: iso(l.premier_contact_le), visite_prevue_le: l.visite_prevue_le || null, vendeur_nom: nomEmp(l.assigne_a),
+      minutes_prise_en_charge: minutes(l.recu_le, l.pris_en_charge_le), minutes_premier_contact: minutes(l.recu_le, l.premier_contact_le),
+      minutes_en_attente: minutes(l.recu_le, l.premier_contact_le || etat.maintenant),
+      vendeur_qualifie: !l.type_demande || !l.assigne_a || !!etat.vendeurs.find((v) => v.employe_id === l.assigne_a)?.types.includes(l.type_demande),
+      en_retard: !l.premier_contact_le && !['perdu', 'converti'].includes(l.statut) && s !== null && (etat.maintenant - l.recu_le) / M > s };
+  }
+  const visibles = () => etat.leads.filter((l) => voitBoard() || l.assigne_a === user().id);
+  const mediane = (xs) => { if (!xs.length) return null; const t = [...xs].sort((a, b) => a - b); const m = t.length >> 1; return Math.round((t.length % 2 ? t[m] : (t[m - 1] + t[m]) / 2) * 10) / 10; };
+  function rapidite() {
+    const parV = {};
+    for (const l of visibles().map(vueLead)) if (l.assigne_a) (parV[l.assigne_a] ||= []).push(l);
+    return Object.entries(parV).map(([id, ls]) => {
+      const c = ls.filter((l) => l.premier_contact_le);
+      const r1 = (x) => Math.round(x * 10) / 10;
+      return { employe_id: id, vendeur_nom: nomEmp(id), leads: ls.length, contactes: c.length,
+        minutes_prise_en_charge: mediane(ls.filter((l) => l.pris_en_charge_le).map((l) => l.minutes_prise_en_charge)),
+        minutes_premier_contact: mediane(c.map((l) => l.minutes_premier_contact)),
+        pct_contactes: r1(100 * c.length / ls.length),
+        pct_premier_par_appel: c.length ? r1(100 * c.filter((l) => l.premier_contact_canal === 'appel').length / c.length) : null,
+        pct_visites: r1(100 * ls.filter((l) => l.visite_prevue_le).length / ls.length),
+        par_appel: c.filter((l) => l.premier_contact_canal === 'appel').length, par_courriel: c.filter((l) => l.premier_contact_canal === 'courriel').length, par_texto: c.filter((l) => l.premier_contact_canal === 'texto').length };
+    }).sort((a, b) => a.vendeur_nom.localeCompare(b.vendeur_nom));
+  }
+  function cote(v, o) {
+    if (v === null || v === undefined || (o.seuil_bon === null && o.seuil_moyen === null)) return 'non_evalue';
+    const ok = (s) => (o.sens === 'bas' ? v <= s : v >= s);
+    if (o.seuil_bon !== null && ok(o.seuil_bon)) return 'bon';
+    if (o.seuil_moyen === null || ok(o.seuil_moyen)) return 'moyen';
+    return 'a_ameliorer';
+  }
+
+  // Historique de la matinée (fictif)
+  const debut = (() => { const d = new Date(etat.maintenant); d.setHours(9, 0, 0, 0); return d.getTime(); })();
+  [[2, 4, 'appel', 'joint', true], [20, 6, 'appel', 'joint', true], [41, 52, 'courriel', null, false], [58, 9, 'appel', 'message_laisse', false],
+   [75, 38, 'texto', null, true], [91, 3, 'appel', 'joint', true], [107, 22, 'appel', 'pas_de_reponse', false]].forEach(([dm, delai, canal, res, visite]) => {
+    const l = creerLead({}, debut + dm * M);
+    activite(l, { type: 'prise_en_charge' }, l.recu_le + Math.max(1, delai - 2) * M, l.assigne_a);
+    activite(l, { type: canal, resultat: res || undefined }, l.recu_le + delai * M, l.assigne_a);
+    if (visite) activite(l, { type: 'visite_planifiee', visite_le: new Date(l.recu_le + 3 * 24 * H).toISOString() }, l.recu_le + (delai + 3) * M, l.assigne_a);
+  });
+  creerLead({}, etat.maintenant - 34 * M);
+  creerLead({}, etat.maintenant - 6 * M);
+  etat.clients.push({ id: 'c-1', type: 'residentiel', prenom: 'Julie', nom: 'Tremblay (FICTIF)', courriel: 'julie@exemple.invalid', telephone: '450-555-0110', succursale_code: 'RO', vendeur_id: 'e-marc', est_proprietaire: true, actif: true });
+  etat.sites.push({ id: 's-1', client_id: 'c-1', adresse: '12 rue des Érables (FICTIF)', ville: 'Saint-Jérôme', province: 'QC', code_postal: 'J7Z 0A0' });
+
+  // ---------- Routeur des fonctions ----------
+  class Erreur extends Error { constructor(status, message) { super(message); this.status = status; } }
+  const exiger = (cond, msg) => { if (!cond) throw new Erreur(400, msg); };
+  const routes = {
+    'session-me': () => ({ token: 'demo', user: user() }),
+    'session-logout': () => ({ ok: true }),
+    leads: {
+      GET: (q) => {
+        let ls = q.vue === 'mes' ? etat.leads.filter((l) => l.assigne_a === user().id) : visibles();
+        if (q.vue !== 'mes' && q.vendeur) ls = ls.filter((l) => l.assigne_a === q.vendeur);
+        if (q.statut === 'actifs') ls = ls.filter((l) => !['converti', 'perdu'].includes(l.statut));
+        else if (q.statut) ls = ls.filter((l) => l.statut === q.statut);
+        return ls.map(vueLead);
+      },
+      POST: (_q, b) => {
+        exiger(b.contact_nom, 'Champ requis : contact_nom');
+        exiger(b.contact_tel || b.contact_courriel, 'Téléphone ou courriel requis');
+        return vueLead(creerLead({ contact_nom: b.contact_nom, contact_tel: b.contact_tel || null, contact_courriel: b.contact_courriel || null,
+          ville: b.ville || null, source: b.source || 'autre', campagne: null, besoin: b.besoin || null, succursale_code: b.succursale_code,
+          type_demande: b.type_demande || null }));
+      },
+    },
+    lead: {
+      GET: (q) => {
+        const l = visibles().find((x) => x.id === q.id);
+        if (!l) throw new Erreur(404, 'Lead introuvable');
+        return { lead: vueLead(l), activites: etat.activites.filter((a) => a.lead_id === l.id).map((a) => ({ ...a, fait_le: iso(a.fait_le) })) };
+      },
+      PATCH: (q, b) => {
+        if (!voitBoard()) throw new Erreur(403, 'Seul le responsable du board réattribue un lead');
+        const l = etat.leads.find((x) => x.id === q.id);
+        if (b.type_demande !== undefined) l.type_demande = b.type_demande;
+        if (b.assigne_a && b.assigne_a !== l.assigne_a) {
+          l.assigne_a = b.assigne_a; l.attribue_le = etat.maintenant; l.pris_en_charge_le = null;
+          activite(l, { type: 'attribution', note: `Réattribué par ${user().name}` });
+        }
+        return vueLead(l);
+      },
+    },
+    'lead-activite': {
+      POST: (q, b) => {
+        const l = visibles().find((x) => x.id === q.id);
+        if (!l) throw new Erreur(403, 'Ce lead est attribué à un autre vendeur');
+        exiger(!(b.type === 'visite_planifiee' && !b.visite_le), 'Date de visite requise');
+        exiger(!(b.type === 'perdu' && !String(b.note || '').trim()), 'Raison de la perte requise');
+        activite(l, { type: b.type, resultat: b.resultat, note: b.note, visite_le: b.visite_le });
+        return { ok: true };
+      },
+    },
+    'crm-rapidite': {
+      GET: () => {
+        const vendeurs = rapidite();
+        const evaluation = [];
+        for (const v of vendeurs) for (const o of etat.objectifs) evaluation.push({ employe_id: v.employe_id, indicateur: o.indicateur, valeur: v[o.indicateur], cote: cote(v[o.indicateur], o) });
+        return { objectifs: etat.objectifs, vendeurs, evaluation };
+      },
+      PUT: (_q, b) => {
+        if (!voitBoard()) throw new Erreur(403, 'Modification refusée (droits insuffisants)');
+        for (const x of b.objectifs || []) {
+          const o = etat.objectifs.find((y) => y.indicateur === x.indicateur);
+          const val = (v) => (v === '' || v === null || v === undefined ? null : Number(String(v).replace(',', '.')));
+          const bon = val(x.seuil_bon), moyen = val(x.seuil_moyen);
+          if (bon !== null && moyen !== null && (o.sens === 'bas' ? bon > moyen : bon < moyen)) throw new Erreur(400, `${o.libelle} : le seuil « bon » doit être plus exigeant que « moyen »`);
+          o.seuil_bon = bon; o.seuil_moyen = moyen;
+        }
+        return etat.objectifs;
+      },
+    },
+    'crm-vendeurs': {
+      GET: () => ({ membres: etat.vendeurs, employes: EMPLOYES.filter((e) => ['Vendeur', 'Gérant de succursale', 'Direction', 'Admin tout'].includes(e.role)) }),
+      PUT: (_q, b) => {
+        if (!voitBoard()) throw new Erreur(403, 'Modification refusée (droits insuffisants)');
+        for (const v of b.vendeurs || []) {
+          const m = etat.vendeurs.find((x) => x.employe_id === v.employe_id);
+          const types = Array.isArray(v.types) ? v.types : (m?.types || ['mural_simple', 'mural_multi', 'central', 'bienergie']);
+          if (m) Object.assign(m, { ordre: v.ordre, actif: v.actif, types }); else etat.vendeurs.push({ employe_id: v.employe_id, ordre: v.ordre, actif: v.actif, types });
+        }
+        return etat.vendeurs;
+      },
+    },
+    'clients-list': { GET: (q) => {
+      const t = String(q.q || '').toLowerCase();
+      return etat.clients.filter((c) => !t || [c.nom, c.prenom, c.courriel, c.telephone].some((v) => String(v || '').toLowerCase().includes(t)));
+    } },
+    'clients-get': { GET: (q) => { const c = etat.clients.find((x) => x.id === q.id); if (!c) throw new Erreur(404, 'Client introuvable'); return { client: c, sites: etat.sites.filter((s) => s.client_id === c.id), devis: [] }; } },
+    'clients-create': { POST: (_q, b) => {
+      exiger(b.nom, 'Champ requis : nom');
+      const c = { id: `c-${etat.clients.length + 1}`, actif: true, ...b, site: undefined };
+      etat.clients.push(c);
+      if (b.site?.adresse) etat.sites.push({ id: `s-${etat.sites.length + 1}`, client_id: c.id, province: 'QC', ...b.site });
+      return c;
+    } },
+    'sites-save': { POST: (_q, b) => { const s = { id: `s-${etat.sites.length + 1}`, province: 'QC', ...b }; etat.sites.push(s); return s; } },
+    'devis-create': { POST: () => { throw new Erreur(400, 'Le devis se fait dans l\'app de Mike (module en veille ici).'); } },
+    'sous-traitants': {
+      GET: () => etat.fournisseurs,
+      POST: (_q, b) => { exiger(b.nom, 'Champ requis : nom'); const f = { id: `f-${etat.fournisseurs.length + 1}`, type: 'sous-traitant', actif: true, ...b }; etat.fournisseurs.push(f); return { fournisseur: f, compte: { email: b.contact?.email } }; },
+    },
+    territoire: {
+      GET: (q) => { const f = user().sousTraitantId || q.fournisseur_id; return etat.territoire.filter((t) => t.fournisseur_id === f); },
+      POST: (_q, b) => {
+        const f = user().sousTraitantId || b.fournisseur_id;
+        exiger(Array.isArray(b.municipalites) && b.municipalites.length, 'Liste de municipalités invalide (1 à 2000)');
+        if (b.statut === 'supplement') exiger(Number.isInteger(b.supplement_cents) && b.supplement_cents > 0, 'Supplément en cents requis (plus de 0 $)');
+        etat.territoire = etat.territoire.filter((t) => !(t.fournisseur_id === f && b.municipalites.includes(t.municipalite_code)));
+        if (b.statut !== 'aucun') for (const code of b.municipalites) etat.territoire.push({ fournisseur_id: f, municipalite_code: code, statut: b.statut, supplement_cents: b.statut === 'supplement' ? b.supplement_cents : null });
+        return { ok: true };
+      },
+    },
+    principaux: {
+      GET: () => etat.principaux,
+      POST: (_q, b) => { etat.principaux = etat.principaux.filter((p) => p.municipalite_code !== b.municipalite_code); if (b.fournisseur_id) etat.principaux.push({ municipalite_code: b.municipalite_code, fournisseur_id: b.fournisseur_id }); return { ok: true }; },
+    },
+    municipalites: { GET: (q) => {
+      if (q.pour) {
+        return etat.territoire.filter((t) => t.municipalite_code === q.pour && t.statut !== 'refuse').map((t) => ({
+          fournisseur_id: t.fournisseur_id, nom: etat.fournisseurs.find((f) => f.id === t.fournisseur_id)?.nom, statut: t.statut, supplement_cents: t.supplement_cents,
+          principal: etat.principaux.some((p) => p.municipalite_code === q.pour && p.fournisseur_id === t.fournisseur_id) }));
+      }
+      const t = String(q.q || '').toLowerCase();
+      if (t.length < 2) return [];
+      return etat.municipalites.filter((m) => m.nom.toLowerCase().includes(t)).slice(0, 20);
+    } },
+    disponibilites: {
+      GET: (q) => { const f = user().sousTraitantId || q.fournisseur_id; return etat.dispos.filter((d) => !f || d.fournisseur_id === f); },
+      POST: (_q, b) => {
+        const f = user().sousTraitantId || b.fournisseur_id;
+        for (const j of b.jours || []) {
+          etat.dispos = etat.dispos.filter((d) => !(d.fournisseur_id === f && d.jour === j.jour));
+          if (j.statut !== 'aucun') etat.dispos.push({ fournisseur_id: f, jour: j.jour, statut: j.statut, note: j.note || null });
+        }
+        return { ok: true };
+      },
+    },
+    'installation-options': { GET: () => ({ types: etat.types, sousTraitants: etat.fournisseurs, grille: etat.tarifs, margeBp: etat.margeBp }) },
+    'installation-tarifs': {
+      POST: (_q, b) => { const t = { en_vigueur_du: new Date().toISOString().slice(0, 10), ...b }; etat.tarifs = etat.tarifs.filter((x) => !(x.fournisseur_id === t.fournisseur_id && x.type_travail_id === t.type_travail_id)); etat.tarifs.push(t); return t; },
+      PATCH: (_q, b) => { etat.margeBp = Number(b.marge_bp); return { ok: true }; },
+      PUT: (_q, b) => { const t = { id: `t-${etat.types.length + 1}`, ...b }; etat.types.push(t); return t; },
+    },
+  };
+
+  window.__demoServeur = {
+    etat, UTILISATEURS,
+    changerUtilisateur: (qui) => { etat.qui = qui; },
+    avancer: (min) => { etat.maintenant += min * M; },
+    leadArrive: () => creerLead({}),
+    heure: () => new Date(etat.maintenant),
+    // Point d'entrée : (fonction, méthode, query, corps) -> { status, body }
+    appeler(fn, methode, query, corps) {
+      const r = routes[fn];
+      try {
+        if (!r) return { status: 404, body: { error: { code: 'demo', message: `« ${fn} » n'existe pas dans le HTML de test` } } };
+        const h = typeof r === 'function' ? r : r[methode];
+        if (!h) return { status: 405, body: { error: { code: 'methode', message: `Méthode ${methode} non permise` } } };
+        const body = h(query, corps || {});
+        return { status: methode === 'POST' && ['leads', 'lead-activite', 'clients-create', 'sous-traitants'].includes(fn) ? 201 : 200, body: JSON.parse(JSON.stringify(body ?? {})) };
+      } catch (e) {
+        return { status: e.status || 500, body: { error: { code: 'erreur', message: e.message } } };
+      }
+    },
+  };
+}());

@@ -459,3 +459,25 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Polices** : Bebas Neue pour les titres et DM Sans pour le texte (Google Fonts, déjà permis par la CSP). Les polices exactes de Mike restent à confirmer ; leur apparence est très proche.
 - **Couverture** : un dégradé vert en attendant une vraie photo (`bf-entete-photo` chez Mike). Aucune photo de personne n'est versée au dépôt.
 - **Pas repris** : la météo (Open-Meteo, bloquée par la CSP `connect-src 'self'`), le bouton téléphone (Twilio) et le punch in/out (Pointage).
+
+## ADR-058 | Types de demande et qualifications des vendeurs
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : certains vendeurs ne sont ni à l'aise ni qualifiés pour certaines demandes, et il ne faut pas « brûler » le client. Simon choisit quels types chaque vendeur peut prendre.
+- **Types de demande** : thermopompe murale simple, murale multi, système central, biénergie (`leads.type_demande`).
+- **Qualifications** (`crm_vendeur_types`) : une case par vendeur et par type, dans « Rapidité des vendeurs ». Un nouveau vendeur est coché pour tout, et Simon décoche ce qu'il ne doit pas prendre. Ajouts et retraits sont journalisés.
+- **Attribution** :
+  - Le tour de rôle se fait **entre les seuls vendeurs qualifiés** pour le type, avec **un tour de rôle distinct par type**.
+  - Si aucun vendeur n'est qualifié, le lead reste **non attribué** dans le board principal, et Simon choisit.
+  - Si le type est inconnu, le lead va à tous les vendeurs actifs. **Comportement à confirmer par Simon.**
+- **Board principal** : il corrige le type et réattribue. Le vendeur ne peut faire ni l'un ni l'autre. Une attribution hors compétence reste possible, mais elle est signalée (« vendeur non qualifié »).
+- **Technique** : `leads_v` gagne la colonne `vendeur_qualifie`. Les vues `leads_v`, `crm_rapidite_v` et `crm_evaluation_v` sont recréées à l'identique ; ce sont des vues, aucune donnée n'est touchée.
+
+## ADR-059 | HTML de test après chaque modification
+- **Date** : 2026-10-22 | **Statut** : Acceptée (Simon)
+- `npm run demo` (`scripts/demo/construire.mjs`) emballe les **vraies pages** de `public/` (esbuild) avec un **faux serveur en mémoire** (`scripts/demo/faux-serveur.js`) dans un seul fichier, `demo-build/hvac-test.html`, ignoré par git.
+- **La barre de test permet de** :
+  - changer d'utilisateur (Simon, vendeurs, sous-traitant) ;
+  - avancer l'heure simulée ;
+  - faire arriver un lead de Monday.
+- **Le faux serveur** imite les règles de la base (tour de rôle par type, horodatage, cotes, visibilité). Les vraies règles restent celles de la base, couvertes par les tests SQL. Le faux serveur sert seulement à tester les écrans.
+- Après chaque modification, on le régénère et on le republie au même lien.

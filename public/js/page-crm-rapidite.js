@@ -3,7 +3,7 @@
 import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message } from './bf-dom.js?v=0.4.0';
-import { pastilleCote, duree, voitBoard } from './bf-crm.js?v=0.4.0';
+import { pastilleCote, duree, voitBoard, TYPES_DEMANDE } from './bf-crm.js?v=0.4.0';
 
 const user = await initPage();
 if (user) {
@@ -60,17 +60,23 @@ if (user) {
         const m = parId.get(e.id);
         const actif = h('input', { type: 'checkbox', checked: Boolean(m?.actif) });
         const ordre = h('input', { type: 'number', min: 1, value: m?.ordre ?? '', class: 'bf-seuil', 'aria-label': 'Ordre' });
-        return { e, actif, ordre, ligne: h('tr', {}, h('td', {}, `${e.prenom} ${e.nom}`), h('td', {}, e.role), h('td', {}, actif), h('td', {}, ordre)) };
+        // Nouveau vendeur : qualifié pour tout par défaut ; on décoche ce qu'il ne doit pas prendre
+        const types = Object.fromEntries(Object.keys(TYPES_DEMANDE).map((t) => [t,
+          h('input', { type: 'checkbox', checked: m ? (m.types || []).includes(t) : true, 'aria-label': `${e.prenom} ${e.nom} : ${TYPES_DEMANDE[t]}` })]));
+        return { e, actif, ordre, types, ligne: h('tr', {}, h('td', {}, `${e.prenom} ${e.nom}`), h('td', {}, actif), h('td', {}, ordre),
+          Object.values(types).map((c) => h('td', { class: 'bf-centre-cel' }, c))) };
       });
       board = h('section', { class: 'bf-carte-section' },
-        h('h2', {}, 'Vendeurs du board (tour de rôle)'),
-        h('p', { class: 'bf-muet' }, 'Les leads sont attribués à tour de rôle entre les vendeurs cochés, dans l\'ordre indiqué. Un seul vendeur coché reçoit tout.'),
+        h('h2', {}, 'Vendeurs du board et types de demande'),
+        h('p', { class: 'bf-muet' }, 'Un lead va à tour de rôle aux vendeurs du board qualifiés pour son type, dans l\'ordre indiqué. Si aucun vendeur n\'est qualifié, le lead reste non attribué et tu choisis toi-même. Un lead dont le type est à préciser va à tous les vendeurs du board.'),
         h('div', { class: 'bf-table-zone' }, h('table', { class: 'bf-table' },
-          h('thead', {}, h('tr', {}, h('th', {}, 'Employé'), h('th', {}, 'Rôle'), h('th', {}, 'Dans le board'), h('th', {}, 'Ordre'))),
+          h('thead', {}, h('tr', {}, h('th', {}, 'Vendeur'), h('th', {}, 'Dans le board'), h('th', {}, 'Ordre'),
+            Object.values(TYPES_DEMANDE).map((t) => h('th', { class: 'bf-centre-cel' }, t)))),
           h('tbody', {}, cases.map((c) => c.ligne)))),
         h('button', { class: 'bf-bouton', type: 'button', onclick: async () => {
           const vendeurs = cases.filter((c) => c.actif.checked || parId.has(c.e.id)).map((c, i) => ({
-            employe_id: c.e.id, actif: c.actif.checked, ordre: Number(c.ordre.value) || i + 1 }));
+            employe_id: c.e.id, actif: c.actif.checked, ordre: Number(c.ordre.value) || i + 1,
+            types: Object.entries(c.types).filter(([, el]) => el.checked).map(([t]) => t) }));
           try { await api.put('crm-vendeurs', { vendeurs }); await charger(); message(msg, 'Vendeurs du board enregistrés.', 'ok'); }
           catch (e) { message(msg, e.message); }
         } }, 'Enregistrer les vendeurs'));
