@@ -305,3 +305,14 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Données** : `scripts/municipalites/convertir.mjs` convertit la couche officielle (SHP, « Découpages administratifs », MRNF, CC-BY 4.0), la simplifie avec mapshaper 0.7.71 et produit le GeoJSON et une migration SQL des municipalités. Les champs sont détectés, sinon le script s'arrête et les affiche (on ne devine pas).
 - **Blocage** : le réseau de l'environnement cloud refuse `www.donneesquebec.ca`. Il faut que Simon autorise ce domaine, ou qu'il fournisse le fichier SHP. Aucune limite inventée n'est versée au repo.
 - **Conséquences** : la carte se teste aujourd'hui avec une grille synthétique (hors repo). L'attribution CC-BY est affichée sous la carte.
+
+## ADR-046 | Format du bon de commande de Mike
+- **Date** : 2026-10-22 | **Statut** : Constat (détails à confirmer)
+- **Source** : captures d'écran fournies par Simon (BC d'un projet Foyer), analysées dans `docs/reference/FORMATS-MIKE.md` §4. Les adresses courriel des employés et les noms de clients ne sont pas notés.
+- **Constats** :
+  - N° BC = préfixe du code projet + série à partir de 100 (`BC#DRF-JEA-TRE-100`).
+  - Le BC est au **coût**, avec TPS et TVQ.
+  - Statuts observés : « Reçu » (les autres sont à confirmer).
+  - Il est envoyé par courriel au fournisseur, avec son PDF, un fil de conversation et un bouton d'annulation.
+  - Livraison à l'entrepôt de Saint-Jérôme, date de livraison « TBD » tant qu'elle n'est pas confirmée.
+- **Pour le Lot B** : le BC HVAC reprend ce format, avec un choix de livraison de plus : entrepôt, ou **ramassage chez le fournisseur par le sous-traitant**.

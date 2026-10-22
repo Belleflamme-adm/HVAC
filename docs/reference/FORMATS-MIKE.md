@@ -1,4 +1,4 @@
-# Formats de l'app de Mike | Devis signé et bon de travail
+# Formats de l'app de Mike | Devis signé, bon de travail, bon de commande
 
 > Analyse de deux PDF fournis par Simon le 22 oct. 2026 (un devis signé de la division Foyer et un BT généré par l'app de Mike).
 > **Les PDF ne sont PAS versés au repo** : ils contiennent des renseignements personnels (Loi 25). Seule la **structure** est notée ici, et les exemples de noms sont fictifs.
@@ -10,6 +10,7 @@
 | Numéro de devis | Entier séquentiel global, 6 chiffres, affiché `#120815`, et `D#` dans les renvois | `#120815`, `D#122109` | Une seule série toutes divisions confondues (à confirmer). Environ 122 100 en octobre 2026. |
 | Code projet | `[SUCC][DIV]-[3 lettres prénom]-[3 lettres nom]-[NNN]` | `DRF-JEA-TRE-001` (Jean Tremblay, Drummondville, Foyer) | Majuscules, sans accents. **4 segments**, et non 3 comme le disait `CLAUDE.md`. Le sens exact de `NNN` est à confirmer (compteur par client ?). |
 | Numéro de BT | `BT#RV001 <code projet>` | `BT#RV001 DRF-JEA-TRE-001` | `RV` = BT « Vendu » (titre « BON DE TRAVAIL | VENDU »). `001` = 1er BT de ce type pour le projet. Les autres types (RO, BR ?) sont à confirmer. |
+| Numéro de BC | `[SUCC][DIV]-[PRÉ]-[NOM]-[1NN]`, affiché `BC#...` | `BC#DRF-JEA-TRE-100` | Même préfixe que le code projet, mais la série commence à **100**. Probablement 101 pour le 2e BC du même préfixe (à confirmer). |
 
 ## 2. Devis (« commande » une fois signé)
 
@@ -66,7 +67,24 @@
 - **Information supplémentaire** : « Draft auto à l'acceptation du devis. À assigner (tech + date). » et « Bon de préparation pour l'équipe installation. Items à sortir du stock + inspecter avant chargement. »
 - Pied de page : « DATE PRÉPARATION PRÉVUE ».
 
-## 4. Ce que ça change pour l'app HVAC
+## 4. Bon de commande (captures d'écran fournies le 22 oct. 2026)
+
+**Écran (mobile)**
+- En-tête « BON DE COMMANDE », N° BC en gros.
+- Cartes : **date de création**, **statut** (ex. « Reçu »), **projet** (`D#<devis> <code projet> <client>`), **fournisseur**, **contact** chez le fournisseur, **courriel** de l'employé qui commande.
+- **Produits commandés (n)** : photo, SKU, description, quantité, **coût** (prix d'achat, pas le prix de vente).
+- Totaux : sous-total, TPS 5 %, TVQ 9,975 %, total (taxes sur l'achat).
+- Actions : **Envoyer par courriel** (au fournisseur), Voir le PDF, Régénérer le PDF, Voir dans Monday, Créer une autre commande, **Annuler ce bon de commande**.
+- **Conversation avec le fournisseur**, propre à chaque BC (fil de discussion). Bouton « Chat équipe » global.
+
+**PDF**
+- En-tête Belleflamme (adresse de Saint-Sauveur), « BON DE COMMANDE #<n° BC> », page x/y.
+- Bloc **Fournisseur** : nom, téléphone, adresse, courriel, date. Bloc **Adresse de livraison** : l'entrepôt de Saint-Jérôme.
+- Tableau : QTÉ | PHOTO | PRODUIT (SKU et description) | RABAIS | **COÛT** | TOTAL.
+- Totaux avec les numéros de TPS et de TVQ. Blocs « Information supplémentaire » et « Termes de paiement ».
+- Bandeau **« DATE DE LIVRAISON : TBD »**, logo CMMTQ et licence RBQ.
+
+## 5. Ce que ça change pour l'app HVAC
 
 | Constat | Impact |
 |---|---|
@@ -77,4 +95,8 @@
 | Ligne « Rabais supplémentaire » négative | Notre base refuse les prix négatifs (ADR-032). Il faut une ligne de rabais global soumise à l'approbation de Simon ou Mike. |
 | Clauses en lignes à 0 $, sections nommées, photos | Le devis HVAC devra gérer les sections, les clauses types et les photos de produits. |
 | Signature électronique avec IP | Il manque une page publique « accepter le devis », avec signature, date et IP. |
+| BC numéroté sur le préfixe du code projet, série 100 | Reproduire `[préfixe]-100`, `-101`... avec un compteur sans trou par préfixe. |
+| BC au **coût**, avec taxes, envoyé par courriel au fournisseur | Le BC HVAC part du BT : les produits « à commander » deviennent des lignes au coût du catalogue. Envoi courriel : service à choisir (ADR-038). |
+| Adresse de livraison = entrepôt | En HVAC, ajouter un choix : **livraison à l'entrepôt** ou **ramassage chez le fournisseur par le sous-traitant X** (ADR-037). |
+| Conversation par BC | Fil de messages par BC (Belleflamme ↔ fournisseur). À prévoir en Lot B ou plus tard. |
 | Distance : 3 $/km au-delà de 30 km (Mike) | Simon a choisi un supplément par ville pour les sous-traitants (ADR-038). Les deux modèles diffèrent : à trancher pour HVAC. |
