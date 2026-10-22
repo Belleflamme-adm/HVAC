@@ -85,3 +85,32 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Contexte** : Simon a demandé de prendre les produits et les kits dans Monday et dans l'app de Mike.
 - **Décision** : en suspens. Simon a refusé de faire l'export lui-même et demande une lecture directe. Ça contredit les garde-fous 2 et 4 de `CLAUDE.md`. Il faut une levée écrite et limitée de ces garde-fous (lecture seule, boards Catalogue et Kits seulement), et un accès technique qui fonctionne : le connecteur Monday ne se connecte pas dans cette session, et l'app de Mike exige une session que Claude n'a pas.
 - **Conséquences** : en attendant, le seed utilise des produits plausibles marqués FICTIF. Les kits de thermopompes existent déjà chez Mike : on les reprendra dès que l'accès sera réglé.
+
+---
+
+# Phase 1 | Modèle de données
+
+## ADR-018 | Conventions numériques
+- **Date** : 2026-10-22 | **Statut** : Proposée
+- **Décision** : montants en cents (`bigint`), rabais en points de base (1 % = 100), taux de taxe en pcm (9,975 % = 9975). Aucun `float`. Arrondi des taxes au cent le plus proche, le demi-cent s'éloigne de zéro. TPS et TVQ calculées chacune sur le sous-total taxable du document.
+- **Conséquences** : arrondis identiques côté base et côté JS. La méthode (par document ou par ligne) reste à confirmer avec Mike.
+
+## ADR-019 | Moment d'attribution des numéros
+- **Date** : 2026-10-22 | **Statut** : Proposée
+- **Décision** : le devis reçoit son numéro à la création (un devis ne se supprime jamais, il passe à `annule`). La facture reçoit son numéro **à l'émission** : un brouillon abandonné ne consomme pas de numéro. Les notes de crédit ont leur propre série.
+- **Conséquences** : la série des factures émises est continue, sans trou, ce qu'exige la règle de Mike (Revenu Québec).
+
+## ADR-020 | Modèle de sécurité
+- **Date** : 2026-10-22 | **Statut** : Proposée
+- **Décision** : RLS sur les 35 tables. `anon` n'a aucun droit. Les fonctions serverless interrogent la base avec le JWT de l'utilisateur, donc la RLS s'applique aussi à elles. La clé `service_role` sert seulement aux tâches système. Les techniciens voient seulement ce qui leur est assigné (minimisation, Loi 25). Aucune politique DELETE, sauf les lignes de brouillon. Les règles critiques (numéros, rabais, factures figées, LogisVert) sont des triggers en base, pas seulement du code JS.
+- **Conséquences** : un bogue du front ou d'une fonction ne peut pas contourner ces règles. Pas de `FORCE ROW LEVEL SECURITY`, pour que les fonctions `security definer` lisent sans récursion.
+
+## ADR-021 | Tests du schéma
+- **Date** : 2026-10-22 | **Statut** : Proposée
+- **Décision** : `tests/sql/run.sh` applique les migrations sur un Postgres 16 local jetable, avec une imitation minimale de Supabase (`tests/sql/00_supabase_stub.sql` : rôles et `auth.uid()`), puis lance les tests SQL (`tests/sql/10_phase1.test.sql`). Docker n'est pas disponible dans le conteneur cloud.
+- **Conséquences** : en Phase 2, la CI GitHub Actions lancera le même script, avec un service Postgres.
+
+## ADR-022 | Formats de numéros provisoires
+- **Date** : 2026-10-22 | **Statut** : À confirmer
+- **Décision** : formats provisoires dans `formats_numerotation` : `D-AAAA-00001`, `F-AAAA-00001`, `NC-AAAA-00001`, `BT-`, `ASV-`, `CE-`. Projet : `ROV-001-26`, qui ne respecte pas encore le format `XXX-XXX-XXX` de Mike.
+- **Conséquences** : on passera aux vrais formats en modifiant la configuration, sans migration de données. Il faut 3 vrais exemples de chaque type.
