@@ -365,3 +365,10 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   4. Villes repères : `public/data/villes-reperes.json`, tenu à la main (1 = toujours nommée, 2 = en priorité). La couche officielle ne donne pas la population, d'où cette liste.
   5. Le GeoJSON garde la MRC et la région de chaque municipalité, tirées de la couche officielle. L'infobulle affiche « Ville (MRC, région) ».
 - **À confirmer** : par « territoire », Simon voulait-il dire la région, la MRC, ou un nom de secteur propre au sous-traitant ?
+
+## ADR-051 | Limites municipales officielles dans la carte du territoire
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Source** : « Découpages administratifs 1/100 000 (SHP) », MRNF, Données Québec, licence CC-BY 4.0, version `V2026-09`, téléchargée le 22 oct. 2026. Couche `munic_s`, champs `MUS_CO_GEO` (code), `MUS_NM_MUN`, `MUS_NM_MRC` et `MUS_NM_REG`. Le zip et les SHP ne sont **pas** versés au dépôt.
+- **Traitement** (`scripts/municipalites/convertir.mjs`) : reprojection WGS84 et simplification à 4 %, puis **fusion par code** (2 260 polygones donnent 1 331 municipalités, territoires non organisés et réserves compris). Résultat : `public/data/municipalites.geojson` (3,2 Mo) et la migration `20261024000201_municipalites_donnees.sql`.
+- **Carte** : elle s'ouvre sur le sud du Québec, de l'Outaouais à Québec et à l'Estrie, et des boutons mènent au « Sud du Québec » ou à « Tout le Québec ». La recherche affiche « Nom (MRC) », parce que 56 noms reviennent plus d'une fois. Les 46 villes repères correspondent toutes aux noms officiels.
+- **Mise à jour** : chaque automne, relancer le script sur la nouvelle version du MRNF. Les domaines `donneesquebec.ca` et `diffusion.mern.gouv.qc.ca` doivent être permis dans l'environnement.

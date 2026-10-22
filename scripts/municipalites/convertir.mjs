@@ -87,6 +87,16 @@ async function principal() {
   });
   console.log('Champs utilisés :', champs);
 
+  // Une municipalité peut compter plusieurs polygones (îles, enclaves) : on les fusionne par code,
+  // pour qu'un clic et une couleur s'appliquent à la municipalité entière.
+  const fusion = join(travail, 'fusion.json');
+  const copies = [champs.nom, champs.mrc, champs.region].filter(Boolean).join(',');
+  execFileSync('npx', ['--yes', MAPSHAPER, '-i', brut, '-dissolve', champs.code, `copy-fields=${copies}`,
+    '-o', 'format=geojson', 'precision=0.0001', fusion], { stdio: 'inherit' });
+  const nbAvant = geo.features.length;
+  geo.features = JSON.parse(readFileSync(fusion, 'utf8')).features;
+  console.log(`Fusion par code : ${nbAvant} polygones -> ${geo.features.length} municipalités`);
+
   // 2. GeoJSON allégé pour la carte : code, nom, MRC et région (étiquettes et frontières de région)
   const leger = {
     type: 'FeatureCollection',

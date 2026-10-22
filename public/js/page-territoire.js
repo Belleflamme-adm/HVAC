@@ -8,6 +8,8 @@ import { creerCarte, chargerMunicipalites, chargerReperes } from './bf-carte.js?
 
 const COULEURS = { accepte: '#2e9d63', supplement: '#e2a01b', refuse: '#c9483f', aucun: '#d9dee6',
   principal: '#1d47c2', sans_principal: '#e2a01b' };
+// Sud du Québec habité, de l'Outaouais à Québec et à l'Estrie : là où Belleflamme installe.
+const SUD_QUEBEC = { ouest: -77.0, sud: 45.0, est: -70.6, nord: 47.4 };
 const LIBELLES = { accepte: 'Accepte', supplement: 'Supplément', refuse: 'Refuse', aucun: 'Non indiqué' };
 
 const user = await initPage();
@@ -43,7 +45,7 @@ if (user) {
       return `${f.properties.nom}${lieu ? ` (${lieu})` : ''} | ${LIBELLES[t?.statut || 'aucun']}${t?.supplement_cents ? ` (+${formatCents(t.supplement_cents)})` : ''}`;
     };
     const carte = creerCarte(carteZone, geo, {
-      couleur, titre, reperes,
+      couleur, titre, reperes, vueDepart: SUD_QUEBEC,
       onClic: (f) => {
         const code = f.properties.code;
         if (mode === 'principaux') { selection.clear(); selection.add(code); }
@@ -110,9 +112,12 @@ if (user) {
 
     // Recherche d'une municipalité
     const recherche = h('input', { type: 'search', placeholder: 'Trouver une municipalité…', 'aria-label': 'Trouver une municipalité', list: 'liste-muni' });
-    const liste = h('datalist', { id: 'liste-muni' }, geo.features.map((f) => h('option', { value: f.properties.nom })));
+    // « Nom (MRC) » : plusieurs municipalités portent le même nom (ex. village nordique et terres réservées)
+    const etiquette = (f) => (f.properties.mrc ? `${f.properties.nom} (${f.properties.mrc})` : f.properties.nom);
+    const liste = h('datalist', { id: 'liste-muni' }, geo.features.map((f) => h('option', { value: etiquette(f) })));
     recherche.addEventListener('change', () => {
-      const f = geo.features.find((x) => x.properties.nom.toLowerCase() === recherche.value.trim().toLowerCase());
+      const v = recherche.value.trim().toLowerCase();
+      const f = geo.features.find((x) => etiquette(x).toLowerCase() === v) || geo.features.find((x) => x.properties.nom.toLowerCase() === v);
       if (!f) return;
       carte.zoomSur(f.properties.code);
       if (mode === 'principaux') selection.clear();
@@ -122,6 +127,7 @@ if (user) {
     });
 
     const outils = h('div', { class: 'bf-filtres' }, recherche, liste,
+      h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => carte.vueDepart() }, 'Sud du Québec'),
       h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => carte.toutVoir() }, 'Tout le Québec'));
     if (planif && !estSt) {
       const sts = await api.get('sous-traitants').catch(() => []);

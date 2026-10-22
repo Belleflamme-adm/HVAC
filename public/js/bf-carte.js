@@ -134,7 +134,7 @@ export async function chargerReperes(url = '/data/villes-reperes.json?v=0.4.0') 
   try { const r = await fetch(url); return r.ok ? r.json() : {}; } catch { return {}; }
 }
 
-// creerCarte(conteneur, geojson, { couleur(code), titre(feature), onClic(feature, evenement), reperes })
+// creerCarte(conteneur, geojson, { couleur(code), titre(feature), onClic(feature, evenement), reperes, vueDepart })
 // reperes : { "Nom officiel": 1 | 2 } (1 = toujours nommée, 2 = nommée en priorité)
 export function creerCarte(conteneur, geojson, options) {
   const features = geojson.features;
@@ -179,7 +179,14 @@ export function creerCarte(conteneur, geojson, options) {
   const mrcs = regrouper(features, 'mrc');
 
   const total = boite(features);
-  let vue = { ...total };
+  // Vue de départ : un cadre en degrés { ouest, sud, est, nord } (ex. le sud du Québec), sinon tout
+  const vueInitiale = () => {
+    const c = options.vueDepart;
+    if (!c) return { ...total };
+    const [x0, y0] = projeter([c.ouest, c.nord]); const [x1, y1] = projeter([c.est, c.sud]);
+    return { x: x0, y: y0, l: x1 - x0, h: y1 - y0 };
+  };
+  let vue = vueInitiale();
 
   function visibleEtK() {
     const r = svg.getBoundingClientRect();
@@ -304,5 +311,5 @@ export function creerCarte(conteneur, geojson, options) {
     appliquer();
   }
 
-  return { redessiner, zoomSur, toutVoir: () => { vue = { ...total }; appliquer(); }, parCode };
+  return { redessiner, zoomSur, toutVoir: () => { vue = { ...total }; appliquer(); }, vueDepart: () => { vue = vueInitiale(); appliquer(); }, parCode };
 }
