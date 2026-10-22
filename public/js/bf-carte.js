@@ -44,7 +44,7 @@ export function creerCarte(conteneur, geojson, options) {
   const features = geojson.features;
   const parCode = new Map(features.map((f) => [f.properties.code, f]));
   const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('class', 'bf-carte');
+  svg.setAttribute('class', 'bf-geo');
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'Carte des municipalités du Québec');
   const groupe = document.createElementNS(NS, 'g');
@@ -116,7 +116,9 @@ export function creerCarte(conteneur, geojson, options) {
     pointeurs.delete(e.pointerId);
     if (pointeurs.size < 2) ecart0 = 0;
     if (e.type === 'pointerup' && !deplace && pointeurs.size === 0) {
-      const code = e.target?.getAttribute?.('data-code');
+      // Avec la capture du pointeur, e.target est le svg : on retrouve le chemin sous le doigt.
+      const cible = document.elementFromPoint(e.clientX, e.clientY);
+      const code = cible?.getAttribute?.('data-code');
       if (code && options.onClic) options.onClic(parCode.get(code), e);
     }
   };
@@ -127,6 +129,7 @@ export function creerCarte(conteneur, geojson, options) {
     for (const [code, p] of chemins) {
       p.setAttribute('fill', options.couleur(code));
       p.setAttribute('class', selection.has(code) ? 'selection' : '');
+      if (selection.has(code)) groupe.append(p); // contour au premier plan
     }
   }
 
