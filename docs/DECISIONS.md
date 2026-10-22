@@ -590,3 +590,13 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Belleflamme qui met un prix sur un travail non confié le confie du même coup. La grille enregistre maintenant tous les prix en un seul appel (`mes-prix`), donc une seule version, et les vendeurs touchés sont avisés comme pour le sous-traitant.
 - **Reprise** : la migration crée une première version pour chaque sous-traitant qui a déjà des travaux confiés.
 - **À valider par un professionnel** : la valeur de preuve d'un PDF régénéré à partir d'une copie figée avec empreinte, par rapport à un fichier conservé tel quel.
+
+## ADR-066 | Étampes sur les leads, « PERDU » en diagonale sur la fiche
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : des étampes comme le « ✓ PRÉPARÉ » de l'app de Mike pour le statut du lead et le type de système. Le lead perdu en rouge, gros, et en diagonale sur la fiche. Les emplacements restent les mêmes.
+- **Étampes** (`etampe()` dans `bf-crm.js`) : icône SVG + texte en majuscules (Bebas Neue), fond plein, texte blanc.
+  - Statuts : Nouveau (violet), Pris en charge (indigo), Contacté (bleu-vert), Qualifié (bleu), Visite planifiée (ambre), Vendu (vert), Perdu (rouge, plus grosse).
+  - Types : Murale simple, Murale multi, Système central, Biénergie, Type à préciser, chacun avec son icône et sa couleur.
+  - Couleurs foncées choisies pour que le texte blanc reste lisible (contraste 4,5:1). Le vert Belleflamme pâle de l'app ne passe pas ce seuil avec du texte blanc : « Vendu » utilise un vert plus foncé.
+- **Fiche du lead perdu** : grande étampe « PERDU » rouge, inclinée, par-dessus la fiche. Le texte et les liens dessous restent lisibles et cliquables.
+- Les étampes remplacent les pastilles aux mêmes endroits : liste des leads et titre de la fiche (où le type s'ajoute à côté du statut).

@@ -285,3 +285,35 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-registre__tete { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
 .bf-registre__details ul { margin: 4px 0; padding-left: 20px; }
 .bf-registre__empreinte { font-size: 12px; overflow-wrap: anywhere; }
+
+/* Étampes des leads (ADR-066) : statut et type de système, à la manière du « ✓ PRÉPARÉ » de l'app de Mike.
+   Couleurs foncées : texte blanc lisible (contraste 4,5:1 ou plus). */
+.bf-etampes { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bf-etampe { --c: #4b5563; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 2px; border-radius: 6px;
+  background: var(--c); color: #ffffff; font-family: var(--f-titre); font-size: 15px; line-height: 1.15; letter-spacing: .06em;
+  text-transform: uppercase; white-space: nowrap; vertical-align: middle;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .3), 0 1px 2px rgba(0, 0, 0, .18); }
+.bf-etampe svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.bf-etampe--nouveau { --c: #7c3aed; }
+.bf-etampe--pris_en_charge { --c: #4338ca; }
+.bf-etampe--contacte { --c: #0f766e; }
+.bf-etampe--qualifie { --c: #0369a1; }
+.bf-etampe--inspection_planifiee { --c: #b45309; }
+.bf-etampe--converti { --c: #15803d; }
+.bf-etampe--perdu { --c: #c62828; font-size: 19px; padding: 4px 12px 3px; letter-spacing: .1em;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45), 0 1px 3px rgba(0, 0, 0, .25); }
+.bf-etampe--perdu svg { width: 17px; height: 17px; stroke-width: 3; }
+.bf-etampe--mural_simple { --c: #155e75; }
+.bf-etampe--mural_multi { --c: #1e3a8a; }
+.bf-etampe--central { --c: #374151; }
+.bf-etampe--bienergie { --c: #9a3412; }
+.bf-etampe--a_preciser { --c: #6b7280; }
+
+/* « PERDU » en diagonale sur la fiche du lead */
+.bf-fiche-perdue { position: relative; overflow: hidden; }
+.bf-filigrane-perdu { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 1; }
+.bf-filigrane-perdu span { transform: rotate(-16deg); font-family: var(--f-titre); font-size: clamp(64px, 14vw, 132px); line-height: 1;
+  letter-spacing: .12em; text-transform: uppercase; color: #c62828; border: 7px solid #c62828; border-radius: 16px; padding: .06em .3em 0;
+  background: color-mix(in srgb, var(--surface) 55%, transparent); opacity: .88; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bf-filigrane-perdu span { color: #f05252; border-color: #f05252; } }
+:root[data-theme="dark"] .bf-filigrane-perdu span { color: #f05252; border-color: #f05252; }

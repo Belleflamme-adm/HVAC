@@ -137,6 +137,13 @@
     activite(l, { type: canal, resultat: res || undefined }, l.recu_le + delai * M, l.assigne_a);
     if (visite) activite(l, { type: 'visite_planifiee', visite_le: new Date(l.recu_le + 3 * 24 * H).toISOString() }, l.recu_le + (delai + 3) * M, l.assigne_a);
   });
+  // Un lead perdu (étampe « PERDU » en diagonale sur la fiche, ADR-066)
+  {
+    const l = creerLead({}, debut - 26 * H);
+    activite(l, { type: 'prise_en_charge' }, l.recu_le + 5 * M, l.assigne_a);
+    activite(l, { type: 'appel', resultat: 'joint' }, l.recu_le + 8 * M, l.assigne_a);
+    activite(l, { type: 'perdu', note: 'A choisi un concurrent moins cher (FICTIF)' }, l.recu_le + 2 * H, l.assigne_a);
+  }
   creerLead({}, etat.maintenant - 34 * M);
   creerLead({}, etat.maintenant - 6 * M);
   etat.clients.push({ id: 'c-1', type: 'residentiel', prenom: 'Julie', nom: 'Tremblay (FICTIF)', courriel: 'julie@exemple.invalid', telephone: '450-555-0110', succursale_code: 'RO', vendeur_id: 'e-marc', est_proprietaire: true, actif: true });

@@ -15,7 +15,36 @@ export const ACTIVITES = {
 };
 // Types de demande : chaque vendeur est qualifié pour certains types (ADR-058)
 export const TYPES_DEMANDE = { mural_simple: 'Murale simple', mural_multi: 'Murale multi', central: 'Système central', bienergie: 'Biénergie' };
-export const pastilleType = (t) => h('span', { class: 'bf-pastille bf-pastille--type' }, t ? TYPES_DEMANDE[t] || t : 'Type à préciser');
+
+// Étampes (ADR-066) : icône + texte en majuscules, fond plein, à la manière du « ✓ PRÉPARÉ » de l'app de Mike.
+// Icônes en SVG (traits), aucune librairie externe.
+const ICONES = {
+  nouveau: 'M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.5 2.5M15.2 15.2l2.5 2.5M6.3 17.7l2.5-2.5M15.2 8.8l2.5-2.5',
+  pris_en_charge: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21c0-4 3.6-6 8-6s8 2 8 6',
+  contacte: 'M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z',
+  qualifie: 'M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6L12 16.3 6.6 19.3l1.3-6L3.3 9.2l6.1-.6z',
+  inspection_planifiee: 'M4 6h16v14H4zM4 10h16M8 3v5M16 3v5',
+  converti: 'M4 12.5l5 5L20 6.5',
+  perdu: 'M6 6l12 12M18 6L6 18',
+  mural_simple: 'M3 6h18v7H3zM7 17v3M12 17v3M17 17v3',
+  mural_multi: 'M2 4h9v6H2zM13 4h9v6h-9zM4.5 13v2.5M8.5 13v2.5M15.5 13v2.5M19.5 13v2.5M7 19h10',
+  central: 'M3 11l9-7 9 7v9H3zM9 20v-6h6v6',
+  bienergie: 'M12 3c1.5 3.5 5.5 5.5 5.5 10.5a5.5 5.5 0 01-11 0c0-2.8 1.6-3.8 1.9-6.5 1.6 1 2.6 2.6 3 3.8.6-2.6.1-5.1.6-7.8z',
+  a_preciser: 'M9 9a3 3 0 115 2.2c-1 .8-2 1.4-2 2.8M12 18v.5',
+};
+function icone(nom) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', ICONES[nom] || ICONES.a_preciser);
+  svg.append(p);
+  return svg;
+}
+export const etampe = (cle, texte, classe = '') => h('span', { class: `bf-etampe bf-etampe--${cle} ${classe}`.trim(), title: texte }, icone(cle), h('span', {}, texte));
+
+export const pastilleType = (t) => (t ? etampe(t, TYPES_DEMANDE[t] || t, 'bf-etampe--type') : etampe('a_preciser', 'Type à préciser', 'bf-etampe--type'));
 export const RESULTATS = { joint: 'joint', message_laisse: 'message laissé', pas_de_reponse: 'pas de réponse', envoye: 'envoyé' };
 export const COTES = { bon: 'Bon', moyen: 'Moyen', a_ameliorer: 'À améliorer', non_evalue: 'Non évalué' };
 
@@ -30,7 +59,9 @@ export function duree(minutes) {
 
 export const heure = (d) => (d ? new Date(d).toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short' }) : '');
 
-export const pastilleLead = (s) => h('span', { class: `bf-pastille bf-pastille--lead-${s}` }, STATUTS_LEAD[s] || s);
+export const pastilleLead = (s) => etampe(s, STATUTS_LEAD[s] || s);
+// Grande étampe « PERDU » en diagonale sur la fiche (le contenu reste lisible et cliquable dessous)
+export const filigranePerdu = () => h('div', { class: 'bf-filigrane-perdu', 'aria-hidden': 'true' }, h('span', {}, 'Perdu'));
 export const pastilleCote = (c) => h('span', { class: `bf-pastille bf-pastille--cote-${c}` }, COTES[c] || c);
 
 // Délai du lead : premier contact fait, ou attente en cours (en rouge si le seuil est dépassé)

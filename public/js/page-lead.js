@@ -3,7 +3,7 @@
 import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
-import { SOURCES_LEAD, ACTIVITES, RESULTATS, TYPES_DEMANDE, pastilleLead, delaiLead, heure, duree, voitBoard } from './bf-crm.js?v=0.4.0';
+import { SOURCES_LEAD, ACTIVITES, RESULTATS, TYPES_DEMANDE, pastilleLead, pastilleType, filigranePerdu, delaiLead, heure, duree, voitBoard } from './bf-crm.js?v=0.4.0';
 
 const URL_POINTAGE = 'https://belleflammetime.netlify.app';   // app de Mike : lien seulement
 
@@ -98,8 +98,10 @@ if (user) {
 
     remplir(zone,
       h('p', {}, h('a', { href: '/leads' }, '← Leads')),
-      h('div', { class: 'bf-titre' }, h('h1', {}, l.contact_nom || 'Lead'), pastilleLead(l.statut)),
-      h('section', { class: 'bf-carte-section' },
+      h('div', { class: 'bf-titre' }, h('h1', {}, l.contact_nom || 'Lead'),
+        h('span', { class: 'bf-etampes' }, pastilleLead(l.statut), pastilleType(l.type_demande))),
+      h('section', { class: `bf-carte-section${l.statut === 'perdu' ? ' bf-fiche-perdue' : ''}` },
+        l.statut === 'perdu' ? filigranePerdu() : null,
         h('dl', { class: 'bf-fiche' },
           h('dt', {}, 'Téléphone'), h('dd', {}, tel ? h('a', { href: `tel:${tel}` }, l.contact_tel) : 'n/d'),
           h('dt', {}, 'Courriel'), h('dd', {}, l.contact_courriel ? h('a', { href: `mailto:${l.contact_courriel}` }, l.contact_courriel) : 'n/d'),
