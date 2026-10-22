@@ -55,10 +55,10 @@ select test.echec($$update public.devis set statut = 'accepte' where id = '41000
 -- Renouvellement : nouveau numéro, mêmes lignes, approbation à refaire
 select test.comme('00000000-0000-0000-0000-00000000000c');
 select public.hvac_dupliquer_devis('41000000-0000-0000-0000-000000000001') as nouveau \gset
-select test.ok((select n.numero <> o.numero and n.statut = 'brouillon'
+select test.ok((select n.numero <> o.numero and n.statut = 'brouillon' and n.code_projet = o.code_projet || '-E01'
                   from public.devis n, public.devis o
                  where n.id = :'nouveau' and o.id = '41000000-0000-0000-0000-000000000001'),
-               'renouvellement : nouveau devis en brouillon, nouveau numéro');
+               'renouvellement : nouveau devis en brouillon, nouveau numéro, code d''origine + E01');
 select test.ok((select count(*) = 1 from public.devis_v where notes_internes like '%Renouvellement%' and bloque_par_rabais),
                'renouvellement : le rabais du kit doit être réapprouvé');
 

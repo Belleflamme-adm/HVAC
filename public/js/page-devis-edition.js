@@ -141,7 +141,7 @@ if (user) {
       boutons.push(h('button', { class: 'bf-bouton', type: 'button', onclick: () => changer('accepte', 'Le client accepte ce devis ?') }, 'Accepté par le client'));
       boutons.push(h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => changer('refuse') }, 'Refusé'));
     }
-    if (['expire', 'refuse', 'annule', 'envoye'].includes(statut)) boutons.push(h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: renouveler }, 'Renouveler (nouveau numéro)'));
+    if (['expire', 'refuse', 'annule', 'envoye'].includes(statut)) boutons.push(h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: renouveler }, 'Renouveler (extension E01, E02...)'));
     if (['brouillon', 'envoye'].includes(dv.statut)) boutons.push(h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => changer('annule', 'Annuler ce devis ? Son numéro reste utilisé.') }, 'Annuler'));
     boutons.push(h('a', { class: 'bf-bouton bf-bouton--discret', href: `/devis-imprimer?id=${dv.id}`, target: '_blank', rel: 'noopener' }, 'Imprimer / PDF'));
 
@@ -160,7 +160,7 @@ if (user) {
         dv.statut !== 'brouillon' ? ` | valide jusqu'au ${dateFr(dv.valide_jusqu)}` : '',
         site ? ` | ${site.adresse}, ${site.ville}` : ''),
       msg,
-      statut === 'expire' ? h('p', { class: 'bf-message bf-message--alerte' }, 'Ce devis est expiré (30 jours). Renouvelle-le pour obtenir un nouveau numéro et des prix à jour.') : null,
+      statut === 'expire' ? h('p', { class: 'bf-message bf-message--alerte' }, 'Ce devis est expiré (30 jours). Renouvelle-le : il garde son code projet avec une extension (E01, E02...) et reprend les prix à jour.') : null,
       estApprobateur(user) && approbations.some((a) => a.statut === 'en_attente')
         ? h('p', { class: 'bf-message bf-message--alerte' }, 'Une demande de rabais attend ta décision : ', h('a', { href: '/devis' }, 'voir les approbations')) : null,
       h('div', { class: 'bf-table-zone' }, h('table', { class: 'bf-table' },

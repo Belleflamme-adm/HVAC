@@ -34,6 +34,7 @@ export function code3(texte) {
 //   bfProjectCodeOf({ succursale: 'ST', division: 'Ventilation', prenom: 'Jean', nom: 'Tremblay' })
 //                                                                                 -> 'STV-JEA-TRE'  (préfixe)
 //   ... avec sequence: 2                                                          -> 'STV-JEA-TRE-002'
+//   ... avec sequence: 1, extension: 2                                            -> 'STV-JEA-TRE-001-E02'
 //   bfProjectCodeOf({ succursale: 'RO', division: 'Ventilation' })                -> 'ROV'
 export function bfProjectCodeOf(p) {
   if (!p) return '';
@@ -44,13 +45,19 @@ export function bfProjectCodeOf(p) {
   const segment1 = succ + lettre;
   if (!p.nom) return segment1;
   const prefixe = `${segment1}-${code3(p.prenom || p.entreprise || p.nom)}-${code3(p.nom)}`;
-  return Number.isInteger(p.sequence) && p.sequence > 0 ? `${prefixe}-${String(p.sequence).padStart(3, '0')}` : prefixe;
+  if (!(Number.isInteger(p.sequence) && p.sequence > 0)) return prefixe;
+  const code = `${prefixe}-${String(p.sequence).padStart(3, '0')}`;
+  return Number.isInteger(p.extension) && p.extension > 0 ? `${code}-E${String(p.extension).padStart(2, '0')}` : code;
 }
 
+// Analyse un code, avec l'extension facultative d'un devis renouvelé (-E01, -E02...).
 export function bfParseProjectCode(code) {
-  const m = /^([A-Z]{2})([VFB])-([A-Z]{3})-([A-Z]{3})-(\d{3})$/.exec(String(code || '').trim().toUpperCase());
+  const m = /^([A-Z]{2})([VFB])-([A-Z]{3})-([A-Z]{3})-(\d{3})(?:-E(\d{2}))?$/.exec(String(code || '').trim().toUpperCase());
   if (!m || !SUCCURSALES[m[1]]) return null;
-  return { succursale: m[1], division: m[2], prenom: m[3], nom: m[4], sequence: Number(m[5]), prefixe: m[1] + m[2] };
+  return {
+    succursale: m[1], division: m[2], prenom: m[3], nom: m[4], sequence: Number(m[5]), prefixe: m[1] + m[2],
+    extension: m[6] ? Number(m[6]) : null, origine: `${m[1]}${m[2]}-${m[3]}-${m[4]}-${m[5]}`,
+  };
 }
 
 export const estCodeProjet = (code) => bfParseProjectCode(code) !== null;

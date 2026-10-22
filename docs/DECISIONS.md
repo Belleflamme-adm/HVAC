@@ -255,3 +255,13 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   4. Le client d'un devis ne peut plus être changé (le code en dépend) : on crée un nouveau devis.
   5. Un renouvellement de devis reçoit un nouveau code (002...), puisque c'est un nouveau devis.
 - **Implémentation** : `app.code3`, `app.prochain_code_projet` (compteurs sans trou, jamais décrémentés), `public/js/bf-project-code.js` (mêmes règles, testées des deux côtés).
+
+## ADR-041 | Extension d'un devis renouvelé (-E01)
+- **Date** : 2026-10-22 | **Statut** : Acceptée (remplace le point 5 de l'ADR-040)
+- **Décision** (Simon) : un devis renouvelé (souvent parce qu'il a expiré) **garde son code projet**, auquel on ajoute une extension : `STV-JEA-TRE-001-E01`, puis `-E02`.
+- **Règles** :
+  - Les extensions sont comptées par devis d'origine. Renouveler une extension donne l'extension suivante de l'origine (E02), jamais `-E01-E01`.
+  - Chaque devis d'origine a sa propre série (`002-E01`).
+  - Un nouveau devis qui n'est pas un renouvellement continue la série normale (`004`).
+  - Le lien vers l'origine (`devis_origine_id`) ne se modifie pas. Maximum : 99 extensions par devis.
+- **Note** : le **numéro** de devis (série globale) change quand même à chaque renouvellement. Seul le code projet est conservé.

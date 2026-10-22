@@ -37,3 +37,21 @@ select test.ok((select code_projet = 'STV-JEA-TRE-002' from public.projets where
 select test.ok((select code_projet is not null from public.devis_v where id = '43000000-0000-0000-0000-000000000001'), 'vue devis_v : code projet exposé');
 
 \echo 'TESTS CODE PROJET PASSÉS'
+
+-- Extensions (renouvellements)
+select public.hvac_dupliquer_devis('43000000-0000-0000-0000-000000000001') as ext1 \gset
+select test.ok((select code_projet = 'STV-JEA-TRE-001-E01' and devis_origine_id = '43000000-0000-0000-0000-000000000001'
+                  from public.devis where id = :'ext1'), 'renouvellement : STV-JEA-TRE-001-E01');
+select public.hvac_dupliquer_devis(:'ext1') as ext2 \gset
+select test.ok((select code_projet = 'STV-JEA-TRE-001-E02' and devis_origine_id = '43000000-0000-0000-0000-000000000001'
+                  from public.devis where id = :'ext2'), 'renouvellement d''une extension : E02, rattaché à l''origine');
+select public.hvac_dupliquer_devis('43000000-0000-0000-0000-000000000002') as ext3 \gset
+select test.ok((select code_projet = 'STV-JEA-TRE-002-E01' from public.devis where id = :'ext3'),
+               'chaque devis d''origine a ses propres extensions : 002-E01');
+insert into public.devis(succursale_code, client_id, vendeur_id) values
+  ('ST','31000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000000c');
+select test.ok((select max(code_projet) = 'STV-JEA-TRE-004' from public.devis where code_projet not like '%-E%' and client_id = '31000000-0000-0000-0000-000000000001'),
+               'un nouveau devis (pas un renouvellement) continue la série : 004');
+select test.echec(format($$update public.devis set devis_origine_id = null where id = %L$$, :'ext1'), 'détacher une extension de son origine');
+
+\echo 'TESTS EXTENSIONS PASSÉS'

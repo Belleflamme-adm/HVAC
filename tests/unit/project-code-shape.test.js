@@ -37,9 +37,17 @@ test('un code attribué par la base est retourné tel quel', () => {
   assert.equal(bfProjectCodeOf({ code_projet: 'stv-jea-tre-001' }), 'STV-JEA-TRE-001');
 });
 
+test('extension d\'un devis renouvelé : -E01', () => {
+  assert.equal(bfProjectCodeOf({ succursale: 'ST', division: 'V', prenom: 'Jean', nom: 'Tremblay', sequence: 1, extension: 1 }), 'STV-JEA-TRE-001-E01');
+  const p = bfParseProjectCode('STV-JEA-TRE-001-E02');
+  assert.equal(p.extension, 2);
+  assert.equal(p.origine, 'STV-JEA-TRE-001');
+  assert.equal(estCodeProjet('STV-JEA-TRE-001-E1'), false);
+});
+
 test('analyse d\'un code', () => {
   assert.deepEqual(bfParseProjectCode('STV-JEA-TRE-002'),
-    { succursale: 'ST', division: 'V', prenom: 'JEA', nom: 'TRE', sequence: 2, prefixe: 'STV' });
+    { succursale: 'ST', division: 'V', prenom: 'JEA', nom: 'TRE', sequence: 2, prefixe: 'STV', extension: null, origine: 'STV-JEA-TRE-002' });
   assert.equal(estCodeProjet('DRF-NOR-DUB-001'), true);
   assert.equal(estCodeProjet('XXV-JEA-TRE-001'), false);
   assert.equal(estCodeProjet('ROV-001-26'), false);
