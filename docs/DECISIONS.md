@@ -265,3 +265,21 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Un nouveau devis qui n'est pas un renouvellement continue la série normale (`004`).
   - Le lien vers l'origine (`devis_origine_id`) ne se modifie pas. Maximum : 99 extensions par devis.
 - **Note** : le **numéro** de devis (série globale) change quand même à chaque renouvellement. Seul le code projet est conservé.
+
+## ADR-042 | Rabais global en $ ou en %
+- **Date** : 2026-10-22 | **Statut** : Acceptée (le choix entre $ et % reste ouvert, les deux sont permis)
+- **Décision** (Simon) : un rabais global sur le devis (comme le « RABAIS SUPPLÉMENTAIRE -200 $ » de l'app de Mike) peut être un **montant** ou un **pourcentage du sous-total**, et il est **toujours** approuvé par Simon ou Mike.
+- **Règles en base** :
+  - Ligne de type `rabais`, au plus une par devis dans l'écran. Le montant négatif est calculé par la base, jamais saisi.
+  - En %, le rabais suit le sous-total quand les autres lignes changent.
+  - Le rabais réduit le sous-total **avant** les taxes, comme chez Mike.
+  - Le total ne peut pas devenir négatif.
+  - Une approbation couvre le mode et la valeur approuvés, ou moins. Augmenter le rabais ou changer de mode ($ vers %) exige une nouvelle approbation.
+  - Seule la ligne `rabais` peut être négative : une ligne libre négative (« crédit déguisé ») est refusée.
+- **Conséquences** : la facture devra accepter cette ligne négative (module facturation).
+
+## ADR-043 | Numéro de devis : la série de Mike
+- **Date** : 2026-10-22 | **Statut** : Acceptée (remplace le format provisoire de l'ADR-022 pour les devis)
+- **Décision** (Simon) : même série que l'app de Mike : un entier global, sans préfixe, affiché `#120815`.
+- **Précaution de Claude** : tant que l'app HVAC est autonome et sur données fictives, le compteur commence à **900001**. Sinon, un devis de démonstration pourrait porter le même numéro qu'un vrai devis de Mike. À la greffe, le compteur est aligné sur le prochain numéro réel de Mike (sans jamais reculer).
+- **Conséquences** : à la greffe, c'est l'app de Mike qui attribue les numéros. Les devis de démonstration (900001 et plus) ne migrent pas.

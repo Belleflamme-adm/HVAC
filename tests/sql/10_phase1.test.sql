@@ -68,8 +68,8 @@ select test.ok((select tps = 0 and tvq = 998 from app.taxes(10000, current_date,
 -- ---------------------------------------------------------------------------
 insert into public.devis(id, succursale_code, client_id, vendeur_id) values
   ('40000000-0000-0000-0000-000000000001','RO','30000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000000c');
-select test.ok((select numero = 'D-' || to_char(current_date,'YYYY') || '-00001' from public.devis
-                 where id = '40000000-0000-0000-0000-000000000001'), 'premier devis numéroté D-AAAA-00001');
+select test.ok((select numero = '900001' from public.devis
+                 where id = '40000000-0000-0000-0000-000000000001'), 'premier devis numéroté 900001 (série de Mike, départ de démo)');
 
 -- Une transaction annulée ne consomme pas de numéro
 begin;
@@ -78,8 +78,8 @@ insert into public.devis(succursale_code, client_id, vendeur_id) values
 rollback;
 insert into public.devis(id, succursale_code, client_id, vendeur_id) values
   ('40000000-0000-0000-0000-000000000002','RO','30000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-00000000000c');
-select test.ok((select numero like '%-00002' from public.devis where id = '40000000-0000-0000-0000-000000000002'),
-               'après un rollback, le numéro suivant est 00002 (aucun trou)');
+select test.ok((select numero = '900002' from public.devis where id = '40000000-0000-0000-0000-000000000002'),
+               'après un rollback, le numéro suivant est 900002 (aucun trou)');
 
 update public.devis set total_cents = 1 where id = '40000000-0000-0000-0000-000000000002';
 select test.ok((select total_cents = 0 from public.devis where id = '40000000-0000-0000-0000-000000000002'),

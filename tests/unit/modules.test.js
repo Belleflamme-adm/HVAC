@@ -138,3 +138,15 @@ test('avecSession : erreur inattendue -> 500 sans détail interne', async () => 
   assert.equal(r.statusCode, 500);
   assert.ok(!r.body.includes('secret interne'));
 });
+
+test('rabais global : mode et valeur validés, montant laissé à la base', async () => {
+  const repo = fauxRepo();
+  await assert.rejects(() => ajouterLigne(repo, { devis_id: ID, type_ligne: 'rabais', rabais_mode: 'cadeau', rabais_valeur: 100 }), /montant ou pourcentage/);
+  await assert.rejects(() => ajouterLigne(repo, { devis_id: ID, type_ligne: 'rabais', rabais_mode: 'pourcentage', rabais_valeur: 15000 }), /100 %/);
+  await assert.rejects(() => ajouterLigne(repo, { devis_id: ID, type_ligne: 'rabais', rabais_mode: 'montant', rabais_valeur: -200 }), /positive/);
+  await ajouterLigne(repo, { devis_id: ID, type_ligne: 'rabais', rabais_mode: 'montant', rabais_valeur: 20000, prix_unitaire_cents: -999999 });
+  const [, , l] = repo.appels.find(([op]) => op === 'insert');
+  assert.equal(l.type_ligne, 'rabais');
+  assert.equal(l.prix_unitaire_cents, 0);
+  assert.equal(l.description, 'Rabais supplémentaire');
+});

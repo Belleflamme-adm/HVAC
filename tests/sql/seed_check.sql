@@ -5,7 +5,7 @@ do $$
 declare n int;
 begin
   select count(*) into n from public.clients;  if n <> 6 then raise exception 'clients: %', n; end if;
-  if not exists (select 1 from public.devis where numero like 'D-%-00001' and statut = 'accepte') then
+  if not exists (select 1 from public.devis where numero = '900001' and statut = 'accepte') then
     raise exception 'devis 1 attendu accepté et numéroté'; end if;
   if not exists (select 1 from public.devis_lignes where approbation_requise) then
     raise exception 'le devis de démo 2 doit attendre une approbation'; end if;

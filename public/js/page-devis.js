@@ -18,7 +18,7 @@ if (user) {
     try {
       const devis = await api.get('devis-list', { statut: filtre.value, vendeur_id: miens.checked ? user.id : undefined });
       liste.replaceChildren(...(devis.length ? devis.map((d) => h('a', { class: 'bf-ligne', href: `/devis-edition?id=${d.id}` },
-        h('strong', {}, d.numero), h('span', { class: 'bf-muet' }, d.code_projet), pastilleStatut(d.statut_effectif),
+        h('strong', {}, `#${d.numero}`), h('span', { class: 'bf-muet' }, d.code_projet), pastilleStatut(d.statut_effectif),
         h('span', {}, [d.client_prenom, d.client_nom].filter(Boolean).join(' ') || d.client_entreprise),
         h('span', {}, formatCents(d.total_cents)),
         d.bloque_par_rabais ? h('span', { class: 'bf-pastille bf-pastille--attente' }, 'Rabais à approuver') : null,
@@ -39,9 +39,10 @@ if (user) {
       };
       approbations.replaceChildren(h('h2', {}, `Rabais à approuver (${demandes.length})`),
         ...demandes.map((a) => h('div', { class: 'bf-ligne' },
-          h('a', { href: `/devis-edition?id=${a.devis_id}` }, h('strong', {}, a.devis?.numero || 'Devis')),
+          h('a', { href: `/devis-edition?id=${a.devis_id}` }, h('strong', {}, a.devis?.numero ? `#${a.devis.numero}` : 'Devis')),
           h('span', {}, a.devis_lignes?.description || ''),
-          h('span', {}, `${pct(a.rabais_bp)} demandé, plafond ${pct(a.plafond_bp)}`),
+          h('span', {}, a.rabais_mode ? `Rabais global de ${a.rabais_mode === 'pourcentage' ? pct(a.rabais_valeur) : formatCents(a.rabais_valeur)}`
+            : `${pct(a.rabais_bp)} demandé, plafond ${pct(a.plafond_bp)}`),
           h('span', { class: 'bf-muet' }, `${a.demandeur ? `${a.demandeur.prenom} ${a.demandeur.nom}` : ''} : ${a.motif || ''}`),
           h('span', { class: 'bf-actions' },
             h('button', { class: 'bf-bouton', type: 'button', onclick: () => decider(a.id, 'approuvee') }, 'Approuver'),

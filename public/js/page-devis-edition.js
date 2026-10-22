@@ -28,10 +28,13 @@ if (user) {
     const etatRabais = (l) => {
       if (!l.approbation_requise) return l.rabais_bp ? h('span', { class: 'bf-muet' }, `≤ plafond ${pct(l.plafond_bp)}`) : null;
       const a = approDe(l.id);
-      if (a?.statut === 'approuvee' && a.rabais_bp >= l.rabais_bp) return h('span', { class: 'bf-pastille bf-pastille--accepte' }, 'Rabais approuvé');
+      const couvert = a?.statut === 'approuvee' && a.rabais_bp >= l.rabais_bp
+        && (a.rabais_mode ?? null) === (l.rabais_mode ?? null) && (a.rabais_valeur ?? 0) >= (l.rabais_valeur ?? 0);
+      if (couvert) return h('span', { class: 'bf-pastille bf-pastille--accepte' }, 'Rabais approuvé');
       if (a?.statut === 'en_attente') return h('span', { class: 'bf-pastille bf-pastille--attente' }, 'En attente de Simon ou Mike');
       return h('span', {},
-        h('span', { class: 'bf-pastille bf-pastille--refuse' }, a?.statut === 'refusee' ? 'Rabais refusé' : `Au-dessus du plafond (${pct(l.plafond_bp)})`),
+        h('span', { class: 'bf-pastille bf-pastille--refuse' }, a?.statut === 'refusee' ? 'Rabais refusé'
+          : l.type_ligne === 'rabais' ? 'À faire approuver' : a?.statut === 'approuvee' ? 'Rabais modifié : réapprouver' : `Au-dessus du plafond (${pct(l.plafond_bp)})`),
         ' ', h('button', { class: 'bf-lien', type: 'button', onclick: () => action(async () => {
           const motif = prompt('Pourquoi ce rabais ? (visible par Simon et Mike)');
           if (!motif) return;
@@ -39,7 +42,26 @@ if (user) {
         }) }, 'Demander l\'approbation'));
     };
 
+    const libelleRabais = (l) => (l.rabais_mode === 'pourcentage' ? pct(l.rabais_valeur) : formatCents(l.rabais_valeur));
+    const ligneRabaisEl = (l) => {
+      const mode = h('select', { disabled: !brouillon, 'aria-label': 'Type de rabais' },
+        h('option', { value: 'montant', selected: l.rabais_mode === 'montant' }, '$'), h('option', { value: 'pourcentage', selected: l.rabais_mode === 'pourcentage' }, '%'));
+      const valeur = h('input', { inputmode: 'decimal', class: 'bf-court', disabled: !brouillon, 'aria-label': 'Valeur du rabais',
+        value: String(l.rabais_mode === 'pourcentage' ? l.rabais_valeur / 100 : l.rabais_valeur / 100).replace('.', ',') });
+      const enregistrer = () => action(() => api.patch('devis-lignes', { rabais_mode: mode.value, rabais_valeur: Math.round(Number(valeur.value.replace(',', '.').replace(/\s/g, '')) * 100) }, { id: l.id }));
+      mode.addEventListener('change', enregistrer);
+      valeur.addEventListener('change', enregistrer);
+      return h('tr', { class: 'bf-ligne-rabais' },
+        h('td', {}, l.description, h('div', { class: 'bf-muet' }, `Rabais global : ${libelleRabais(l)}`)),
+        h('td', {}), h('td', {}),
+        h('td', { class: 'num' }, valeur, ' ', mode),
+        h('td', { class: 'num' }, formatCents(l.montant_cents)),
+        h('td', {}, etatRabais(l)),
+        h('td', {}, brouillon ? h('button', { class: 'bf-lien', type: 'button', onclick: () => action(() => api.del('devis-lignes', { id: l.id })) }, 'Retirer') : null));
+    };
+
     const ligneEl = (l) => {
+      if (l.type_ligne === 'rabais') return ligneRabaisEl(l);
       const qte = h('input', { type: 'number', min: '0.01', step: '0.01', value: l.quantite, disabled: !brouillon, 'aria-label': 'Quantité', class: 'bf-court' });
       const rabais = h('input', { type: 'text', inputmode: 'decimal', value: String(l.rabais_bp / 100).replace('.', ','), disabled: !brouillon, 'aria-label': 'Rabais en %', class: 'bf-court' });
       const enregistrer = () => action(() => api.patch('devis-lignes', { quantite: Number(qte.value), rabais_bp: versBp(rabais.value) }, { id: l.id }));
@@ -111,6 +133,18 @@ if (user) {
       }).catch((e) => message(msg, e.message));
     }
 
+    const formRabais = h('form', { class: 'bf-filtres' },
+      h('select', { name: 'mode', 'aria-label': 'Type de rabais global' }, h('option', { value: 'montant' }, 'Rabais global en $'), h('option', { value: 'pourcentage' }, 'Rabais global en %')),
+      h('input', { name: 'valeur', inputmode: 'decimal', placeholder: 'Valeur', required: true, class: 'bf-court', 'aria-label': 'Valeur du rabais global' }),
+      h('button', { class: 'bf-bouton bf-bouton--discret', type: 'submit' }, 'Ajouter le rabais'),
+      h('span', { class: 'bf-muet' }, 'Toujours approuvé par Simon ou Mike'));
+    formRabais.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const f = new FormData(formRabais);
+      const v = Math.round(Number(String(f.get('valeur')).replace(',', '.').replace(/\s/g, '')) * 100);
+      action(() => api.post('devis-lignes', { devis_id: dv.id, type_ligne: 'rabais', rabais_mode: f.get('mode'), rabais_valeur: v }));
+    });
+
     const formLibre = h('form', { class: 'bf-filtres' },
       h('input', { name: 'description', placeholder: 'Ligne libre (ex. main-d\'oeuvre supplémentaire)', required: true, 'aria-label': 'Description' }),
       h('input', { name: 'prix', inputmode: 'decimal', placeholder: 'Prix $', required: true, class: 'bf-court', 'aria-label': 'Prix unitaire' }),
@@ -154,7 +188,7 @@ if (user) {
 
     remplir(zone, 
       h('p', {}, h('a', { href: '/devis' }, '← Devis'), ' | ', h('a', { href: `/client?id=${c.id}` }, nomClient)),
-      h('div', { class: 'bf-titre' }, h('h1', {}, `Devis ${dv.numero}`), pastilleStatut(statut)),
+      h('div', { class: 'bf-titre' }, h('h1', {}, `Devis #${dv.numero}`), pastilleStatut(statut)),
       h('p', { class: 'bf-muet' },
         `Projet ${dv.code_projet} | ${dv.succursale_code} | ${dv.vendeur_nom || ''} | créé le ${dateFr(dv.date_devis)}`,
         dv.statut !== 'brouillon' ? ` | valide jusqu'au ${dateFr(dv.valide_jusqu)}` : '',
@@ -166,7 +200,7 @@ if (user) {
       h('div', { class: 'bf-table-zone' }, h('table', { class: 'bf-table' },
         h('thead', {}, h('tr', {}, ['Description', 'Qté', 'Prix', 'Rabais', 'Montant', '', ''].map((t) => h('th', {}, t)))),
         h('tbody', {}, lignes.length ? lignes.map(ligneEl) : h('tr', {}, h('td', { colspan: 7, class: 'bf-muet' }, 'Aucune ligne. Ajoute un produit ou un kit.'))))),
-      brouillon ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Ajouter'), rechercheCat, resultats, formInst, formLibre) : null,
+      brouillon ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Ajouter'), rechercheCat, resultats, formInst, formLibre, lignes.some((l) => l.type_ligne === 'rabais') ? null : formRabais) : null,
       h('section', { class: 'bf-totaux' },
         h('dl', { class: 'bf-dl' },
           h('dt', {}, 'Sous-total'), h('dd', { class: 'num' }, formatCents(dv.sous_total_cents)),

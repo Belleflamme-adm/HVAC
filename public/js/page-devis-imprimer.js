@@ -12,13 +12,13 @@ if (await exigerSession()) {
   try {
     const { devis: dv, lignes, client: c, site } = await api.get('devis-get', { id: param('id') });
     const nomClient = [c.prenom, c.nom].filter(Boolean).join(' ') || c.entreprise;
-    document.title = `Devis ${dv.numero} | ${ENTREPRISE.nomCommercial}`;
+    document.title = `Devis #${dv.numero} | ${ENTREPRISE.nomCommercial}`;
     remplir(doc, 
       MODE_DEMO ? h('p', { class: 'demo' }, 'DOCUMENT DE DÉMONSTRATION | données fictives, sans valeur') : null,
       dv.statut === 'brouillon' ? h('p', { class: 'demo' }, 'BROUILLON | non envoyé au client') : null,
       h('header', { class: 'tete' },
         h('div', {}, h('h1', {}, ENTREPRISE.nomCommercial), h('p', {}, ENTREPRISE.nomLegal), h('p', {}, ENTREPRISE.adresse), h('p', {}, ENTREPRISE.telephone)),
-        h('div', { class: 'droite' }, h('h2', {}, `Devis ${dv.numero}`),
+        h('div', { class: 'droite' }, h('h2', {}, `Devis #${dv.numero}`),
           h('p', {}, `Date : ${dateFr(dv.date_devis)}`),
           dv.statut !== 'brouillon' ? h('p', {}, `Valide jusqu'au : ${dateFr(dv.valide_jusqu)}`) : null,
           h('p', {}, `Statut : ${LIBELLES_STATUT[dv.statut_effectif] || dv.statut_effectif}`),

@@ -100,7 +100,7 @@ Ces règles tiennent même si le front ou une fonction a un bogue :
 ## 6. Points à confirmer (ils ne bloquent pas la Phase 2)
 
 1. **Format des numéros** de devis, facture et projet de Mike. Les formats actuels sont provisoires et se changent dans `formats_numerotation`, sans migration :
-   - devis `D-2026-00001`
+   - devis : **réglé** (ADR-043) : série de Mike, entier `#120815` (départ de démo 900001)
    - facture `F-2026-00001`
    - note de crédit `NC-2026-00001`
    - projet : **réglé** (ADR-040) : `STV-JEA-TRE-001`, attribué à chaque devis.
@@ -126,4 +126,6 @@ Ces règles tiennent même si le front ou une fonction a un bogue :
 | Paramètre `marge_installation_bp` | Marge sur le prix de vente, 25 % par défaut (ADR-036), ajustable par Simon et Mike |
 | `devis_lignes.type_ligne` | `produit`, `kit`, `installation`, `libre` |
 | Ligne d'installation | Sous-traitant obligatoire, coût (grille ou soumission), marge figée, prix = coût / (1 − marge), plafond de rabais 0 % |
+| Ligne `rabais` (rabais global) | En $ ou en % du sous-total, toujours approuvée par Simon ou Mike, montant négatif calculé par la base (ADR-042) |
+| `devis.devis_origine_id` | Lien d'une extension (-E01) vers son devis d'origine (ADR-041) |
 

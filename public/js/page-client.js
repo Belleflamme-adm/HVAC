@@ -68,7 +68,7 @@ if (user) {
         formSite),
       h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Devis'),
         devis.length ? h('div', { class: 'bf-liste' }, devis.map((dv) => h('a', { class: 'bf-ligne', href: `/devis-edition?id=${dv.id}` },
-          h('strong', {}, dv.numero), pastilleStatut(dv.statut_effectif),
+          h('strong', {}, `#${dv.numero}`), pastilleStatut(dv.statut_effectif),
           h('span', {}, formatCents(dv.total_cents)), h('span', { class: 'bf-muet' }, dateFr(dv.date_devis)))))
           : h('p', { class: 'bf-muet' }, 'Aucun devis.')));
   }
