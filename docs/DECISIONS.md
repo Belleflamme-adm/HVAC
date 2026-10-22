@@ -425,3 +425,23 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Ils restent **visibles, grisés et inactifs** (« En veille | app de Mike »), regroupés à la fin.
   - Leur code et leurs tests sont **conservés**. Pour en réactiver un, on remet `etat: 'actif'` dans `public/js/bf-tuiles.js`.
   - Rien n'est supprimé sans l'accord écrit de Simon (garde-fou 5).
+
+## ADR-056 | CRM des leads : board principal, tour de rôle, rapidité et tableau de quantification
+- **Date** : 2026-10-22 | **Statut** : Base de données livrée (en local), écrans à venir
+- **Parcours** (Simon) : Google ou Facebook, puis Monday, puis le **board principal** de l'app.
+  - Le board principal est la vérité. Le vendeur a **sa vue**, avec seulement ses leads (imposé par la RLS).
+  - Le board principal est visible par Admin tout, Direction, Gérant et Coordonnateur.
+- **Attribution** : à tour de rôle entre les vendeurs actifs du board (`crm_vendeurs`, par ordre). Un seul vendeur reçoit tout ; avec deux ou trois vendeurs, c'est 1, 2, 3, 1... Le pointeur est verrouillé à chaque attribution, et l'attribution est journalisée. Seul le board principal réattribue un lead.
+- **Journal du vendeur** (`lead_activites`) : prise en charge, appel (joint, message laissé ou pas de réponse), courriel, texto, note, visite planifiée, perdu (avec raison), réouverture.
+  - On ne fait qu'ajouter : rien ne se modifie ni ne se supprime.
+  - **L'heure est celle de la base**, jamais celle du téléphone, et le vendeur ne peut pas antidater.
+  - Le statut du lead avance tout seul : nouveau, pris en charge, contacté, visite planifiée.
+- **Rapidité** (`leads_v`, `crm_rapidite_v`) : délai de prise en charge, délai du premier contact et canal utilisé, taux de leads contactés, taux de premiers contacts par appel, taux de visites.
+- **Tableau de quantification** (`crm_objectifs`, demandé par Simon) :
+  - Pour chaque indicateur, Simon et Mike inscrivent un seuil « bon » et un seuil « moyen ».
+  - `crm_evaluation_v` compare chaque vendeur et le classe **bon**, **moyen** ou **à améliorer**.
+  - Tant que les seuils sont vides, le vendeur est « non évalué » ; ils seront quantifiés au fil des semaines.
+  - Un lead est « en retard » quand le seuil du premier contact est dépassé.
+- **Visite** : planifiée dans **Pointage** (app de Mike) ; le CRM garde la date (lien `url_pointage`, aucune connexion).
+- **Monday** : l'entrée des leads reste désactivée (`MONDAY_ENABLED=false`, garde-fou 4). Les colonnes du board « Lead » de Monday sont à confirmer (`docs/MAPPING.md`).
+- **À noter** : les délais sont calculés en minutes réelles, sans tenir compte des heures d'ouverture. Un lead reçu à 23 h paraîtra lent le lendemain matin. À décider avec Simon (heures ouvrables ou non).
