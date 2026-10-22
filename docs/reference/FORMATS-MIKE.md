@@ -101,7 +101,7 @@ Hébergé dans l'app **Pointage** de Mike (`belleflammetime`). En-tête « VENTI
 | 10 | Notes + particularités (OPT) | Texte libre, **dictée vocale**. Les transcriptions des vidéos sont ajoutées dessous. |
 | | | Bouton « Envoyer le rapport » |
 
-**Constat important** : la section 7 part des produits **vendus au devis**, et le devis de Mike contient la clause « Visite pré-installation sans frais [...] dans la semaine suivant la signature ». La visite pré-installation a donc lieu **après l'acceptation**, pour valider et ajuster. Ça contredit l'ADR-007 (« avant le devis »), à trancher.
+**Constat (tranché par l'ADR-049)** : la section 7 part des produits **vendus au devis**, et le devis de Mike contient la clause « Visite pré-installation sans frais [...] dans la semaine suivant la signature ». La visite pré-installation a donc lieu **après l'acceptation**, pour valider et ajuster. Simon a tranché : en HVAC, la visite est faite par le vendeur **avant** le devis, et la section 8 est retirée.
 
 ## 6. Ce que ça change pour l'app HVAC
 

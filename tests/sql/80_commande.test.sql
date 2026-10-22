@@ -14,10 +14,29 @@ insert into public.devis_lignes(devis_id, position, produit_id, description, pri
   ('48000000-0000-0000-0000-000000000001', 1, '20000000-0000-0000-0000-000000000001','Thermopompe', 0, 2);
 insert into public.devis_lignes(devis_id, position, type_ligne, type_travail_id, sous_traitant_id, description, prix_unitaire_cents) values
   ('48000000-0000-0000-0000-000000000001', 2, 'installation','71000000-0000-0000-0000-000000000001','f2000000-0000-0000-0000-000000000001','Installation murale', 0);
+-- Pré-installation obligatoire avant l'envoi (ADR-049)
+update public.parametres set valeur = 'true' where cle = 'exiger_preinstallation';
+select test.echec($$update public.devis set statut = 'envoye' where id = '48000000-0000-0000-0000-000000000001'$$,
+                  'envoyer un devis sans visite de pré-installation', 'pré-installation');
+insert into public.inspections(id, succursale_code, client_id, site_id, inspecteur_id, statut, realisee_le, donnees) values
+  ('49000000-0000-0000-0000-000000000001','RO','30000000-0000-0000-0000-000000000003','d9000000-0000-0000-0000-000000000002',
+   '00000000-0000-0000-0000-00000000000c','realisee', now(), '{"type_machine":"monozone","voltage":"240V"}');
+update public.devis set inspection_id = '49000000-0000-0000-0000-000000000001' where id = '48000000-0000-0000-0000-000000000001';
 update public.devis set statut = 'envoye' where id = '48000000-0000-0000-0000-000000000001';
+update public.parametres set valeur = 'false' where cle = 'exiger_preinstallation';
 update public.devis set statut = 'accepte' where id = '48000000-0000-0000-0000-000000000001';
 
-select test.ok((select count(*) = 1 from public.projets where devis_id = '48000000-0000-0000-0000-000000000001'), 'acceptation : projet créé');
+select test.ok((select statut = 'attente_paiement' from public.projets where devis_id = '48000000-0000-0000-0000-000000000001'),
+               'acceptation : projet créé, en attente du dépôt ou de Financeit');
+select test.ok((select count(*) = 0 from public.bons_travail b join public.projets p on p.id = b.projet_id
+                 where p.devis_id = '48000000-0000-0000-0000-000000000001'), 'pas de BT ni de BC avant le paiement');
+
+-- Financeit approuvé : BC et BT créés, projet à cédule
+insert into public.financements(succursale_code, client_id, projet_id, statut, montant_cents)
+  select 'RO','30000000-0000-0000-0000-000000000003', id, 'approuve', 100000 from public.projets where devis_id = '48000000-0000-0000-0000-000000000001';
+select test.ok((select statut = 'a_planifier' from public.projets where devis_id = '48000000-0000-0000-0000-000000000001'),
+               'Financeit approuvé : projet à cédule');
+
 select test.ok((select b.numero = 'RV001 ' || p.code_projet and b.statut = 'brouillon' and b.assigne_fournisseur_id = 'f2000000-0000-0000-0000-000000000001'
                   from public.bons_travail b join public.projets p on p.id = b.projet_id where p.devis_id = '48000000-0000-0000-0000-000000000001'),
                'acceptation : BT RV001 en brouillon, assigné au sous-traitant du devis');
@@ -43,6 +62,8 @@ insert into public.devis_lignes(devis_id, produit_id, description, prix_unitaire
   ('48000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','Thermopompe', 0);
 update public.devis set statut = 'envoye' where id = '48000000-0000-0000-0000-000000000002';
 update public.devis set statut = 'accepte' where id = '48000000-0000-0000-0000-000000000002';
+insert into public.financements(succursale_code, client_id, projet_id, statut, montant_cents)
+  select 'RO','30000000-0000-0000-0000-000000000003', id, 'approuve', 1000 from public.projets where devis_id = '48000000-0000-0000-0000-000000000002';
 select test.ok((select bc.numero like '%-101' from public.bons_commande bc join public.projets p on p.id = bc.projet_id
                  where p.devis_id = '48000000-0000-0000-0000-000000000002'), '2e BC du même préfixe : -101');
 
@@ -53,19 +74,14 @@ set role authenticated;
 select test.comme('00000000-0000-0000-0000-00000000000c');
 select test.echec(format($$select public.hvac_planifier_bt(%L, '2026-11-20')$$, :'bt'), 'un vendeur ne planifie pas', 'réservée');
 select test.comme('00000000-0000-0000-0000-00000000000a');
-select test.echec(format($$select public.hvac_planifier_bt(%L, '2026-11-20')$$, :'bt'), 'planification sans dépôt payé', 'dépôt non payé');
-reset role;
-insert into public.financements(succursale_code, client_id, projet_id, statut, montant_cents)
-  select 'RO','30000000-0000-0000-0000-000000000003', id, 'approuve', 100000 from public.projets where devis_id = '48000000-0000-0000-0000-000000000001';
-set role authenticated;
 select test.echec(format($$select public.hvac_planifier_bt(%L, '2026-11-21')$$, :'bt'), 'journée non disponible du sous-traitant', 'pas disponible');
 select public.hvac_planifier_bt(:'bt', '2026-11-20', '08:00');
 reset role;
 select test.ok((select statut = 'planifie' and prevu_le = '2026-11-20 08:00-05'::timestamptz from public.bons_travail where id = :'bt'),
                'planifié le 20 novembre à 8 h (confirmé automatiquement)');
-select test.ok((select p.installation_prevue_le = '2026-11-20 08:00-05'::timestamptz and p.solde_du_le = '2026-11-17 08:00-05'::timestamptz
+select test.ok((select p.installation_prevue_le = '2026-11-20 08:00-05'::timestamptz and p.solde_du_le is null
                   from public.projets p join public.bons_travail b on b.projet_id = p.id where b.id = :'bt'),
-               'projet : date d''installation et solde dû 72 h avant');
+               'projet financé par Financeit : date d''installation, aucun solde 72 h avant');
 select test.ok((select count(*) = 1 from public.notifications where destinataire_fournisseur_id = 'f2000000-0000-0000-0000-000000000001'),
                'le sous-traitant reçoit une notification');
 select test.ok((select count(*) = 2 from public.envois where statut = 'en_attente'), 'courriel et SMS mis en file d''envoi');

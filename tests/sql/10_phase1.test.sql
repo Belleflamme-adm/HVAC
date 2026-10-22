@@ -27,6 +27,9 @@ $$;
 grant usage on schema test to authenticated, anon;
 grant execute on all functions in schema test to authenticated, anon;
 
+-- La pré-installation obligatoire (ADR-049) est testée dans 80_commande ; désactivée ici.
+update public.parametres set valeur = 'false' where cle = 'exiger_preinstallation';
+
 -- ---------------------------------------------------------------------------
 -- Données de test (superutilisateur : contourne la RLS)
 -- ---------------------------------------------------------------------------

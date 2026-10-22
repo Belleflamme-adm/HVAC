@@ -105,7 +105,7 @@ insert into public.leads (succursale_code, source, statut, client_id, contact_no
   ('GA','telephone','contacte','d1000000-0000-0000-0000-000000000004','Denis Fortin','Remplacement plinthes par thermopompe murale','e0000000-0000-0000-0000-000000000005');
 
 insert into public.inspections (succursale_code, client_id, site_id, inspecteur_id, prevue_le, realisee_le, statut, donnees) values
-  ('RO','d1000000-0000-0000-0000-000000000001','d2000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-000000000008',
+  ('RO','d1000000-0000-0000-0000-000000000001','d2000000-0000-0000-0000-000000000001','e0000000-0000-0000-0000-000000000003',
    now() - interval '10 days', now() - interval '10 days', 'realisee',
    '{"superficie_pi2": 1400, "panneau_amperes": 200, "emplacement_unite_ext": "côté cour", "notes": "FICTIF"}');
 
@@ -120,6 +120,9 @@ insert into public.devis_lignes (devis_id, position, produit_id, description, qu
 insert into public.devis_lignes (devis_id, position, type_ligne, type_travail_id, sous_traitant_id, description, quantite, prix_unitaire_cents) values
   ('d3000000-0000-0000-0000-000000000001',4,'installation','a2000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000003',
    'Installation thermopompe murale',1,0);
+-- Le devis s'appuie sur la visite de pré-installation du vendeur (ADR-049)
+update public.devis set inspection_id = (select id from public.inspections where client_id = 'd1000000-0000-0000-0000-000000000001' limit 1)
+ where id = 'd3000000-0000-0000-0000-000000000001';
 update public.devis set statut = 'envoye' where id = 'd3000000-0000-0000-0000-000000000001';
 update public.devis set statut = 'accepte' where id = 'd3000000-0000-0000-0000-000000000001';
 

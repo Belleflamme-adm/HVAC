@@ -343,3 +343,14 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Jobs du sous-traitant** (`hvac_mes_jobs`) : seulement les jobs planifiées. Il voit le nom et le téléphone du client, l'adresse, les lignes, et où ramasser le matériel. Chaque accès est journalisé (Loi 25). Il fait passer la job à « en cours », puis « terminée ».
 - **Fournisseurs** : ajout de l'adresse (lieu de ramassage).
 - **Données de démo** : le devis accepté produit automatiquement le projet, le BT RV001 et le BC `ROV-JUL-TRE-100`.
+
+## ADR-049 | Séquence HVAC confirmée : pré-installation avant le devis, BT et BC après le paiement
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Séquence** (Simon, mot pour mot) : « Lead, visite/pré-installation, devis, acceptation, dépôt/financeit, BC, BT, cédule job, paiement finale 72h avant la job si dépot 40% et non financeit, installation, facturation, paiement sous-traitant ».
+- **Décisions** :
+  1. La visite de pré-installation est faite **par le vendeur, avant le devis** (confirme l'ADR-007, tranche le constat de `FORMATS-MIKE.md` §5). Un devis ne s'envoie pas sans visite réalisée et liée (`devis.inspection_id`). Paramètre `exiger_preinstallation`, à `true` par défaut.
+  2. Le formulaire HVAC reprend les sections de Mike **sauf la section 8** (« pièces supplémentaires à apporter ») : la visite précède le devis, donc tout va directement au devis.
+  3. **À l'acceptation**, la base crée seulement le projet, au statut `attente_paiement`.
+  4. **Au dépôt payé** (facture de type dépôt) **ou au financement Financeit approuvé**, la base crée le BT `RV001` et les BC brouillons, une seule fois, et le projet passe à « à cédule ». Remplace le point 2 de l'ADR-047 et le premier point de l'ADR-048.
+  5. **Solde 72 h avant** : seulement pour la voie dépôt 40 %. Un projet financé par Financeit n'a aucune date de solde.
+- **Retour arrière** : la migration `20261024000200_sequence_hvac.sql` redéfinit les fonctions, on la retire et on rejoue les migrations en local. Pour garder l'ordre sans bloquer l'envoi, mettre `exiger_preinstallation` à `false`.
