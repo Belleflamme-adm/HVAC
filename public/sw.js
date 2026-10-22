@@ -14,7 +14,7 @@ const COQUILLE = [
   '/js/bf-carte.js?v=0.4.0', '/js/bf-calendrier.js?v=0.4.0', '/js/page-territoire.js?v=0.4.0',
   '/js/page-disponibilites.js?v=0.4.0', '/js/page-sous-traitants.js?v=0.4.0', '/installation-grille', '/js/page-installation-grille.js?v=0.4.0', '/manifest.webmanifest', '/icons/icon.svg',
   '/leads', '/lead', '/crm-rapidite', '/js/bf-crm.js?v=0.4.0', '/js/page-leads.js?v=0.4.0', '/js/page-lead.js?v=0.4.0',
-  '/js/page-crm-rapidite.js?v=0.4.0',
+  '/js/page-crm-rapidite.js?v=0.4.0', '/js/bf-fenetre.js?v=0.4.0', '/js/bf-barre.js?v=0.4.0',
 ];
 
 self.addEventListener('install', (e) => {

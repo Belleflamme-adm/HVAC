@@ -1,57 +1,131 @@
+/* Style de l'app de Mike (v0.4.1) : vert Belleflamme, titres condensés (Bebas Neue), texte DM Sans,
+   tuiles en liste avec icône sur fond menthe, ruban de stats vert, barre du bas (recherche + cloche). */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
 :root {
-  --bg: #f5f7fb; --surface: #ffffff; --ink: #0f1a33; --muted: #4a5672; --line: #dbe2ee;
-  --accent: #e2741b; --accent-ink: #ffffff; --bad: #b4232c; --r: 14px;
-  --f: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+  --bg: #f3f5f4; --surface: #ffffff; --ink: #14201a; --muted: #56635b; --line: #e1e6e3;
+  --vert: #1fa64a; --vert-fonce: #158a3b; --vert-texte: #157a36; --menthe: #d8f1e0; --vert-ink: #ffffff;
+  --accent: #1fa64a; --accent-ink: #ffffff; --bad: #c62828; --r: 14px;
+  --f: "DM Sans", "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+  --f-titre: "Bebas Neue", "Oswald", "Arial Narrow", Impact, sans-serif;
+  --ombre: 0 1px 2px rgba(20, 32, 26, .06), 0 4px 14px rgba(20, 32, 26, .05);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a1122; --surface: #111b33; --ink: #e8eefb; --muted: #a6b3cf; --line: #24324f;
-    --accent: #f08a37; --accent-ink: #1a0d02; --bad: #ff8b8f; color-scheme: dark;
+    --bg: #0c1410; --surface: #141f19; --ink: #e6efe9; --muted: #9fb0a5; --line: #24332b;
+    --vert: #22b452; --vert-fonce: #1a9443; --vert-texte: #5fd98a; --menthe: #183826; --vert-ink: #04120a;
+    --accent: #22b452; --accent-ink: #04120a; --bad: #ff8a80; --ombre: none; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0a1122; --surface: #111b33; --ink: #e8eefb; --muted: #a6b3cf; --line: #24324f;
-  --accent: #f08a37; --accent-ink: #1a0d02; --bad: #ff8b8f; color-scheme: dark;
+  --bg: #0c1410; --surface: #141f19; --ink: #e6efe9; --muted: #9fb0a5; --line: #24332b;
+  --vert: #22b452; --vert-fonce: #1a9443; --vert-texte: #5fd98a; --menthe: #183826; --vert-ink: #04120a;
+  --accent: #22b452; --accent-ink: #04120a; --bad: #ff8a80; --ombre: none; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--f); }
-h1 { font-size: 26px; margin: 0 0 6px; }
-.bf-entete { display: flex; justify-content: space-between; align-items: center; gap: 12px;
-  padding: 12px max(16px, env(safe-area-inset-left)); background: var(--ink); color: var(--bg); }
-.bf-entete__marque { font-weight: 700; }
-.bf-entete__marque span { font-weight: 400; opacity: .8; margin-left: 6px; }
-.bf-bandeau { padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+h1, h2 { font-family: var(--f-titre); font-weight: 400; letter-spacing: .02em; text-wrap: balance; }
+h1 { font-size: 34px; line-height: 1.05; margin: 0 0 6px; }
+.bf-entete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  background: var(--vert); color: var(--vert-ink); }
+.bf-entete__marque { display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-titre); font-size: 24px; letter-spacing: .03em; }
+.bf-entete__marque img { border-radius: 50%; box-shadow: 0 0 0 2px #ffffff55; }
+.bf-entete__marque span { font-weight: 400; }
+.bf-entete__sortie, .bf-couverture__sortie { font: 600 14px var(--f); padding: 6px 14px; border-radius: 999px; border: 1.5px solid currentColor;
+  background: transparent; color: inherit; cursor: pointer; }
+.bf-bandeau { padding: 6px 16px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); }
 .bf-bandeau strong { color: var(--ink); }
-.bf-bandeau__imp { color: var(--accent); font-weight: 700; }
-.bf-page { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
-.bf-note { color: var(--muted); margin: 0 0 20px; }
-.bf-tuiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
-.bf-tuile { display: flex; flex-direction: column; justify-content: space-between; min-height: 96px; padding: 16px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); color: var(--ink); text-decoration: none; }
-.bf-tuile:hover { border-color: var(--accent); }
-.bf-tuile__titre { font-weight: 700; }
-.bf-tuile--bientot, .bf-tuile--construction { opacity: .75; border-style: dashed; }
-.bf-tuile--veille { opacity: .4; filter: grayscale(1); cursor: not-allowed; }
+.bf-bandeau__imp { color: var(--vert-texte); font-weight: 700; }
+.bf-page { max-width: 1120px; margin: 0 auto; padding: 22px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); }
+.bf-note { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+
+/* Accueil : filet vert, couverture, logo rond, titre, ruban */
+.bf-filet { height: 10px; background: var(--vert); }
+.bf-couverture { position: relative; height: clamp(150px, 26vw, 300px);
+  background:
+    radial-gradient(circle at 30% 40%, #ffffff22 0 2px, transparent 3px) 0 0 / 26px 26px,
+    linear-gradient(135deg, #0f3d24 0%, #1fa64a 55%, #7dd3a0 100%); }
+.bf-couverture__sortie { position: absolute; top: 12px; right: max(16px, env(safe-area-inset-right)); color: #ffffff; background: #00000033; }
+.bf-couverture__logo { position: absolute; left: 50%; bottom: -58px; transform: translateX(-50%); width: 116px; height: 116px; border-radius: 50%;
+  background: #0d1f14; border: 4px solid var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+  display: grid; place-items: center; align-content: center; gap: 0; color: #ffffff; font-size: 11px; }
+.bf-couverture__logo img { width: 64px; height: 64px; }
+.bf-accueil__titre { text-align: center; padding: 70px 16px 10px; background: var(--surface); }
+.bf-accueil__titre h1 { color: var(--vert-texte); font-size: clamp(30px, 5vw, 40px); margin: 0; }
+.bf-accueil__titre h1 span { opacity: .45; }
+.bf-accueil__date { margin: 2px 0 0; font-weight: 500; }
+.bf-accueil__qui { margin: 0; color: var(--muted); font-size: 14px; }
+.bf-ruban { background: var(--vert); color: #ffffff; overflow: hidden; white-space: nowrap; font-weight: 700; font-size: 14px; padding: 7px 0; }
+.bf-ruban__piste { display: inline-flex; gap: 18px; padding-left: 16px; animation: bf-defile 45s linear infinite; }
+.bf-ruban:hover .bf-ruban__piste { animation-play-state: paused; }
+.bf-ruban__item { display: inline-flex; align-items: center; gap: 6px; }
+.bf-ruban__chiffre { background: #ffffff; color: #14201a; border-radius: 7px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.bf-ruban__sep { margin-left: 12px; opacity: .8; }
+@keyframes bf-defile { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .bf-ruban { white-space: normal; } .bf-ruban__piste { animation: none; flex-wrap: wrap; } }
+
+/* Tuiles en liste (comme chez Mike) */
+.bf-tuiles { display: grid; gap: 12px; max-width: 1120px; margin: 0 auto; }
+.bf-tuile { display: grid; grid-template-columns: 56px minmax(0, 1fr) 24px; align-items: center; gap: 14px; width: 100%;
+  padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--ombre);
+  color: var(--ink); text-decoration: none; text-align: left; font: inherit; cursor: pointer; }
+.bf-tuile:hover { border-color: var(--vert); }
+.bf-tuile__icone { width: 56px; height: 56px; border-radius: 12px; background: var(--menthe); display: grid; place-items: center; font-size: 28px; line-height: 1; }
+.bf-tuile__texte { display: grid; gap: 2px; min-width: 0; }
+.bf-tuile__titre { font-family: var(--f-titre); font-size: 22px; letter-spacing: .03em; line-height: 1.1; text-transform: uppercase; }
+.bf-tuile__desc { font-size: 13px; color: var(--muted); }
+.bf-tuile__fleche { font-size: 22px; color: var(--muted); text-align: center; }
+.bf-tuile--bientot, .bf-tuile--construction { opacity: .75; border-style: dashed; cursor: default; }
+.bf-tuile--veille { opacity: .45; filter: grayscale(1); cursor: not-allowed; box-shadow: none; }
+.bf-tuile--veille-groupe { opacity: .7; }
+.bf-tuile--veille-groupe .bf-tuile__icone { filter: grayscale(1); }
 .bf-tuile__etat { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+
+/* Fenêtre flottante (bf-windows chez Mike) */
+.bf-fenetre-fond { position: fixed; inset: 0; z-index: 50; background: rgba(10, 20, 14, .25); display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.bf-fenetre { width: min(640px, 100%); max-height: min(80vh, 760px); display: flex; flex-direction: column; background: var(--bg);
+  border: 1px solid var(--line); border-top: 3px solid var(--vert); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, .25); overflow: hidden; }
+.bf-fenetre--grande { width: min(1100px, 100%); max-height: 92vh; }
+.bf-fenetre__barre { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px 8px 14px;
+  background: var(--surface); border-bottom: 1px solid var(--line); font-weight: 700; }
+.bf-fenetre__boutons { display: flex; gap: 6px; }
+.bf-fenetre__boutons button { width: 32px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; }
+.bf-fenetre__corps { padding: 14px; overflow-y: auto; }
+
+/* Barre du bas : recherche + cloche */
+body.bf-avec-barre { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+.bf-barre { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; gap: 10px; align-items: center;
+  padding: 8px max(12px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: var(--surface); border-top: 1px solid var(--line); }
+.bf-barre__recherche { flex: 1; display: flex; min-width: 0; border: 1.5px solid var(--line); border-radius: 999px; background: var(--bg); overflow: hidden; }
+.bf-barre__recherche input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 15px var(--f); padding: 9px 14px; }
+.bf-barre__recherche input:focus { outline: none; }
+.bf-barre__recherche:focus-within { border-color: var(--vert); }
+.bf-barre__loupe { border: 0; background: transparent; padding: 0 14px; cursor: pointer; font-size: 16px; }
+.bf-barre__cloche { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; background: var(--line);
+  color: var(--ink); text-decoration: none; font-weight: 700; font-size: 14px; }
+.bf-barre__cloche--alerte { background: #e53935; color: #ffffff; }
+
 .bf-bouton { font: 700 15px var(--f); padding: 11px 18px; border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
 .bf-bouton[disabled] { opacity: .6; cursor: progress; }
 .bf-bouton--discret { background: transparent; color: inherit; border: 1.5px solid currentColor; padding: 7px 14px; }
 .bf-centre { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-.bf-carte { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 28px; }
+.bf-carte { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--vert); border-radius: var(--r); padding: 28px; }
 .bf-carte form { display: grid; gap: 14px; }
 .bf-carte label { display: grid; gap: 4px; font-weight: 600; font-size: 14px; }
 .bf-carte input { font: 16px var(--f); padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
 .bf-erreur { color: var(--bad); min-height: 1.5em; margin: 0; }
 .bf-pied { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 16px; }
-a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--vert); outline-offset: 2px; }
 
 /* Module Clients + Devis (v0.3.0) */
 .bf-nav { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
 .bf-nav a { color: inherit; text-decoration: none; padding: 6px 12px; border-radius: 999px; opacity: .85; }
-.bf-nav a[aria-current="page"], .bf-nav a:hover { background: rgba(255,255,255,.12); opacity: 1; }
+.bf-nav a[aria-current="page"], .bf-nav a:hover { background: rgba(255,255,255,.2); opacity: 1; }
 a.bf-entete__marque { color: inherit; text-decoration: none; }
-h2 { font-size: 19px; margin: 0 0 10px; }
+h2 { font-size: 24px; margin: 0 0 10px; }
 .bf-titre { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .bf-muet { color: var(--muted); font-size: 14px; }
 .bf-message { min-height: 0; margin: 8px 0; }

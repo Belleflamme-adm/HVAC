@@ -445,3 +445,17 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Visite** : planifiée dans **Pointage** (app de Mike) ; le CRM garde la date (lien `url_pointage`, aucune connexion).
 - **Monday** : l'entrée des leads reste désactivée (`MONDAY_ENABLED=false`, garde-fou 4). Les colonnes du board « Lead » de Monday sont à confirmer (`docs/MAPPING.md`).
 - **À noter** : les délais sont calculés en minutes réelles, sans tenir compte des heures d'ouverture. Un lead reçu à 23 h paraîtra lent le lendemain matin. À décider avec Simon (heures ouvrables ou non).
+
+## ADR-057 | Style visuel calqué sur l'app de Mike
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon, avec des captures de l'app de Mike) : la portion HVAC doit avoir le même style que l'app de Mike.
+- **Repris de l'app de Mike** :
+  - un filet et un bandeau verts ;
+  - à l'accueil, une couverture avec un logo rond au centre, un titre condensé vert et la date ;
+  - un **ruban de stats** vert qui défile, avec des chiffres sur pastilles blanches : leads du jour, en attente, en retard, contactés, délai médian, visites ;
+  - des **tuiles en liste** : icône sur fond menthe, titre condensé en majuscules, description et chevron ;
+  - les groupes qui s'ouvrent en **fenêtre flottante** (comme « Opération ») : « Ventes HVAC », « Sous-traitants » et « Dans l'app de Mike » (en veille, grisée) ;
+  - une **barre du bas** avec la recherche (les leads, pour l'instant) et une cloche rouge qui compte les leads en retard.
+- **Polices** : Bebas Neue pour les titres et DM Sans pour le texte (Google Fonts, déjà permis par la CSP). Les polices exactes de Mike restent à confirmer ; leur apparence est très proche.
+- **Couverture** : un dégradé vert en attendant une vraie photo (`bf-entete-photo` chez Mike). Aucune photo de personne n'est versée au dépôt.
+- **Pas repris** : la météo (Open-Meteo, bloquée par la CSP `connect-src 'self'`), le bouton téléphone (Twilio) et le punch in/out (Pointage).

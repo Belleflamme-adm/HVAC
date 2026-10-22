@@ -23,7 +23,10 @@ if (user) {
 
   async function charger() {
     try {
-      const leads = await api.get('leads', { vue, statut: choixStatut.value, vendeur: vue === 'board' ? choixVendeur.value : undefined });
+      let leads = await api.get('leads', { vue, statut: choixStatut.value, vendeur: vue === 'board' ? choixVendeur.value : undefined });
+      // Recherche de la barre du bas : nom, ville ou téléphone
+      const q = (param('q') || '').trim().toLowerCase();
+      if (q) leads = leads.filter((l) => [l.contact_nom, l.ville, l.contact_tel, l.contact_courriel].some((v) => String(v || '').toLowerCase().includes(q)));
       // Les leads à traiter d'abord : en retard, puis nouveaux
       const rang = (l) => (l.en_retard ? 0 : l.statut === 'nouveau' ? 1 : 2);
       leads.sort((a, b) => rang(a) - rang(b));   // tri stable : les plus récents restent en tête de chaque groupe
