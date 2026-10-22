@@ -372,3 +372,11 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Traitement** (`scripts/municipalites/convertir.mjs`) : reprojection WGS84 et simplification à 4 %, puis **fusion par code** (2 260 polygones donnent 1 331 municipalités, territoires non organisés et réserves compris). Résultat : `public/data/municipalites.geojson` (3,2 Mo) et la migration `20261024000201_municipalites_donnees.sql`.
 - **Carte** : elle s'ouvre sur le sud du Québec, de l'Outaouais à Québec et à l'Estrie, et des boutons mènent au « Sud du Québec » ou à « Tout le Québec ». La recherche affiche « Nom (MRC) », parce que 56 noms reviennent plus d'une fois. Les 46 villes repères correspondent toutes aux noms officiels.
 - **Mise à jour** : chaque automne, relancer le script sur la nouvelle version du MRNF. Les domaines `donneesquebec.ca` et `diffusion.mern.gouv.qc.ca` doivent être permis dans l'environnement.
+
+## ADR-052 | La carte du territoire est un outil de saisie occasionnel
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Contexte** (Simon) : le sous-traitant indique sur la carte où il va, où il ne va pas, et où il demande un supplément. Il la modifie lui-même, de son bureau, environ 2 à 4 fois par année. Pour Belleflamme, c'est ensuite une référence qui sert à choisir le sous-traitant et à établir le prix au client.
+- **Décisions** :
+  1. On ne fait aucune optimisation de poids pour le téléphone : le fichier des limites (3,2 Mo) est acceptable pour un usage de bureau aussi rare.
+  2. L'usage quotidien passe par le devis. Le supplément de la ville du chantier est appliqué automatiquement à la ligne d'installation, puis figé (ADR-035 et ADR-038). Une modification du territoire ne change donc pas les devis déjà faits.
+  3. Chaque modification est déjà journalisée (`trg_audit`).
