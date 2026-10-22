@@ -316,3 +316,15 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Il est envoyé par courriel au fournisseur, avec son PDF, un fil de conversation et un bouton d'annulation.
   - Livraison à l'entrepôt de Saint-Jérôme, date de livraison « TBD » tant qu'elle n'est pas confirmée.
 - **Pour le Lot B** : le BC HVAC reprend ce format, avec un choix de livraison de plus : entrepôt, ou **ramassage chez le fournisseur par le sous-traitant**.
+
+## ADR-047 | Règles du Lot B (commande, BT, BC, planification)
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Décisions** (Simon) :
+  1. **N° de BC** : préfixe du code projet + série 100, 101, 102..., avec un compteur sans trou par préfixe, distinct de celui des devis.
+  2. **Création du BC** : un brouillon automatique est créé à partir du BT à l'acceptation du devis : les produits à commander, **au coût**, avec un BC par fournisseur. La coordination le vérifie, puis l'envoie.
+  3. **Matériel** : choisi sur chaque BC, entre **ramassage chez le fournisseur par le sous-traitant** et **livraison à l'entrepôt de Saint-Jérôme** (le sous-traitant y ramasse alors le matériel).
+  4. **Date d'installation** : placée par Belleflamme dans une journée **disponible** du sous-traitant, elle est **confirmée automatiquement**. Le sous-traitant reçoit seulement une alerte.
+- **Rappels** :
+  - La planification est permise une fois le dépôt payé ou le financement approuvé (ADR-037).
+  - Le solde est dû 72 h avant l'installation (ADR-009).
+  - Les alertes passent par l'app, le SMS et le courriel. Les fournisseurs de SMS et de courriel restent à choisir : en attendant, les envois sont mis en file sans être expédiés.
