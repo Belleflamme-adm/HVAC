@@ -33,7 +33,7 @@ Deux objectifs simultanés :
 1. **Infra perso seulement** : mon GitHub, mon Netlify, un projet Supabase NEUF et dédié dans mon compte.
 2. **INTERDIT** de créer, lire ou modifier quoi que ce soit dans l'infra de Mike :
    - Netlify, équipe `michealmaisonneuve` (sites `belleflammemain`, `belleflammetime`, `bffire`, etc.)
-   - Supabase, org `Belleflamme-adm's Org`
+   - Supabase : toute org de Mike (nom à confirmer). **Attention : `Belleflamme-adm's Org` appartient à Simon** (confirmé le 22 oct. 2026), ce n'est PAS celle de Mike.
    - Monday, `belleflamme-team.monday.com`
 3. **Avant toute commande qui provisionne ou déploie** (`netlify link`, `netlify deploy`, `supabase link`, `supabase db push`, création de projet) : lance `netlify status` / `supabase projects list`, annonce-moi le compte ou l'org actif, et attends mon OK. Si c'est un compte de Mike : STOP immédiat.
 4. **Aucune connexion** à Monday ni à la base Supabase de prod de Mike (Friday) pour l'instant. Données fictives seulement.

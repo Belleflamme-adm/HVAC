@@ -147,3 +147,9 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 ## ADR-028 | CI
 - **Date** : 2026-10-23 | **Statut** : Proposée
 - **Décision** : GitHub Actions lance `npm test` (36 tests) et `tests/sql/run.sh` sur un service `postgres:16` (schéma, session, seed). Aucun secret n'est nécessaire.
+
+## ADR-029 | Org Supabase de Simon
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Contexte** : `CLAUDE.md` désignait `Belleflamme-adm's Org` comme l'org de Mike. Le connecteur Supabase de la session ne voit que cette org (plan Free, projets « Belleflamme-adm's Project » et « Signature-courriel », tous deux en `us-east-1`).
+- **Décision** : Simon confirme que `Belleflamme-adm's Org` lui appartient. `CLAUDE.md` est corrigé. Le nom de l'org Supabase de Mike reste à confirmer.
+- **Conséquences** : le plan Free permet seulement 2 projets actifs (doc Supabase, Billing FAQ), et la limite est déjà atteinte. Pour créer le projet HVAC dédié, il faut mettre un projet en pause ou passer à un plan payant. C'est la décision de Simon.
