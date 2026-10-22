@@ -10,7 +10,7 @@ const COQUILLE = [
   '/js/bf-page.js?v=0.3.0', '/js/bf-api.js?v=0.3.0', '/js/bf-dom.js?v=0.3.0', '/js/bf-money.js?v=0.3.0',
   '/js/bf-project-code.js?v=0.3.0', '/js/bf-entreprise.js?v=0.3.0', '/js/page-clients.js?v=0.3.0',
   '/js/page-client.js?v=0.3.0', '/js/page-devis.js?v=0.3.0', '/js/page-devis-edition.js?v=0.3.0',
-  '/js/page-devis-imprimer.js?v=0.3.0', '/manifest.webmanifest', '/icons/icon.svg',
+  '/js/page-devis-imprimer.js?v=0.3.0', '/installation-grille', '/js/page-installation-grille.js?v=0.3.0', '/manifest.webmanifest', '/icons/icon.svg',
 ];
 
 self.addEventListener('install', (e) => {

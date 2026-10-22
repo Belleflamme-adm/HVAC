@@ -32,6 +32,7 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 | `marques` | (dans Catalogue ?) | à confirmer | `escompte_fournisseur_bp`, `plafond_rabais_exception_bp` : source chez Mike à confirmer |
 | `produits` | Catalogue (~29,7k items) | 9677840877 | à confirmer. Champs HVAC (`ahri`, `energy_star`, `btu_nominal`, `btu_moins8`) : à confirmer. |
 | `kits`, `kit_items` | Kits | à confirmer | à confirmer. Les kits de thermopompes existent déjà chez Mike (selon Simon). |
+| `types_travaux`, `tarifs_sous_traitants` | BD - Fournisseurs ? (grilles de sous-traitants) | à confirmer | à confirmer. Chez Mike, les prix des sous-traitants sont peut-être dans des factures payables ou des documents, pas dans un board. |
 | `devis`, `devis_lignes` | Ventes et Devis 2.0 | à confirmer | à confirmer. Format du numéro de devis de Mike : à confirmer (ADR-004). |
 | `approbations_rabais`, `delegations_rabais` | (aucun board connu) | | Probablement nouveau. À confirmer : comment Mike trace les approbations aujourd'hui. |
 | `projets` | Plan de charge - Macro | à confirmer | `code_projet` = code Macro `XXX-XXX-XXX` (1er segment = succursale + division). 2e et 3e segments : à confirmer. |

@@ -46,7 +46,10 @@ if (user) {
       qte.addEventListener('change', enregistrer);
       rabais.addEventListener('change', enregistrer);
       return h('tr', {},
-        h('td', {}, l.description, l.kit_id ? h('span', { class: 'bf-muet' }, ' (kit)') : null),
+        h('td', {}, l.description, l.kit_id ? h('span', { class: 'bf-muet' }, ' (kit)') : null,
+          l.type_ligne === 'installation' ? h('div', { class: 'bf-muet bf-interne' },
+            `Interne : coût ${formatCents(l.cout_cents)} (${l.source_cout === 'soumission' ? `soumission ${l.reference_soumission}` : 'grille'})`,
+            ` + marge ${pct(l.marge_bp)}`) : null),
         h('td', { class: 'num' }, qte),
         h('td', { class: 'num' }, formatCents(l.prix_unitaire_cents)),
         h('td', { class: 'num' }, rabais, ' %'),
@@ -74,6 +77,40 @@ if (user) {
         } catch (e) { message(msg, e.message); }
       }, 250);
     });
+    // Installation : coût du sous-traitant + marge, calculés par la base
+    const formInst = h('form', { class: 'bf-form bf-form--compact' });
+    if (brouillon) {
+      api.get('installation-options').then(({ types, sousTraitants, grille, margeBp }) => {
+        const coutGrille = (st, ty) => grille.find((g) => g.fournisseur_id === st && g.type_travail_id === ty)?.cout_cents;
+        const selType = h('select', { name: 'type', required: true, 'aria-label': 'Type de travail' },
+          h('option', { value: '' }, 'Type de travail…'), types.map((t) => h('option', { value: t.id }, t.nom)));
+        const selSt = h('select', { name: 'st', 'aria-label': 'Sous-traitant' },
+          h('option', { value: '' }, 'Sous-traitant…'), sousTraitants.map((f) => h('option', { value: f.id }, f.nom)));
+        const soum = h('input', { type: 'checkbox', name: 'soumission' });
+        const cout = h('input', { name: 'cout', inputmode: 'decimal', placeholder: 'Coût soumission $', class: 'bf-court', hidden: true, 'aria-label': 'Coût de la soumission' });
+        const ref = h('input', { name: 'ref', placeholder: 'No de soumission', hidden: true, 'aria-label': 'Numéro de soumission' });
+        const apercu = h('span', { class: 'bf-muet' });
+        const majApercu = () => {
+          const c = soum.checked ? Math.round(Number(String(cout.value).replace(',', '.').replace(/\s/g, '')) * 100) : coutGrille(selSt.value, selType.value);
+          apercu.textContent = c > 0 ? `Coût ${formatCents(c)} | prix client ${formatCents(Math.round(c * 10000 / (10000 - margeBp)))} (marge ${pct(margeBp)})`
+            : (selSt.value && selType.value && !soum.checked ? 'Aucun prix dans la grille : coche « Soumission »' : '');
+        };
+        soum.addEventListener('change', () => { cout.hidden = ref.hidden = !soum.checked; majApercu(); });
+        [selType, selSt, cout].forEach((el) => el.addEventListener('input', majApercu));
+        formInst.addEventListener('submit', (ev) => {
+          ev.preventDefault();
+          const corps = { devis_id: dv.id, type_ligne: 'installation', type_travail_id: selType.value, sous_traitant_id: selSt.value || undefined, quantite: 1 };
+          if (soum.checked) Object.assign(corps, { source_cout: 'soumission', reference_soumission: ref.value,
+            cout_cents: Math.round(Number(String(cout.value).replace(',', '.').replace(/\s/g, '')) * 100) });
+          action(() => api.post('devis-lignes', corps));
+        });
+        remplir(formInst, h('strong', {}, 'Installation (sous-traitant + marge)'),
+          h('div', { class: 'bf-filtres' }, selType, selSt, h('label', { class: 'bf-case' }, soum, 'Soumission pour ce job'), cout, ref,
+            h('button', { class: 'bf-bouton bf-bouton--discret', type: 'submit' }, 'Ajouter l\'installation')),
+          apercu);
+      }).catch((e) => message(msg, e.message));
+    }
+
     const formLibre = h('form', { class: 'bf-filtres' },
       h('input', { name: 'description', placeholder: 'Ligne libre (ex. main-d\'oeuvre supplémentaire)', required: true, 'aria-label': 'Description' }),
       h('input', { name: 'prix', inputmode: 'decimal', placeholder: 'Prix $', required: true, class: 'bf-court', 'aria-label': 'Prix unitaire' }),
@@ -129,7 +166,7 @@ if (user) {
       h('div', { class: 'bf-table-zone' }, h('table', { class: 'bf-table' },
         h('thead', {}, h('tr', {}, ['Description', 'Qté', 'Prix', 'Rabais', 'Montant', '', ''].map((t) => h('th', {}, t)))),
         h('tbody', {}, lignes.length ? lignes.map(ligneEl) : h('tr', {}, h('td', { colspan: 7, class: 'bf-muet' }, 'Aucune ligne. Ajoute un produit ou un kit.'))))),
-      brouillon ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Ajouter'), rechercheCat, resultats, formLibre) : null,
+      brouillon ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Ajouter'), rechercheCat, resultats, formInst, formLibre) : null,
       h('section', { class: 'bf-totaux' },
         h('dl', { class: 'bf-dl' },
           h('dt', {}, 'Sous-total'), h('dd', { class: 'num' }, formatCents(dv.sous_total_cents)),

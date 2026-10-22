@@ -96,3 +96,8 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 @media (max-width: 640px) { .bf-nav { order: 3; width: 100%; justify-content: flex-start; } .bf-entete { flex-wrap: wrap; } }
 [hidden] { display: none !important; }
 .bf-form input:not([type="checkbox"]), .bf-form select { width: 100%; min-width: 0; }
+.bf-form--compact { padding: 12px 14px; gap: 8px; }
+.bf-interne { font-size: 12px; margin-top: 2px; }
+@media print { .bf-interne { display: none; } }
+.bf-form--compact .bf-filtres select, .bf-form--compact .bf-filtres input:not([type="checkbox"]) { width: auto; flex: 1 1 200px; }
+.bf-form--compact .bf-filtres .bf-court { flex: 0 1 9em; }

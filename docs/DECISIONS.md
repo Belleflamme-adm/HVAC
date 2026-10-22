@@ -186,3 +186,15 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Date** : 2026-10-22 | **Statut** : Acceptée
 - **Décision** : le vendeur demande l'approbation ligne par ligne, avec un motif obligatoire. Le rabais et le plafond sont recopiés de la ligne par la base, jamais du formulaire. Simon et Mike voient les demandes en attente en haut de la page Devis.
 - **Conséquences** : aucune notification push ni courriel pour l'instant (la cloche `notif-bell-unified` de Mike servira lors de la greffe).
+
+## ADR-035 | Prix de l'installation : coût du sous-traitant + marge
+- **Date** : 2026-10-22 | **Statut** : Acceptée (taux à fixer)
+- **Décision** (Simon) :
+  1. **Prix client = coût / (1 − marge)**, avec une marge sur le **prix de vente** et non une majoration du coût. Exemple : 1 000 $ à 30 % donne 1 428,57 $.
+  2. **Coût** : la grille du sous-traitant par type de travail (`tarifs_sous_traitants`), ou une **soumission** propre au job (coût + numéro de soumission obligatoires).
+  3. **Un taux de marge unique**, `marge_installation_bp`, modifiable par Simon ou Mike seulement. **Valeur provisoire : 30 %.**
+  4. **Aucun rabais** sur l'installation sans l'approbation de Simon ou Mike (plafond 0 %).
+- **Règles en base** : prix, coût (grille) et marge imposés par le trigger. La marge est figée sur la ligne à sa création : changer le taux ne touche pas les devis existants. Un tarif ne se modifie pas, on ajoute un tarif daté. Les techniciens ne voient pas la grille.
+- **Conséquences** : les kits ne contiennent plus de main-d'oeuvre ; l'installation est une ligne séparée. Le coût et la marge s'affichent dans l'écran du devis (usage interne), jamais sur le PDF du client.
+- **Risque** : une soumission saisie trop basse donne un prix trop bas. La vraie protection viendra en facturation : comparer la facture réelle du sous-traitant au coût du devis (rapport de marge réelle par projet).
+- **À confirmer** : le taux réel de la marge ; le prix quand l'installation est faite par **nos employés** (ADR-005) plutôt que par un sous-traitant.

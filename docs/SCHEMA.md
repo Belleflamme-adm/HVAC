@@ -121,4 +121,9 @@ Ces règles tiennent même si le front ou une fonction a un bogue :
 | Paramètre `validite_devis_jours` | 30 jours à partir de l'envoi |
 | Trigger de ligne | Prix imposé par le catalogue, plafond 0 % sur les kits |
 | Trigger de statut | Brouillon -> envoyé -> accepté ou refusé ; devis vide refusé ; devis expiré non acceptable |
+| `types_travaux` | Types de travail d'installation (murale, centrale, échangeur...) |
+| `tarifs_sous_traitants` | Grille datée des coûts par sous-traitant et type de travail. Non modifiable : on ajoute un tarif. Invisible aux techniciens. |
+| Paramètre `marge_installation_bp` | Marge sur le prix de vente (provisoire : 30 %) |
+| `devis_lignes.type_ligne` | `produit`, `kit`, `installation`, `libre` |
+| Ligne d'installation | Coût (grille ou soumission), marge figée, prix = coût / (1 − marge), plafond de rabais 0 % |
 

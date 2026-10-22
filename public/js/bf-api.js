@@ -10,5 +10,6 @@ export const api = {
   get: (fn, query) => appel(fn, { query: qs(query) }),
   post: (fn, body, query) => appel(fn, { method: 'POST', body, query: qs(query) }),
   patch: (fn, body, query) => appel(fn, { method: 'PATCH', body, query: qs(query) }),
+  put: (fn, body, query) => appel(fn, { method: 'PUT', body, query: qs(query) }),
   del: (fn, query) => appel(fn, { method: 'DELETE', query: qs(query) }),
 };

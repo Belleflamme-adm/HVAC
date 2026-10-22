@@ -50,24 +50,31 @@ insert into public.produits (id, sku, marque_id, nom, categorie, modele, ahri, e
   ('b1000000-0000-0000-0000-000000000005','NOR-FRN-60','a1000000-0000-0000-0000-000000000002','Fournaise électrique 20 kW','fournaise','NOR-F20',null,null,null,null,false,false, 132000, 240000,true),
   ('b1000000-0000-0000-0000-000000000006','VMX-ECH-150','a1000000-0000-0000-0000-000000000003','Échangeur d''air VRC 150 PCM','echangeur_air','VMX-150',null,null,null,null,false,false, 97500, 150000,true),
   ('b1000000-0000-0000-0000-000000000007','VMX-SUP-MUR','a1000000-0000-0000-0000-000000000003','Support mural et base antivibration','accessoire',null,null,null,null,null,false,false, 6500, 10000,true),
-  ('b1000000-0000-0000-0000-000000000008','VMX-LIN-25','a1000000-0000-0000-0000-000000000003','Ensemble de lignes frigorifiques 25 pi','conduit',null,null,null,null,null,false,false, 16250, 25000,true),
-  ('b1000000-0000-0000-0000-000000000009','MO-INST-MUR','a1000000-0000-0000-0000-000000000003','Main-d''oeuvre installation murale','main_oeuvre',null,null,null,null,null,false,false, 0, 85000,true);
+  ('b1000000-0000-0000-0000-000000000008','VMX-LIN-25','a1000000-0000-0000-0000-000000000003','Ensemble de lignes frigorifiques 25 pi','conduit',null,null,null,null,null,false,false, 16250, 25000,true);
 
-update public.produits set stocke = false where categorie = 'main_oeuvre';
+-- Installation : coût du sous-traitant + marge (le prix n'est pas dans le catalogue)
+insert into public.types_travaux (id, code, nom, description) values
+  ('a2000000-0000-0000-0000-000000000001','INST-MUR','Installation thermopompe murale','Unité murale, lignes jusqu''à 25 pi, support'),
+  ('a2000000-0000-0000-0000-000000000002','INST-CENT','Installation thermopompe centrale','Raccord à la fournaise existante, serpentin'),
+  ('a2000000-0000-0000-0000-000000000003','INST-ECH','Installation échangeur d''air','VRC, conduits et sorties');
+
+insert into public.tarifs_sous_traitants (fournisseur_id, type_travail_id, cout_cents, en_vigueur_du, notes) values
+  ('f0000000-0000-0000-0000-000000000003','a2000000-0000-0000-0000-000000000001', 65000, '2026-01-01', 'Grille FICTIVE'),
+  ('f0000000-0000-0000-0000-000000000003','a2000000-0000-0000-0000-000000000002',180000, '2026-01-01', 'Grille FICTIVE'),
+  ('f0000000-0000-0000-0000-000000000003','a2000000-0000-0000-0000-000000000003', 90000, '2026-01-01', 'Grille FICTIVE');
 
 insert into public.kits (id, code, nom, description, fictif) values
-  ('c1000000-0000-0000-0000-000000000001','KIT-TPM-12','Kit thermopompe murale 12 000 BTU installé','Unité, support, lignes 25 pi, installation',true),
-  ('c1000000-0000-0000-0000-000000000002','KIT-TPM-24','Kit thermopompe murale 24 000 BTU installé','Unité, support, lignes 25 pi, installation',true);
+  ('c1000000-0000-0000-0000-000000000001','KIT-TPM-12','Kit thermopompe murale 12 000 BTU','Unité, support, lignes 25 pi (installation en sus)',true),
+  ('c1000000-0000-0000-0000-000000000002','KIT-TPM-24','Kit thermopompe murale 24 000 BTU','Unité, support, lignes 25 pi (installation en sus)',true);
 
 insert into public.kit_items (kit_id, produit_id, quantite) values
   ('c1000000-0000-0000-0000-000000000001','b1000000-0000-0000-0000-000000000001',1),
   ('c1000000-0000-0000-0000-000000000001','b1000000-0000-0000-0000-000000000007',1),
   ('c1000000-0000-0000-0000-000000000001','b1000000-0000-0000-0000-000000000008',1),
-  ('c1000000-0000-0000-0000-000000000001','b1000000-0000-0000-0000-000000000009',1),
   ('c1000000-0000-0000-0000-000000000002','b1000000-0000-0000-0000-000000000003',1),
   ('c1000000-0000-0000-0000-000000000002','b1000000-0000-0000-0000-000000000007',1),
-  ('c1000000-0000-0000-0000-000000000002','b1000000-0000-0000-0000-000000000008',1),
-  ('c1000000-0000-0000-0000-000000000002','b1000000-0000-0000-0000-000000000009',1);
+  ('c1000000-0000-0000-0000-000000000002','b1000000-0000-0000-0000-000000000008',1);
+
 
 -- Clients (FICTIFS) ---------------------------------------------------------
 insert into public.clients (id, prenom, nom, courriel, telephone, succursale_code, vendeur_id, est_proprietaire, nom_preuve_propriete) values
@@ -103,8 +110,10 @@ insert into public.devis (id, succursale_code, client_id, site_id, vendeur_id, n
 insert into public.devis_lignes (devis_id, position, produit_id, description, quantite, prix_unitaire_cents, rabais_bp) values
   ('d3000000-0000-0000-0000-000000000001',1,'b1000000-0000-0000-0000-000000000003','Thermopompe murale 24 000 BTU climat froid',1,450000,500),
   ('d3000000-0000-0000-0000-000000000001',2,'b1000000-0000-0000-0000-000000000007','Support mural',1,10000,0),
-  ('d3000000-0000-0000-0000-000000000001',3,'b1000000-0000-0000-0000-000000000008','Lignes frigorifiques 25 pi',1,25000,0),
-  ('d3000000-0000-0000-0000-000000000001',4,'b1000000-0000-0000-0000-000000000009','Installation',1,85000,0);
+  ('d3000000-0000-0000-0000-000000000001',3,'b1000000-0000-0000-0000-000000000008','Lignes frigorifiques 25 pi',1,25000,0);
+insert into public.devis_lignes (devis_id, position, type_ligne, type_travail_id, sous_traitant_id, description, quantite, prix_unitaire_cents) values
+  ('d3000000-0000-0000-0000-000000000001',4,'installation','a2000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000003',
+   'Installation thermopompe murale',1,0);
 update public.devis set statut = 'envoye' where id = 'd3000000-0000-0000-0000-000000000001';
 update public.devis set statut = 'accepte' where id = 'd3000000-0000-0000-0000-000000000001';
 

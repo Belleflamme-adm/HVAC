@@ -9,6 +9,7 @@ export const TUILES_HVAC = [
   { cle: 'catalogue',   titre: 'Catalogue et kits',    href: '/catalogue',   etat: 'phase3' },
   { cle: 'asv',         titre: 'Appels de service',    href: '/asv',         etat: 'phase3' },
   { cle: 'subventions', titre: 'Subventions LogisVert', href: '/subventions', etat: 'phase3' },
+  { cle: 'installation', titre: 'Grille d\'installation', href: '/installation-grille', etat: 'actif' },
   { cle: 'factures',    titre: 'Facturation',          href: '/factures',    etat: 'phase3' },
   { cle: 'assistant',   titre: 'Assistant ventilation', href: '/assistant-ventilation', etat: 'phase3' },
 ];

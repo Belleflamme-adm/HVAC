@@ -14,5 +14,7 @@ begin
   if not exists (select 1 from public.projets where code_projet like 'ROV-001-%') then
     raise exception 'projet ROV-001 attendu'; end if;
   if exists (select 1 from public.produits where not fictif) then raise exception 'produit non marqué FICTIF'; end if;
+  if not exists (select 1 from public.devis_lignes where type_ligne = 'installation' and prix_unitaire_cents = 92857) then
+    raise exception 'installation de démo attendue : 650 $ + marge 30 %% = 928,57 $'; end if;
   raise notice 'ok | seed de démo cohérent';
 end $$;

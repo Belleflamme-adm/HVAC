@@ -29,5 +29,5 @@
 
 ## Fonctions livrées (Phase 3, Clients + Devis)
 
-`clients-list`, `clients-get`, `clients-create`, `clients-update`, `sites-save`, `catalogue-search`, `devis-list`, `devis-get`, `devis-create`, `devis-update`, `devis-lignes`, `devis-statut`, `devis-renouveler`, `approbations`.
+`clients-list`, `clients-get`, `clients-create`, `clients-update`, `sites-save`, `catalogue-search`, `devis-list`, `devis-get`, `devis-create`, `devis-update`, `devis-lignes`, `devis-statut`, `devis-renouveler`, `approbations`, `installation-options`, `installation-tarifs`.
 
