@@ -7,6 +7,8 @@ import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, dateFr, pct, param } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
 
+// ADR-062 : la demande de prix par lien (ADR-061) est en veille ; les cases servent à choisir les travaux confiés.
+const DEMANDES_PAR_LIEN = false;
 const UNITES = { forfait: 'forfait', tete: 'par tête', pied: 'par pied', sortie: 'par sortie', heure: 'par heure', unite: 'par unité', livre: 'par livre' };
 
 const user = await initPage();
@@ -27,7 +29,7 @@ if (user) {
   async function charger() {
     let o;
     try { o = await api.get('installation-options'); } catch (e) { remplir(zone, msg); message(msg, e.message); return; }
-    const { types, categories = [], sousTraitants, grille, margeBp } = o;
+    const { types, categories = [], sousTraitants, grille, margeBp, confies = [] } = o;
     if (!fournisseur && sousTraitants.length) fournisseur = sousTraitants[0].id;
     const prixClient = (c) => Math.round(c * 10000 / (10000 - margeBp));
     const tarif = (typeId) => grille.find((g) => g.fournisseur_id === fournisseur && g.type_travail_id === typeId);
@@ -49,11 +51,29 @@ if (user) {
     choixSt.addEventListener('change', () => { fournisseur = choixSt.value; choisis.clear(); lienCree = null; charger(); });
     const recherche = h('input', { id: 'recherche-travail', type: 'search', placeholder: 'Chercher un travail (ex. multizone, biénergie, EXTRA)…', value: filtre, 'aria-label': 'Chercher un travail' });
 
+    // Travaux confiés à ce sous-traitant (cases) : ce sont les lignes qu'il voit et prix dans son portail
+    const confiesSt = new Set(confies.filter((c) => c.fournisseur_id === fournisseur).map((c) => c.type_travail_id));
+    if (!DEMANDES_PAR_LIEN) { choisis.clear(); confiesSt.forEach((id) => choisis.add(id)); }
+    const boutonConfies = h('button', { class: 'bf-bouton', type: 'button', disabled: true }, 'Enregistrer les travaux confiés');
+    const majConfies = () => {
+      const ajouter = [...choisis].filter((id) => !confiesSt.has(id));
+      const retirer = [...confiesSt].filter((id) => !choisis.has(id));
+      boutonConfies.disabled = !(ajouter.length + retirer.length) || !fournisseur;
+      boutonConfies.textContent = ajouter.length + retirer.length ? `Enregistrer les travaux confiés (+${ajouter.length} | -${retirer.length})` : `${choisis.size} travaux confiés`;
+      return { ajouter, retirer };
+    };
+    boutonConfies.addEventListener('click', async () => {
+      const { ajouter, retirer } = majConfies();
+      try { await api.post('travaux-confies', { fournisseur_id: fournisseur, ajouter, retirer }); message(msg, 'Travaux confiés enregistrés : le sous-traitant les voit dans « Ma liste de prix ».', 'ok'); charger(); }
+      catch (e) { message(msg, e.message); }
+    });
+
     // Demande de prix : travaux cochés pour le sous-traitant choisi
     const boutonDemande = h('button', { class: 'bf-bouton', type: 'button', disabled: true }, 'Créer la demande de prix');
     const messageDemande = h('input', { id: 'message-demande', placeholder: 'Message au sous-traitant (optionnel)', 'aria-label': 'Message au sous-traitant' });
     const resultatLien = h('div');
     const majDemande = () => {
+      if (!DEMANDES_PAR_LIEN) { majConfies(); return; }
       boutonDemande.disabled = !choisis.size || !fournisseur;
       boutonDemande.textContent = choisis.size ? `Créer la demande de prix (${choisis.size} travaux)` : 'Coche les travaux à demander';
     };
@@ -86,7 +106,7 @@ if (user) {
 
     // Demandes déjà envoyées à ce sous-traitant
     let demandes = [];
-    try { demandes = peutDemander && fournisseur ? await api.get('prix-demandes', { fournisseur }) : []; } catch { demandes = []; }
+    try { demandes = DEMANDES_PAR_LIEN && peutDemander && fournisseur ? await api.get('prix-demandes', { fournisseur }) : []; } catch { demandes = []; }
     const STATUTS_DEMANDE = { envoyee: 'Envoyée, en attente', recue: 'Reçue : à approuver', approuvee: 'Approuvée', annulee: 'Annulée' };
     const listeDemandes = demandes.length ? h('div', { class: 'bf-liste' }, demandes.map((d) => h('a', { class: 'bf-ligne', href: `/demande-prix?id=${d.id}` },
       h('strong', {}, `Demande du ${dateFr(d.created_at)}`),
@@ -111,7 +131,7 @@ if (user) {
         champ.classList.toggle('bf-prix__champ--modifie', modifies.has(t.id));
         majBouton();
       });
-      const coche = h('input', { type: 'checkbox', class: 'bf-prix__coche', checked: choisis.has(t.id), 'aria-label': `Demander le prix : ${t.nom}` });
+      const coche = h('input', { type: 'checkbox', class: 'bf-prix__coche', checked: choisis.has(t.id), 'aria-label': `${DEMANDES_PAR_LIEN ? 'Demander le prix' : 'Confié à ce sous-traitant'} : ${t.nom}` });
       coche.addEventListener('change', () => { if (coche.checked) choisis.add(t.id); else choisis.delete(t.id); majDemande(); });
       const texte = h('div', { class: 'bf-prix__texte' },
         h('div', {}, h('strong', {}, t.code), ` | ${t.nom}`),
@@ -197,13 +217,15 @@ if (user) {
       admin ? h('section', { class: 'bf-carte-section' }, formMarge) : null,
       h('div', { class: 'bf-filtres' }, h('strong', {}, 'Sous-traitant'), choixSt,
         h('span', { class: 'bf-muet' }, `${remplis} prix sur ${types.length} travaux`)),
-      peutDemander ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Demandes de prix envoyées'), listeDemandes) : null,
+      DEMANDES_PAR_LIEN && peutDemander ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Demandes de prix envoyées'), listeDemandes) : null,
       resultatLien,
-      peutDemander ? h('p', { class: 'bf-muet' }, 'Coche les travaux à faire chiffrer par ce sous-traitant, puis « Créer la demande de prix » : tu obtiens un lien à lui envoyer. Tu peux aussi saisir un prix toi-même au bout de la ligne.') : null,
+      peutDemander && !DEMANDES_PAR_LIEN ? h('p', {}, 'Coche les travaux confiés à ce sous-traitant : il les voit dans son portail (« Ma liste de prix ») et y met ses prix lui-même. ',
+        fournisseur ? h('a', { href: `/mes-prix?fournisseur=${fournisseur}` }, 'Voir sa liste de prix et ses soumissions actives →') : null) : null,
       recherche,
       sections.map((s) => s.sec),
       (admin || peutDemander) ? h('div', { class: 'bf-prix-barre' },
-        peutDemander ? messageDemande : null, peutDemander ? boutonDemande : null,
+        peutDemander && DEMANDES_PAR_LIEN ? messageDemande : null, peutDemander && DEMANDES_PAR_LIEN ? boutonDemande : null,
+        peutDemander && !DEMANDES_PAR_LIEN ? boutonConfies : null,
         admin ? bouton : null) : null,
       admin ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Ajouter un travail à la liste'), formType) : null);
     appliquerFiltre();

@@ -528,3 +528,19 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Tout est journalisé : création, ouverture, signature avec l'adresse IP si elle est disponible, approbation.
 - **Envoi automatique par courriel** : plus tard, quand le fournisseur de courriel sera choisi (ADR-038). Pour l'instant, Simon envoie le lien lui-même.
 - **Valeur légale** : une signature dessinée avec nom, date et adresse IP est une preuve raisonnable de l'accord sur les prix. Son poids juridique au Québec est **à valider par un professionnel** (Loi concernant le cadre juridique des technologies de l'information).
+
+## ADR-062 | Liste de prix dans le portail du sous-traitant, engagements et renouvellement
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : oublier le lien HTML. La liste de prix vit dans le dossier de la compagnie de ventilation, et le sous-traitant la modifie quand il veut.
+- **ADR-061 en veille** : le parcours par lien signé reste dans le code (`DEMANDES_PAR_LIEN = false` dans la grille), rien n'est effacé.
+- **Travaux confiés** : dans la grille, les cases cochées veulent maintenant dire « travaux confiés à ce sous-traitant » (table `travaux_sous_traitants`, admin et planification). Les travaux déjà tarifés sont confiés d'office. Le sous-traitant ne voit et ne chiffre que ses travaux confiés.
+- **Portail « Ma liste de prix »** (`/mes-prix`) :
+  - Le sous-traitant modifie ses prix. Le nouveau prix est un tarif daté du jour et s'applique aux **nouveaux devis**. Deux changements le même jour remplacent le prix du jour ; l'historique des jours précédents reste intact.
+  - Avant d'enregistrer, un panneau montre les **soumissions actives touchées** : numéro, ville, vendeur, travail, prix à honorer et échéance. Après l'enregistrement, le même rapport s'affiche.
+  - Une section « Tes soumissions actives » liste tous ses engagements.
+  - Soumission active = envoyée et non expirée (à honorer jusqu'à l'échéance), ou acceptée dont le projet n'est pas terminé.
+  - Aucun nom de client n'est montré au sous-traitant (Loi 25) : numéro de devis et ville seulement.
+- **Avis** : le vendeur de chaque soumission touchée reçoit un avis (le devis garde l'ancien prix, le nouveau s'appliquera au renouvellement). Simon et Mike (Admin tout) reçoivent « Liste de prix modifiée ».
+- **Renouvellement** : le devis renouvelé recalcule déjà l'installation au prix en vigueur du sous-traitant attitré. Un déclencheur avise le vendeur de chaque écart avec le devis d'origine pour qu'il le renvoie au client ; la vue `devis_ecarts_prix_v` montre les écarts.
+- **Limite connue** : les devis vivent dans l'app de Mike (ADR-055). Le rapport des engagements s'appuie sur nos tables de devis (en veille) jusqu'à la greffe. Chez Mike, chaque ligne d'installation devra porter le type de travail et le sous-traitant pour que ce rapport fonctionne.
+- **À décider** : les prix changent tout de suite, sans approbation. Simon est avisé. Une approbation pourra être ajoutée si Simon le demande.

@@ -137,7 +137,7 @@ test('recentrage CRM : modules de Mike visibles mais en veille, à la fin', () =
 
 test('menu et tuiles selon le rôle', () => {
   const st = { sousTraitantId: F, role: 'Sous-traitant' };
-  assert.deepEqual(liensPour(st).map(([h]) => h), ['/', '/territoire', '/disponibilites']);
+  assert.deepEqual(liensPour(st).map(([h]) => h), ['/', '/territoire', '/mes-prix', '/disponibilites']);
   assert.ok(!tuilesPour(st).some((t) => ['clients', 'devis'].includes(t.cle)));
   assert.ok(liensPour({ role: 'Coordonnateur' }).some(([h]) => h === '/sous-traitants'));
   assert.ok(!liensPour({ role: 'Vendeur' }).some(([h]) => h === '/sous-traitants'));

@@ -45,6 +45,9 @@
     ],
     margeBp: 2500,
     demandes: [], dernierLien: null,
+    confies: [],
+    // Soumissions actives fictives (devis faits dans l'app de Mike) qui utilisent les prix de Clim Laurentides
+    engagements: [],
     municipalites: [],
   };
   const user = () => UTILISATEURS[etat.qui];
@@ -136,6 +139,20 @@
   creerLead({}, etat.maintenant - 6 * M);
   etat.clients.push({ id: 'c-1', type: 'residentiel', prenom: 'Julie', nom: 'Tremblay (FICTIF)', courriel: 'julie@exemple.invalid', telephone: '450-555-0110', succursale_code: 'RO', vendeur_id: 'e-marc', est_proprietaire: true, actif: true });
   etat.sites.push({ id: 's-1', client_id: 'c-1', adresse: '12 rue des Érables (FICTIF)', ville: 'Saint-Jérôme', province: 'QC', code_postal: 'J7Z 0A0' });
+
+  // Travaux confiés et soumissions actives (fictifs)
+  const tid = (code) => `t-${code}`;
+  for (const code of ['INST-MURAL-1T-12', 'INST-MURAL-1T-18', 'INST-MULTI-2T', 'INST-MULTI-3T', 'INST-TETE-MULTI', 'REMP-MURAL-1T', 'EXTRA-LIGNE-PI', 'EXTRA-POMPE-COND']) etat.confies.push({ fournisseur_id: 'f-clim', type_travail_id: tid(code) });
+  etat.tarifs.push({ fournisseur_id: 'f-clim', type_travail_id: tid('INST-MULTI-2T'), cout_cents: 210000, en_vigueur_du: '2026-03-01' },
+    { fournisseur_id: 'f-clim', type_travail_id: tid('EXTRA-LIGNE-PI'), cout_cents: 2500, en_vigueur_du: '2026-03-01' });
+  const jourPlus = (j) => new Date(etat.maintenant + j * 24 * H).toISOString().slice(0, 10);
+  const eng = (numero, ville, vendeur, code, travail, cout, jours, statut = 'envoye') => ({ fournisseur_id: 'f-clim', devis_id: `d-${numero}`, numero, statut, ville, vendeur_nom: vendeur,
+    type_travail_id: tid(code), code, travail, quantite: 1, cout_cents: cout, honorer_jusqu: statut === 'accepte' ? null : jourPlus(jours) });
+  etat.engagements.push(
+    eng('122431', 'Saint-Jérôme', 'Marc Vendeur (FICTIF)', 'INST-MURAL-1T-12', 'Murale 1 tête, jusqu\'à 12 000 BTU', 120000, 12),
+    eng('122458', 'Prévost', 'Sophie Vente (FICTIF)', 'INST-MURAL-1T-12', 'Murale 1 tête, jusqu\'à 12 000 BTU', 120000, 27),
+    eng('122470', 'Sainte-Adèle', 'Sophie Vente (FICTIF)', 'INST-MULTI-2T', 'Multizone 2 têtes', 210000, 19),
+    eng('122395', 'Mirabel', 'Marc Vendeur (FICTIF)', 'INST-MULTI-2T', 'Multizone 2 têtes', 210000, 0, 'accepte'));
 
   // ---------- Routeur des fonctions ----------
   class Erreur extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -271,6 +288,35 @@
         return { ok: true };
       },
     },
+    'mes-prix': {
+      GET: (q) => {
+        const f = user().sousTraitantId || q.fournisseur;
+        const ids = new Set(etat.confies.filter((c) => c.fournisseur_id === f).map((c) => c.type_travail_id));
+        return { categories: etat.categories,
+          travaux: etat.types.filter((t) => ids.has(t.id)).map((t) => { const p = etat.tarifs.find((x) => x.fournisseur_id === f && x.type_travail_id === t.id);
+            return { ...t, cout_cents: p?.cout_cents ?? null, en_vigueur_du: p?.en_vigueur_du ?? null }; }),
+          engagements: etat.engagements.filter((e) => e.fournisseur_id === f) };
+      },
+      POST: (_q, b) => {
+        const f = user().sousTraitantId || (['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role) ? b.fournisseur_id : null);
+        if (!f) throw new Erreur(403, 'Sous-traitant requis');
+        let n = 0; const types = [];
+        const jour = new Date(etat.maintenant).toISOString().slice(0, 10);
+        for (const x of b.prix || []) {
+          exiger(etat.confies.some((c) => c.fournisseur_id === f && c.type_travail_id === x.type_travail_id), 'Ce travail n\'est pas confié à ce sous-traitant');
+          exiger(Number.isInteger(x.cout_cents) && x.cout_cents > 0, 'Prix invalide');
+          etat.tarifs = etat.tarifs.filter((t) => !(t.fournisseur_id === f && t.type_travail_id === x.type_travail_id));
+          etat.tarifs.push({ fournisseur_id: f, type_travail_id: x.type_travail_id, cout_cents: x.cout_cents, en_vigueur_du: jour }); n++; types.push(x.type_travail_id);
+        }
+        return { changes: n, engagements: etat.engagements.filter((e) => e.fournisseur_id === f && types.includes(e.type_travail_id)) };
+      },
+    },
+    'travaux-confies': { POST: (_q, b) => {
+      if (!['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role)) throw new Erreur(403, 'Modification refusée');
+      etat.confies = etat.confies.filter((c) => !(c.fournisseur_id === b.fournisseur_id && (b.retirer || []).includes(c.type_travail_id)));
+      for (const t of b.ajouter || []) if (!etat.confies.some((c) => c.fournisseur_id === b.fournisseur_id && c.type_travail_id === t)) etat.confies.push({ fournisseur_id: b.fournisseur_id, type_travail_id: t });
+      return { ajoutes: (b.ajouter || []).length, retires: (b.retirer || []).length };
+    } },
     'types-travaux': { PATCH: (q, b) => {
       if (user().role !== 'Admin tout') throw new Erreur(403, 'Modification refusée (Simon ou Mike seulement)');
       const t = etat.types.find((x) => x.id === q.id);
@@ -334,7 +380,7 @@
         return { ok: true, signe_le: d.signe_le, valide_jusqu: d.valide_jusqu };
       },
     },
-    'installation-options': { GET: () => ({ types: etat.types, categories: etat.categories, sousTraitants: etat.fournisseurs, grille: etat.tarifs, margeBp: etat.margeBp }) },
+    'installation-options': { GET: () => ({ types: etat.types, categories: etat.categories, sousTraitants: etat.fournisseurs, confies: etat.confies, grille: etat.tarifs, margeBp: etat.margeBp }) },
     'installation-tarifs': {
       POST: (_q, b) => {
         if (user().role !== 'Admin tout') throw new Erreur(403, 'Modification refusée (Simon ou Mike seulement)');

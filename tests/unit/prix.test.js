@@ -52,3 +52,16 @@ test('prix : fonction publique sans session, jeton par en-tête', async () => {
   const methode = await prixPublic({ httpMethod: 'DELETE', headers: {} }, {}, { adapter });
   assert.equal(methode.statusCode, 405);
 });
+
+import { majMesPrix, confierTravaux } from '../../lib/modules/prix.js';
+
+test('portail : le sous-traitant envoie seulement des prix valides ; Belleflamme confie des travaux', async () => {
+  const repo = { appels: [], rpc: async (...a) => { repo.appels.push(['rpc', ...a]); return { changes: 1 }; },
+    upsert: async (...a) => { repo.appels.push(['upsert', ...a]); }, removeWhere: async (...a) => { repo.appels.push(['removeWhere', ...a]); } };
+  await majMesPrix(repo, null, { prix: [{ type_travail_id: ID, cout_cents: 125000 }] });
+  assert.deepEqual(repo.appels[0], ['rpc', 'hvac_maj_mes_prix', { p_prix: [{ type_travail_id: ID, cout_cents: 125000 }], p_fournisseur: null }]);
+  await assert.rejects(majMesPrix(repo, null, { prix: [{ type_travail_id: ID, cout_cents: -5 }] }), /Prix invalide/);
+  await assert.rejects(majMesPrix(repo, null, { prix: [] }), /Aucun prix/);
+  await confierTravaux(repo, { fournisseur_id: ID, ajouter: [ID], retirer: [] });
+  assert.equal(repo.appels.at(-1)[0], 'upsert');
+});

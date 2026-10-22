@@ -272,3 +272,4 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-prix--public { grid-template-columns: minmax(0, 1fr) auto; }
 @media (max-width: 560px) { .bf-prix--public { grid-template-columns: 1fr; } .bf-prix--public .bf-prix__droite { grid-column: 1; justify-items: start; } }
 .bf-attestation { font-weight: 600; align-items: flex-start; }
+.bf-avis-engagement { border-color: #e2a01b; border-left: 4px solid #e2a01b; }
