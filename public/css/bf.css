@@ -142,3 +142,21 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-cal-jour.bf-cal-disponible { background: #2e9d63; color: #fff; }
 .bf-cal-jour.bf-cal-indisponible { background: #c9483f; color: #fff; }
 .bf-carte-panneau .bf-bouton[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* CRM des leads (ADR-056) */
+.bf-retard { color: var(--bad); font-weight: 700; }
+.bf-ligne--retard { border-left: 4px solid var(--bad); }
+.bf-pastille--lead-nouveau { background: #fff3e4; color: #a24b05; }
+.bf-pastille--lead-pris_en_charge, .bf-pastille--lead-contacte { background: #e3ecff; color: #1d47c2; }
+.bf-pastille--lead-inspection_planifiee, .bf-pastille--lead-converti { background: #e3f5ec; color: #11734a; }
+.bf-pastille--lead-perdu { background: #eceff3; color: #4a5672; }
+.bf-pastille--cote-bon { background: #e3f5ec; color: #11734a; }
+.bf-pastille--cote-moyen { background: #fff3e4; color: #a24b05; }
+.bf-pastille--cote-a_ameliorer { background: #fdecec; color: #b4232c; }
+.bf-pastille--cote-non_evalue { background: #eceff3; color: #4a5672; }
+.bf-journal { list-style: none; padding: 0; display: grid; gap: 8px; }
+.bf-journal li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.bf-seuil { width: 6.5em; font: inherit; padding: 4px 6px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.bf-fiche { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0 0 8px; }
+.bf-fiche dt { color: var(--muted); font-size: 14px; }
+.bf-fiche dd { margin: 0; overflow-wrap: anywhere; }

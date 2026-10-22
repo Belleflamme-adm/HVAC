@@ -7,7 +7,7 @@ import { h } from './bf-dom.js?v=0.4.0';
 export function liensPour(user) {
   if (user?.sousTraitantId) return [['/', 'Accueil'], ['/territoire', 'Mon territoire'], ['/disponibilites', 'Mes disponibilités']];
   // Devis : en veille (app de Mike, ADR-055), retiré du menu ; la tuile grisée reste à l'accueil
-  const liens = [['/', 'Accueil'], ['/clients', 'Clients']];
+  const liens = [['/', 'Accueil'], ['/leads', 'Leads'], ['/clients', 'Clients']];
   if (['Admin tout', 'Direction', 'Coordonnateur'].includes(user?.role)) liens.push(['/sous-traitants', 'Sous-traitants']);
   return liens;
 }

@@ -3,7 +3,7 @@
 // Les modules qui existent déjà chez Mike (devis, facturation, BT/BC, projets...) sont « en veille » :
 // visibles, grisés, inactifs. Leur code est conservé ; pour en réactiver un, remettre etat: 'actif'.
 export const TUILES_HVAC = [
-  { cle: 'leads',       titre: 'Leads (CRM)',          href: '/leads',       etat: 'construction' },
+  { cle: 'leads',       titre: 'Leads (CRM)',          href: '/leads',       etat: 'actif' },
   { cle: 'clients',     titre: 'Clients',              href: '/clients',     etat: 'actif' },
   { cle: 'devis',       titre: 'Devis',                href: '/devis',       etat: 'veille' },
   { cle: 'inspections', titre: 'Pré-installation',     href: '/inspections', etat: 'veille' },
