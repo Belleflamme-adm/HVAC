@@ -1,6 +1,6 @@
 // Carte des municipalités en SVG (aucune tuile externe, aucune librairie : rien ne sort vers un tiers).
-// Données : public/data/municipalites.geojson, généré par scripts/municipalites/convertir.mjs
-// (« Découpages administratifs », MRNF, CC-BY 4.0). Propriétés : code, nom, mrc, region.
+// Données : public/data/municipalites.geojson (Québec, scripts/municipalites/convertir.mjs, MRNF, CC-BY 4.0)
+// et public/data/municipalites-on.geojson (Est ontarien, scripts/municipalites/ontario.mjs). Propriétés : code, nom, mrc, region.
 // Repères : public/data/villes-reperes.json (grandes villes toujours nommées, tenu à la main).
 
 const NS = 'http://www.w3.org/2000/svg';
@@ -124,10 +124,12 @@ export function choisirEtiquettes(candidats, visible, k) {
   return retenues;
 }
 
-export async function chargerMunicipalites(url = '/data/municipalites.geojson?v=0.4.0') {
-  const r = await fetch(url);
-  if (!r.ok) return null;
-  return r.json();
+// Québec (MRNF) + Est de l'Ontario (MRNF Ontario), fusionnés en une seule collection
+export async function chargerMunicipalites(urls = ['/data/municipalites.geojson?v=0.4.0', '/data/municipalites-on.geojson?v=0.4.0']) {
+  const reponses = await Promise.all(urls.map((u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
+  const valides = reponses.filter(Boolean);
+  if (!valides.length) return null;
+  return { type: 'FeatureCollection', features: valides.flatMap((g) => g.features) };
 }
 
 export async function chargerReperes(url = '/data/villes-reperes.json?v=0.4.0') {

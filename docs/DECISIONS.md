@@ -380,3 +380,21 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   1. On ne fait aucune optimisation de poids pour le téléphone : le fichier des limites (3,2 Mo) est acceptable pour un usage de bureau aussi rare.
   2. L'usage quotidien passe par le devis. Le supplément de la ville du chantier est appliqué automatiquement à la ligne d'installation, puis figé (ADR-035 et ADR-038). Une modification du territoire ne change donc pas les devis déjà faits.
   3. Chaque modification est déjà journalisée (`trg_audit`).
+
+## ADR-053 | Est de l'Ontario dans la carte du territoire (150 km d'Ottawa)
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : couvrir l'Est ontarien, dans un rayon de 150 km autour d'Ottawa, avec un sous-traitant ontarien qui détient ses propres cartes TSSA et licences.
+- **Source** : « Municipal Boundary - Lower and Single Tier », Land Information Ontario (service public `ws.lioservices.lrc.gov.on.ca`), sous la Licence du gouvernement ouvert de l'Ontario. Les noms sont pris en français quand le service les fournit. Le fichier de Statistique Canada a été écarté parce que son serveur bloque les téléchargements automatisés.
+- **Traitement** (`scripts/municipalites/ontario.mjs`) :
+  - Le script interroge le service par lots d'identifiants, fusionne les morceaux par `MUNID` et simplifie à 4 %.
+  - Il garde les municipalités dont une partie est à moins de 150 km de la colline du Parlement : 66 municipalités, 0,05 Mo.
+- **Modèle** :
+  - Ajout de la colonne `municipalites.province` (`QC` ou `ON`).
+  - Les codes ontariens sont préfixés `ON-`, ce qui rend toute collision avec un code québécois impossible ; une contrainte de la base le garantit.
+  - Les comtés (Prescott et Russell, Renfrew...) tiennent lieu de MRC, et la région s'appelle « Est de l'Ontario ».
+- **Carte** : elle charge les deux fichiers. La vue de départ va de Pembroke à Québec. 13 villes ontariennes sont ajoutées aux repères (Ottawa, Cornwall, Hawkesbury...).
+- **Hors carte** (décidé par Simon, à faire) :
+  - TVH 13 % par une case à cocher sur le devis.
+  - Exemption autochtone par une case aussi, comme dans l'app de Mike.
+  - LogisVert pour le Québec seulement, et les programmes ontariens s'il y en a.
+  - App bilingue français-anglais pour les sous-traitants.

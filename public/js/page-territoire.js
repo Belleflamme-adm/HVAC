@@ -8,8 +8,8 @@ import { creerCarte, chargerMunicipalites, chargerReperes } from './bf-carte.js?
 
 const COULEURS = { accepte: '#2e9d63', supplement: '#e2a01b', refuse: '#c9483f', aucun: '#d9dee6',
   principal: '#1d47c2', sans_principal: '#e2a01b' };
-// Sud du Québec habité, de l'Outaouais à Québec et à l'Estrie : là où Belleflamme installe.
-const SUD_QUEBEC = { ouest: -77.0, sud: 45.0, est: -70.6, nord: 47.4 };
+// Sud du Québec habité et Est ontarien, de Pembroke à Québec et à l'Estrie : là où Belleflamme installe.
+const VUE_DEPART = { ouest: -77.7, sud: 44.2, est: -70.6, nord: 47.4 };
 const LIBELLES = { accepte: 'Accepte', supplement: 'Supplément', refuse: 'Refuse', aucun: 'Non indiqué' };
 
 const user = await initPage();
@@ -46,7 +46,7 @@ if (user) {
       return `${f.properties.nom}${lieu ? ` (${lieu})` : ''} | ${LIBELLES[t?.statut || 'aucun']}${t?.supplement_cents ? ` (+${formatCents(t.supplement_cents)})` : ''}`;
     };
     const carte = creerCarte(carteZone, geo, {
-      couleur, titre, reperes, vueDepart: SUD_QUEBEC,
+      couleur, titre, reperes, vueDepart: VUE_DEPART,
       onClic: (f) => {
         const code = f.properties.code;
         if (mode === 'principaux') { selection.clear(); selection.add(code); }
@@ -130,7 +130,7 @@ if (user) {
     });
 
     const outils = h('div', { class: 'bf-filtres' }, recherche, liste,
-      h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => carte.vueDepart() }, 'Sud du Québec'),
+      h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => carte.vueDepart() }, 'Sud du Québec et Est ontarien'),
       h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => carte.toutVoir() }, 'Tout le Québec'));
     if (planif && !estSt) {
       const sts = await api.get('sous-traitants').catch(() => []);
@@ -150,7 +150,7 @@ if (user) {
         : 'Vert : accepte | Orange : avec supplément | Rouge : refuse. En mode « principaux », bleu = principal désigné.'),
       msg, outils, legende,
       h('div', { class: 'bf-carte-mise' }, carteZone, panneau),
-      h('p', { class: 'bf-muet bf-attribution' }, 'Limites municipales : Découpages administratifs, MRNF, Données Québec (CC-BY 4.0). Sans valeur légale.'));
+      h('p', { class: 'bf-muet bf-attribution' }, 'Limites municipales : Découpages administratifs, MRNF, Données Québec (CC-BY 4.0) ; Municipal Boundary, ministère des Richesses naturelles de l\'Ontario (Licence du gouvernement ouvert de l\'Ontario). Sans valeur légale.'));
     charger();
   }
 }

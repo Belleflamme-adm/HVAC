@@ -111,9 +111,11 @@ async function principal() {
 
   // 3. Migration SQL des municipalités
   // Toujours APRÈS la dernière migration (la table municipalites doit déjà exister).
-  const derniere = readdirSync('supabase/migrations').map((f) => f.slice(0, 14)).filter((x) => /^\d{14}$/.test(x)).sort().at(-1) || '0';
-  const horodatage = String(BigInt(derniere) + 1n).padStart(14, '0');
-  const fichier = `supabase/migrations/${horodatage}_municipalites_donnees.sql`;
+  // On réécrit la migration existante si elle est là ; sinon, nouvelle migration après la dernière
+  const fichiers = readdirSync('supabase/migrations');
+  const existante = fichiers.find((f) => f.endsWith('_municipalites_donnees.sql'));
+  const derniere = fichiers.map((f) => f.slice(0, 14)).filter((x) => /^\d{14}$/.test(x)).sort().at(-1) || '0';
+  const fichier = `supabase/migrations/${existante || `${String(BigInt(derniere) + 1n).padStart(14, '0')}_municipalites_donnees.sql`}`;
   writeFileSync(fichier, genererSql(geo.features, champs));
   const taille = (readFileSync('public/data/municipalites.geojson').length / 1e6).toFixed(2);
   console.log(`OK : ${leger.features.length} municipalités | public/data/municipalites.geojson (${taille} Mo) | ${fichier}`);
