@@ -206,3 +206,21 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   2. **Aucun employé n'installe** : toute installation est faite par un sous-traitant. Le sous-traitant est obligatoire sur chaque ligne d'installation, même pour une soumission (contrainte en base).
 - **Conséquences** : si Belleflamme engage un jour des installateurs, on créera une liste de prix interne (nouveau type de source de coût). Rien n'est à prévoir d'ici là.
 - **Interprétation à confirmer** : « 25 % par-dessus » est lu comme une **marge de 25 % du prix de vente** (choix de Simon dans l'ADR-035). Une majoration de 25 % du coût donnerait plutôt 1 250 $.
+
+---
+
+# Phase 3 | Processus d'installation (méthode Belleflamme), en cours de définition
+
+## ADR-037 | Flux devis -> commande -> installation par sous-traitant
+- **Date** : 2026-10-22 | **Statut** : Acceptée (détails à préciser)
+- **Flux décrit par Simon** :
+  1. Visite pré-installation avec le formulaire existant de Mike, puis devis.
+  2. Au devis, on attitre le sous-traitant du secteur : ses prix de grille (plus la marge) donnent le prix de l'installation.
+  3. Le client accepte : le devis devient une commande, avec un projet, un **bon de travail** pour le sous-traitant et un **bon de commande** pour le matériel.
+  4. Le sous-traitant inscrit **lui-même** ses disponibilités dans l'app. Belleflamme place la job dans une journée disponible, et le sous-traitant confirme.
+  5. Le sous-traitant reçoit une alerte : date, client, produits.
+  6. Matériel : ramassé chez le fournisseur (« Jayco », nom à confirmer) s'il est disponible, sinon à l'entrepôt de Saint-Jérôme.
+- **Décisions** :
+  - **Accès des sous-traitants** : un compte limité à l'app (rôle « Sous-traitant »), qui voit seulement ses jobs, ses disponibilités et ses produits. Une entente de confidentialité est requise (Loi 25), puisqu'il voit le nom, l'adresse et le téléphone du client. À valider par un professionnel.
+  - **Secteurs** : chaque sous-traitant choisit, par ville du Québec, entre **accepte**, **accepte avec supplément** ou **refuse**.
+  - **Planification** permise une fois le **dépôt payé** ou le **financement approuvé** (Financeit). Le solde reste dû 72 h avant l'installation.
