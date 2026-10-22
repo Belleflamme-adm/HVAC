@@ -105,12 +105,17 @@ if (user) {
       remplir(panneau,
         h('h2', {}, selection.size ? `${selection.size} municipalité(s) sélectionnée(s)` : 'Clique les municipalités'),
         selection.size ? h('p', { class: 'bf-muet' }, noms.slice(0, 8).join(', ') + (noms.length > 8 ? '…' : '')) : null,
+        selection.size ? h('p', { class: 'bf-muet' }, 'Astuce : clique de nouveau sur une ville pour la retirer de la sélection.') : null,
         h('div', { class: 'bf-actions' },
           h('button', { class: 'bf-bouton', type: 'button', disabled: !selection.size, onclick: appliquer('accepte') }, 'J\'accepte'),
           h('button', { class: 'bf-bouton', type: 'button', disabled: !selection.size, onclick: appliquer('supplement') }, 'Avec supplément'),
           h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', disabled: !selection.size, onclick: appliquer('refuse') }, 'Je refuse'),
           h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', disabled: !selection.size, onclick: appliquer('aucun') }, 'Effacer'),
-          h('button', { class: 'bf-lien', type: 'button', disabled: !selection.size, onclick: () => { selection.clear(); carte.redessiner(selection); rendrePanneau(); } }, 'Désélectionner')));
+          h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', disabled: !selection.size, onclick: () => {
+            const n = selection.size;
+            selection.clear(); carte.redessiner(selection); rendrePanneau();
+            message(msg, `${n} municipalité(s) désélectionnée(s).`, 'ok');
+          } }, 'Tout désélectionner')));
     }
 
     // Recherche d'une municipalité
