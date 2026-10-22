@@ -1,0 +1,13 @@
+{
+  "name": "Belleflamme HVAC",
+  "short_name": "HVAC",
+  "lang": "fr-CA",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f1a33",
+  "theme_color": "#0f1a33",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

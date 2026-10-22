@@ -1,0 +1,16 @@
+{
+  "name": "belleflamme-hvac",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Division Ventilation/Climatisation (HVAC) du Groupe Belleflamme, app autonome greffable dans l'app de Mike.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test \"tests/unit/**/*.test.js\"",
+    "test:sql": "bash tests/sql/run.sh",
+    "dev": "npx --yes netlify-cli@27.14.1 dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3"
+  }
+}

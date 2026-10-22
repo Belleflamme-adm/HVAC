@@ -1,6 +1,6 @@
 # Migration | Greffer la division HVAC dans l'app de Mike
 
-> Document vivant. Mis à jour à chaque livraison. Statut : **Phase 1, schéma proposé, rien n'est déployé.**
+> Document vivant. Mis à jour à chaque livraison. Statut : **Phase 2, squelette prêt, rien n'est déployé.**
 
 ## Ordre prévu (à valider avec Mike le moment venu)
 
@@ -10,7 +10,7 @@
 4. **Compteurs** : aligner `compteurs` sur les derniers numéros réels de Mike **avant** la première facture. Jamais de décrément.
 5. **Données** : les données de démo (`fictif = true`) ne migrent pas.
 6. **Synchro Monday** : activer `MONDAY_ENABLED` / `FRIDAY_SYNC_ENABLED` et les webhooks seulement une fois le mapping colonne par colonne complété (`docs/MAPPING.md`).
-7. **Variables** : à lister en Phase 2. Aucune clé dans le repo.
+7. **Variables** (voir `.env.example`) : `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (tâches système seulement), `DATA_ADAPTER`, `MONDAY_ENABLED`, `FRIDAY_SYNC_ENABLED`, `MONDAY_WEBHOOK_SECRET`, `APP_VERSION`. Aucune clé dans le repo.
 8. **DNS / URL** : à définir (sous-chemin de `belleflammemain` ou app séparée dans son hub).
 
 ## Risques connus
@@ -21,4 +21,6 @@
 | Formats de numéros différents | Configurables (`formats_numerotation`), sans migration |
 | Libellés de rôles différents | Contrainte `check` sur `employes.role` à ajuster |
 | Région Supabase différente | Dump/restore (ADR-014) |
-| Auth : Mike utilise peut-être son propre token, pas Supabase Auth | Le contrat `session-*` reste identique côté front, on adapte seulement les fonctions |
+| Auth : Mike utilise peut-être son propre token, pas Supabase Auth | Le contrat `session-*` reste identique côté front, on adapte seulement `lib/session.js` et l'adapter |
+| Collision de noms de fonctions (`session-login`, `health`...) avec les ~430 fonctions de Mike | Ne pas copier les `session-*` : utiliser celles de Mike, qui ont le même contrat. Renommer `health` en `hvac-health`. |
+| Composants `bf-*` homonymes chez Mike (`bf-tuiles`, `bf-bandeau`) | Les nôtres sont minimaux : utiliser ceux de Mike et ne greffer que nos tuiles |

@@ -114,3 +114,36 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Date** : 2026-10-22 | **Statut** : À confirmer
 - **Décision** : formats provisoires dans `formats_numerotation` : `D-AAAA-00001`, `F-AAAA-00001`, `NC-AAAA-00001`, `BT-`, `ASV-`, `CE-`. Projet : `ROV-001-26`, qui ne respecte pas encore le format `XXX-XXX-XXX` de Mike.
 - **Conséquences** : on passera aux vrais formats en modifiant la configuration, sans migration de données. Il faut 3 vrais exemples de chaque type.
+
+---
+
+# Phase 2 | Squelette
+
+## ADR-023 | Jeton de session en cookie HttpOnly
+- **Date** : 2026-10-23 | **Statut** : Proposée
+- **Contexte** : le contrat de Mike retourne `token` + `user`, mais la règle interdit de mettre des identifiants dans `localStorage` ou `sessionStorage`.
+- **Décision** : `session-login` pose deux cookies HttpOnly, Secure, SameSite=Lax : `bf_session` (jeton d'accès) et `bf_refresh` (limité à `/.netlify/functions`). Le corps renvoie quand même `{ token, user }` pour respecter le contrat. Le front garde le jeton en mémoire seulement. `session-me` rafraîchit la session quand le jeton est expiré.
+- **Conséquences** : le front est greffable tel quel. Si Mike stocke son jeton autrement, on adapte seulement `lib/session.js`.
+
+## ADR-024 | Format des Netlify Functions
+- **Date** : 2026-10-23 | **Statut** : À confirmer
+- **Décision** : modules ESM `.mjs` qui exportent `handler(event, context)` (format classique, réponse `{ statusCode, headers, body }`). Les dépendances sont injectables en 3e argument, pour les tests.
+- **Conséquences** : le format exact des fonctions de Mike (v1 `handler` ou v2 `Response`) est inconnu. La conversion serait mécanique.
+
+## ADR-025 | Impersonation
+- **Date** : 2026-10-23 | **Statut** : Proposée
+- **Décision** : `session-me?impersonate=<employe_id>`, réservé à « Admin tout » et journalisé dans `journal_audit`. L'interface prend l'identité de la cible (`masterImpersonation` renseigné), mais les données restent lues avec le JWT de l'admin.
+- **Conséquences** : c'est une vue « comme si », pas un vrai changement de droits. Un vrai test de la vue d'un vendeur demande un compte de test.
+
+## ADR-026 | Liaison des comptes
+- **Date** : 2026-10-23 | **Statut** : Proposée
+- **Décision** : un admin crée la fiche `employes` (courriel réel), puis invite le courriel dans Supabase Auth. Au premier login, `hvac_session()` lie le compte à la fiche par courriel. Aucune clé `service_role` n'est nécessaire.
+
+## ADR-027 | Données de démo
+- **Date** : 2026-10-23 | **Statut** : Acceptée
+- **Décision** : `supabase/seed.sql` contient 10 employés (Simon et Mike en « Admin tout », les autres FICTIFS), 6 clients, des marques et des produits **inventés** (Boréal Climat, Nordika, Ventimax) pour qu'aucun prix ne soit confondu avec un vrai prix fournisseur, 2 kits, 2 devis (un accepté, un en attente d'approbation), un projet, un BT, une facture de dépôt payée et un contrat d'entretien. Courriels en `@exemple.invalid`, à remplacer avant d'inviter les gens.
+- **Conséquences** : les devis et la facture de démo consomment de vrais numéros de séquence (exigence « numérotés dès le départ »).
+
+## ADR-028 | CI
+- **Date** : 2026-10-23 | **Statut** : Proposée
+- **Décision** : GitHub Actions lance `npm test` (36 tests) et `tests/sql/run.sh` sur un service `postgres:16` (schéma, session, seed). Aucun secret n'est nécessaire.

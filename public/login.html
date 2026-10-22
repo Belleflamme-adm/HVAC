@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Connexion | HVAC Belleflamme</title>
+  <meta name="theme-color" content="#0f1a33">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/bf.css?v=0.2.0">
+  <script src="/js/bf-theme-init.js?v=0.2.0"></script>
+  <script type="module" src="/js/login.js?v=0.2.0"></script>
+</head>
+<body class="bf-centre">
+  <main class="bf-carte">
+    <h1>Division HVAC</h1>
+    <p class="bf-note">Groupe Belleflamme</p>
+    <form id="form-login" autocomplete="on">
+      <label>Courriel <input name="email" type="email" required autocomplete="username"></label>
+      <label>Mot de passe <input name="password" type="password" required autocomplete="current-password"></label>
+      <button class="bf-bouton" type="submit">Se connecter</button>
+      <p id="message" class="bf-erreur" role="alert"></p>
+    </form>
+  </main>
+</body>
+</html>

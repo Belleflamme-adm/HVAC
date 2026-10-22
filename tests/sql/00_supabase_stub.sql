@@ -23,3 +23,7 @@ grant usage on schema public to anon, authenticated, service_role;
 -- Supabase accorde par défaut tous les droits sur public à ces rôles ; la RLS fait le tri.
 alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+
+create or replace function auth.jwt() returns jsonb language sql stable as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
+$$;
