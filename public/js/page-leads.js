@@ -13,7 +13,8 @@ if (user) {
   const board = voitBoard(user);
   let vue = param('vue') || (board ? 'board' : 'mes');
 
-  const choixVue = h('select', { 'aria-label': 'Vue' },
+  // Le vendeur n'a qu'une vue (ses leads) : pas de menu à choix pour lui
+  const choixVue = h('select', { 'aria-label': 'Vue', hidden: !board },
     h('option', { value: 'mes', selected: vue === 'mes' }, 'Mes leads'),
     board ? h('option', { value: 'board', selected: vue === 'board' }, 'Board principal (tous les leads)') : null);
   const choixStatut = h('select', { 'aria-label': 'Statut' },
@@ -82,6 +83,6 @@ if (user) {
         board ? h('a', { class: 'bf-bouton bf-bouton--discret', href: '/crm-rapidite' }, 'Rapidité des vendeurs') : null,
         h('button', { class: 'bf-bouton', type: 'button', onclick: () => { form.hidden = false; } }, 'Nouveau lead'))),
     h('p', { class: 'bf-muet' }, 'Les leads de Google et Facebook entrent dans Monday, puis arrivent ici (branchement Monday à activer).'),
-    h('div', { class: 'bf-filtres' }, choixVue, choixStatut, choixVendeur), msg, form, liste);
+    h('div', { class: 'bf-filtres' }, board ? null : h('strong', {}, 'Mes leads'), choixVue, choixStatut, choixVendeur), msg, form, liste);
   charger();
 }

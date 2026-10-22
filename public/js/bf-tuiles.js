@@ -54,7 +54,7 @@ export function accueilPour(user) {
   const veille = TUILES_HVAC.filter((t) => t.etat === 'veille');
   const ventes = [TUILES_HVAC[0], TUILES_HVAC[1], ...(voitBoard(user) ? [RAPIDITE] : [])];
   const liste = [
-    { cle: 'ventes', titre: 'Ventes HVAC', icone: '📈', desc: 'Leads · clients · rapidité des vendeurs', groupe: ventes },
+    { cle: 'ventes', titre: 'Ventes HVAC', icone: '📈', desc: voitBoard(user) ? 'Leads · clients · rapidité des vendeurs' : 'Mes leads · clients', groupe: ventes },
   ];
   if (estPlanif(user)) liste.push({ cle: 'operations', titre: 'Sous-traitants', icone: '🛠️', desc: 'Sous-traitants · accès · territoires · listes de prix · disponibilités', groupe: TUILES_PLANIFICATION });
   liste.push({ cle: 'veille', titre: 'Dans l\'app de Mike', icone: '💤', desc: 'Devis, pré-installation, facturation, projets... : en veille ici, on utilise ceux de Mike', groupe: veille, veille: true });
