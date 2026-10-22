@@ -41,7 +41,7 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 ## ADR-008 | Subvention LogisVert
 - **Date** : 2026-10-22 | **Statut** : Acceptée
 - **Décision** : dans la majorité des cas, c'est le client qui dépose la demande, à l'aide d'un document HTML créé par Simon. Pour les clients qui ont besoin d'aide (souvent des clients âgés), le représentant des ventes les accompagne.
-- **Conséquences** : l'app doit générer ou alimenter le document HTML de Simon (à obtenir) avec la facture et les numéros de série. Il faut un indicateur « accompagnement par le représentant » et un suivi du statut de la demande.
+- **Conséquences** : le guide client de Simon est copié dans `docs/reference/logisvert-guide-client.html` (source : https://claude.ai/artifact/WRNh66LK6or389XJa166Bg, liste HQ du 16-10-2026). La facture HVAC doit **obligatoirement** contenir : numéro et date de facture, date d'installation, nom du client identique à la preuve de propriété, adresse d'installation, TPS/TVQ et RBQ de Belleflamme, description, **numéro AHRI ou ENERGY STAR**, modèle et capacité (BTU), coût et mention « Payé ». L'app bloque l'envoi d'une facture HVAC finale s'il manque un de ces champs. On suit aussi la photo de la plaque de l'appareil extérieur (modèle + S/N), l'échéance de 9 mois après l'installation (avec alerte), un indicateur « accompagnement par le représentant » et le statut de la demande. Les règles du programme changent : on les revalide à chaque mise à jour de la liste d'Hydro-Québec.
 
 ## ADR-009 | Facturation et financement
 - **Date** : 2026-10-22 | **Statut** : À confirmer (méthode de Mike)
@@ -67,9 +67,9 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Décision** : après le squelette, on livre **Clients + Devis** en premier (numérotation, taxes, rabais, dépôt de 40 %).
 
 ## ADR-014 | Région Supabase
-- **Date** : 2026-10-22 | **Statut** : À confirmer
-- **Décision** : même région que le projet Supabase de Mike, pour faciliter la migration.
-- **Conséquences** : je n'ai pas accès à l'infra de Mike, c'est donc Simon qui doit me donner la région. Pour la Loi 25, si la région est hors Canada, il faut une évaluation des facteurs relatifs à la vie privée pour la communication hors Québec (à valider par un professionnel).
+- **Date** : 2026-10-22 | **Statut** : Acceptée (hypothèse sur la région de Mike non vérifiée)
+- **Décision** : Canada, `ca-central-1`. Simon croit que la région de Mike est aussi au Canada.
+- **Conséquences** : on vérifie la disponibilité de la région au moment de créer le projet (Phase 2). Si la région de Mike s'avère différente, la migration passera par un dump/restore, sans impact sur le code.
 
 ## ADR-015 | Certifications des techniciens
 - **Date** : 2026-10-22 | **Statut** : Acceptée
@@ -83,5 +83,5 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 ## ADR-017 | Source du catalogue fictif
 - **Date** : 2026-10-22 | **Statut** : À confirmer
 - **Contexte** : Simon a demandé de prendre les produits et les kits dans Monday et dans l'app de Mike.
-- **Décision** : refusé tel quel. Ça violerait les garde-fous 2 et 4 (aucune lecture de Monday ni de l'app de Mike). Alternative : Simon exporte lui-même les boards Catalogue et Kits (CSV ou Excel) et me fournit le fichier.
-- **Conséquences** : en attendant, le seed utilise des produits plausibles marqués FICTIF.
+- **Décision** : en suspens. Simon a refusé de faire l'export lui-même et demande une lecture directe. Ça contredit les garde-fous 2 et 4 de `CLAUDE.md`. Il faut une levée écrite et limitée de ces garde-fous (lecture seule, boards Catalogue et Kits seulement), et un accès technique qui fonctionne : le connecteur Monday ne se connecte pas dans cette session, et l'app de Mike exige une session que Claude n'a pas.
+- **Conséquences** : en attendant, le seed utilise des produits plausibles marqués FICTIF. Les kits de thermopompes existent déjà chez Mike : on les reprendra dès que l'accès sera réglé.
