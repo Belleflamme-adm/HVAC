@@ -12,7 +12,9 @@ function fichiers(dir, ext) {
 }
 
 const HTML = fichiers('public', ['.html']);
-const JS = fichiers('public', ['.js']);
+// Librairies tierces figées (public/js/vendor/, version dans le nom) : hors des règles de style de notre code
+const JS = fichiers('public', ['.js']).filter((f) => !f.includes('/vendor/'));
+const VENDOR = fichiers('public', ['.js']).filter((f) => f.includes('/vendor/'));
 
 test('pretty URLs : aucun lien interne en .html', () => {
   for (const f of [...HTML, ...JS]) {
@@ -42,6 +44,13 @@ test('aucune clé service_role ni secret dans le front', () => {
   for (const f of [...HTML, ...JS]) {
     const src = readFileSync(f, 'utf8');
     assert.doesNotMatch(src, /service_role|SERVICE_ROLE|eyJhbGci/, f);
+  }
+});
+
+test('librairies tierces : version exacte dans le nom du fichier, aucun secret', () => {
+  for (const f of VENDOR) {
+    assert.match(f, /-\d+\.\d+\.\d+[.-]/, f);
+    assert.doesNotMatch(readFileSync(f, 'utf8'), /service_role|SERVICE_ROLE|eyJhbGci/, f);
   }
 });
 

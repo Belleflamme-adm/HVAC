@@ -53,7 +53,7 @@ test('prix : fonction publique sans session, jeton par en-tête', async () => {
   assert.equal(methode.statusCode, 405);
 });
 
-import { majMesPrix, confierTravaux } from '../../lib/modules/prix.js';
+import { majMesPrix, confierTravaux, frequence, lireRegistre } from '../../lib/modules/prix.js';
 
 test('portail : le sous-traitant envoie seulement des prix valides ; Belleflamme confie des travaux', async () => {
   const repo = { appels: [], rpc: async (...a) => { repo.appels.push(['rpc', ...a]); return { changes: 1 }; },
@@ -63,5 +63,24 @@ test('portail : le sous-traitant envoie seulement des prix valides ; Belleflamme
   await assert.rejects(majMesPrix(repo, null, { prix: [{ type_travail_id: ID, cout_cents: -5 }] }), /Prix invalide/);
   await assert.rejects(majMesPrix(repo, null, { prix: [] }), /Aucun prix/);
   await confierTravaux(repo, { fournisseur_id: ID, ajouter: [ID], retirer: [] });
-  assert.equal(repo.appels.at(-1)[0], 'upsert');
+  assert.deepEqual(repo.appels.at(-1), ['rpc', 'hvac_confier_travaux', { p_fournisseur: ID, p_ajouter: [ID], p_retirer: [] }]);
+  await assert.rejects(confierTravaux(repo, { fournisseur_id: ID }), /Aucun travail/);
+});
+
+test('registre : alerte quand le sous-traitant modifie sa liste 3 fois ou plus en 30 jours', () => {
+  const maintenant = new Date('2026-10-22T12:00:00Z');
+  const v = (jours, st = true) => ({ par_sous_traitant: st, cree_le: new Date(maintenant.getTime() - jours * 86400000).toISOString() });
+  assert.deepEqual(frequence([v(1), v(5)], 3, maintenant), { n30: 2, seuil: 3, alerte: false, jours: 30 });
+  assert.equal(frequence([v(1), v(5), v(29)], 3, maintenant).alerte, true);
+  assert.equal(frequence([v(1), v(5), v(31)], 3, maintenant).alerte, false, 'plus de 30 jours : ne compte pas');
+  assert.equal(frequence([v(1), v(5), v(6, false)], 3, maintenant).alerte, false, 'versions faites par Belleflamme : ne comptent pas');
+});
+
+test('registre : lecture triée de la plus récente, seuil lu dans les paramètres', async () => {
+  const appels = [];
+  const repo = { list: async (t, o) => { appels.push([t, o]); return t === 'parametres' ? [{ valeur: 5 }] : []; } };
+  const r = await lireRegistre(repo, ID);
+  assert.equal(r.seuil, 5);
+  assert.deepEqual(appels[0][1].ordre, { colonne: 'numero', asc: false });
+  await assert.rejects(lireRegistre(repo, 'x'), /invalide/);
 });

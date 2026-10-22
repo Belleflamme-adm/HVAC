@@ -3,10 +3,12 @@
 // - Avant d'enregistrer, il voit les devis actifs (soumissions envoyées non expirées, ou acceptées) qui utilisent
 //   ces travaux, avec le prix qu'il avait donné : il doit les honorer jusqu'à leur échéance.
 // Simon, Mike et la planification ouvrent la même page avec ?fournisseur=.
+// Sous la liste : le registre des versions archivées, en PDF (ADR-065).
 import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param, dateFr } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
+import { registreListe } from './bf-registre.js?v=0.4.0';
 
 const UNITES = { forfait: 'forfait', tete: 'par tête', pied: 'par pied', sortie: 'par sortie', heure: 'par heure', unite: 'par unité', livre: 'par livre' };
 
@@ -80,7 +82,7 @@ if (user) {
       try {
         const r = await api.post('mes-prix', { fournisseur_id: fournisseur || undefined, prix: [...modifies].map(([type_travail_id, cout_cents]) => ({ type_travail_id, cout_cents })) });
         rapport = r;
-        message(msg, `${r.changes} prix enregistré(s). Ils s'appliquent aux nouveaux devis dès maintenant. Belleflamme et les vendeurs concernés sont avisés.`, 'ok');
+        message(msg, `${r.changes} prix enregistré(s)${r.version ? `, version ${r.version} archivée au registre` : ''}. Ils s'appliquent aux nouveaux devis dès maintenant. Belleflamme et les vendeurs concernés sont avisés.`, 'ok');
         charger();
       } catch (e) { message(msg, e.message); }
     });
@@ -101,6 +103,7 @@ if (user) {
       aRemplir ? h('p', { class: 'bf-message bf-message--alerte' }, `${aRemplir} travail(aux) sans prix : remplis-les pour recevoir ces jobs.`) : null,
       sections, impact,
       travaux.length ? h('div', { class: 'bf-prix-barre' }, bouton, h('span', { class: 'bf-muet' }, 'Ton prix s\'applique aux nouveaux devis dès l\'enregistrement.')) : null,
+      registreListe(estSt ? user.sousTraitantId : fournisseur, { titre: estSt ? 'Mes listes de prix archivées' : 'Registre des listes de prix' }).el,
       h('section', { class: 'bf-carte-section' }, h('h2', {}, `Tes soumissions actives (${engagements.length})`),
         engagements.length ? tableEngagements(engagements) : h('p', { class: 'bf-muet' }, 'Aucune soumission active avec tes prix pour le moment.')));
   }

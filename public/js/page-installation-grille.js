@@ -3,6 +3,7 @@
 // Lecture : rôles commerciaux. Écriture : Simon et Mike (RLS). Un prix ne se modifie pas : chaque
 // enregistrement ajoute un tarif daté (l'historique reste).
 import { initPage } from './bf-page.js?v=0.4.0';
+import { registreListe } from './bf-registre.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, dateFr, pct, param } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
@@ -64,7 +65,11 @@ if (user) {
     };
     boutonConfies.addEventListener('click', async () => {
       const { ajouter, retirer } = majConfies();
-      try { await api.post('travaux-confies', { fournisseur_id: fournisseur, ajouter, retirer }); message(msg, 'Travaux confiés enregistrés : le sous-traitant les voit dans « Ma liste de prix ».', 'ok'); charger(); }
+      try {
+        const r = await api.post('travaux-confies', { fournisseur_id: fournisseur, ajouter, retirer });
+        message(msg, `Travaux confiés enregistrés${r?.version ? `, version ${r.version} archivée au registre` : ''} : le sous-traitant les voit dans « Ma liste de prix ».`, 'ok');
+        charger();
+      }
       catch (e) { message(msg, e.message); }
     });
 
@@ -187,12 +192,10 @@ if (user) {
     recherche.addEventListener('input', appliquerFiltre);
 
     bouton.addEventListener('click', async () => {
-      const aujourdhui = new Date().toISOString().slice(0, 10);
+      // Un seul enregistrement : une seule version au registre, vendeurs avisés (ADR-062, ADR-065)
       try {
-        for (const [typeId, cents] of modifies) {
-          await api.post('installation-tarifs', { fournisseur_id: fournisseur, type_travail_id: typeId, cout_cents: cents, en_vigueur_du: aujourdhui });
-        }
-        message(msg, `${modifies.size} prix enregistré(s), en vigueur aujourd'hui. Les anciens prix restent dans l'historique.`, 'ok');
+        const r = await api.post('mes-prix', { fournisseur_id: fournisseur, prix: [...modifies].map(([type_travail_id, cout_cents]) => ({ type_travail_id, cout_cents })) });
+        message(msg, `${r.changes} prix enregistré(s), en vigueur aujourd'hui${r.version ? `, version ${r.version} archivée au registre` : ''}. Les anciens prix restent dans l'historique.`, 'ok');
         charger();
       } catch (e) { message(msg, e.message); }
     });
@@ -227,6 +230,7 @@ if (user) {
         peutDemander && DEMANDES_PAR_LIEN ? messageDemande : null, peutDemander && DEMANDES_PAR_LIEN ? boutonDemande : null,
         peutDemander && !DEMANDES_PAR_LIEN ? boutonConfies : null,
         admin ? bouton : null) : null,
+      fournisseur ? registreListe(fournisseur).el : null,
       admin ? h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Ajouter un travail à la liste'), formType) : null);
     appliquerFiltre();
     majDemande();

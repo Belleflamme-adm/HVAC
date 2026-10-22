@@ -573,3 +573,20 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Courriels vérifiés. Chaque modification est journalisée (Loi 25 : noms et coordonnées de personnes).
   - À la création, le contact qui reçoit l'accès devient le responsable par défaut.
 - **Liste** : le nom est un lien vers la fiche, avec un bouton « Fiche ». La ligne montre le responsable, ses coordonnées et la licence RBQ (« RBQ à inscrire » si absente).
+
+## ADR-065 | Registre des versions de la liste de prix, en PDF, avec alerte de fréquence
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : à chaque enregistrement de la liste de prix d'un sous-traitant, archiver un PDF de la liste complète. La plus récente en premier, avec la date, l'heure et l'auteur. Garder une trace pour discuter avec le sous-traitant s'il change sa liste trop souvent. Pour tous les sous-traitants.
+- **Choix de Simon** :
+  - Le registre est visible par Belleflamme (tous les sous-traitants) et par chaque sous-traitant (le sien seulement).
+  - Une nouvelle version est créée quand un prix change (par le sous-traitant ou par Belleflamme) ET quand un travail confié est ajouté ou retiré.
+  - Alerte quand le sous-traitant modifie sa liste 3 fois ou plus en 30 jours (paramètre `seuil_versions_liste_30j`). Simon et Mike reçoivent un avis.
+- **Conception** :
+  - Chaque version est une **copie figée** en base (`listes_prix_versions`) : toutes les lignes avec leur prix, les changements depuis la version précédente (ajout, retrait, prix avant et après), l'auteur, la date et l'heure, et une **empreinte SHA-256** des lignes.
+  - Une version ne se modifie ni ne s'efface jamais (déclencheur), et personne n'y écrit directement (RLS) : seules les fonctions de la base en ajoutent.
+  - Aucune version si rien n'a changé. Les modifications du même enregistrement font une seule version.
+  - Le **PDF est produit dans le navigateur à partir de la copie figée** (pdf-lib 1.17.1, MIT, copiée dans le repo). La même version donne toujours le même contenu, et l'empreinte est imprimée au bas de chaque page. Stocker des fichiers PDF aurait demandé Supabase Storage pour la même preuve ; on pourra les y copier plus tard si un comptable ou un avocat l'exige.
+  - Une version comptée pour l'alerte est une version faite par le sous-traitant. Celles faites par Belleflamme ne comptent pas.
+  - Belleflamme qui met un prix sur un travail non confié le confie du même coup. La grille enregistre maintenant tous les prix en un seul appel (`mes-prix`), donc une seule version, et les vendeurs touchés sont avisés comme pour le sous-traitant.
+- **Reprise** : la migration crée une première version pour chaque sous-traitant qui a déjà des travaux confiés.
+- **À valider par un professionnel** : la valeur de preuve d'un PDF régénéré à partir d'une copie figée avec empreinte, par rapport à un fichier conservé tel quel.

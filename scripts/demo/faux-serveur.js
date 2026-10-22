@@ -47,7 +47,7 @@
     ],
     margeBp: 2500,
     demandes: [], dernierLien: null,
-    confies: [],
+    confies: [], versions: [],
     // Soumissions actives fictives (devis faits dans l'app de Mike) qui utilisent les prix de Clim Laurentides
     engagements: [],
     municipalites: [],
@@ -147,6 +147,54 @@
   for (const code of ['INST-MURAL-1T-12', 'INST-MURAL-1T-18', 'INST-MULTI-2T', 'INST-MULTI-3T', 'INST-TETE-MULTI', 'REMP-MURAL-1T', 'EXTRA-LIGNE-PI', 'EXTRA-POMPE-COND']) etat.confies.push({ fournisseur_id: 'f-clim', type_travail_id: tid(code) });
   etat.tarifs.push({ fournisseur_id: 'f-clim', type_travail_id: tid('INST-MULTI-2T'), cout_cents: 210000, en_vigueur_du: '2026-03-01' },
     { fournisseur_id: 'f-clim', type_travail_id: tid('EXTRA-LIGNE-PI'), cout_cents: 2500, en_vigueur_du: '2026-03-01' });
+  // Registre des versions de la liste de prix (ADR-065) : copie figée à chaque changement
+  const lignesDe = (f) => {
+    const ordreCat = new Map(etat.categories.map((c) => [c.code, c.ordre]));
+    return etat.types.filter((t) => etat.confies.some((c) => c.fournisseur_id === f && c.type_travail_id === t.id))
+      .sort((a, b) => (ordreCat.get(a.categorie) ?? 99) - (ordreCat.get(b.categorie) ?? 99) || a.ordre - b.ordre)
+      .map((t) => { const p = etat.tarifs.find((x) => x.fournisseur_id === f && x.type_travail_id === t.id);
+        return { code: t.code, nom: t.nom, categorie: etat.categories.find((c) => c.code === t.categorie)?.nom || t.categorie, unite: t.unite,
+          cout_cents: p?.cout_cents ?? null, en_vigueur_du: p?.en_vigueur_du ?? null }; });
+  };
+  const ecarts = (avant, apres) => {
+    const parCode = (l) => new Map(l.map((x) => [x.code, x]));
+    const a = parCode(avant); const n = parCode(apres); const out = [];
+    for (const x of apres) if (!a.has(x.code)) out.push({ type: 'ajout', code: x.code, nom: x.nom, avant: null, apres: x.cout_cents });
+    for (const x of avant) if (!n.has(x.code)) out.push({ type: 'retrait', code: x.code, nom: x.nom, avant: x.cout_cents, apres: null });
+    for (const x of apres) if (a.has(x.code) && a.get(x.code).cout_cents !== x.cout_cents) out.push({ type: 'prix', code: x.code, nom: x.nom, avant: a.get(x.code).cout_cents, apres: x.cout_cents });
+    return out.sort((x, y) => x.code.localeCompare(y.code));
+  };
+  // Empreinte de démonstration (la vraie base calcule un SHA-256)
+  const empreinte = (txt) => { let h1 = 0x811c9dc5; let h2 = 0x1b873593; for (let i = 0; i < txt.length; i++) { h1 = Math.imul(h1 ^ txt.charCodeAt(i), 16777619); h2 = Math.imul(h2 ^ txt.charCodeAt(i), 2246822519); }
+    return Array.from({ length: 8 }, (_, i) => (((i % 2 ? h1 : h2) ^ Math.imul(i + 1, 0x9e3779b9)) >>> 0).toString(16).padStart(8, '0')).join(''); };
+  function versionner(f, motif, { quand = etat.maintenant, auteur, parSt, lignes = lignesDe(f) } = {}) {
+    const prec = etat.versions.filter((v) => v.fournisseur_id === f).sort((a, b) => b.numero - a.numero)[0];
+    const changements = prec ? ecarts(prec.lignes, lignes) : [];
+    if (prec && !changements.length) return null;
+    if (!prec && !lignes.length) return null;
+    const u = user(); const st = parSt ?? Boolean(u.sousTraitantId);
+    const v = { id: `v-${etat.versions.length + 1}`, fournisseur_id: f, numero: (prec?.numero || 0) + 1, cree_le: new Date(quand).toISOString(),
+      auteur_nom: auteur || (st ? (etat.fournisseurs.find((x) => x.id === f)?.responsable_nom || u.name) : u.name), par_sous_traitant: st, motif,
+      lignes: JSON.parse(JSON.stringify(lignes)), changements, nb_lignes: lignes.length, nb_changements: changements.length, empreinte: empreinte(JSON.stringify(lignes)) };
+    etat.versions.push(v);
+    return v.numero;
+  }
+  // Historique fictif de Clim Laurentides : 2 modifications par le sous-traitant dans les 30 derniers jours.
+  // Une 3e modification dans le HTML de test déclenche l'alerte.
+  {
+    const J = 24 * H;
+    const actuel = () => lignesDe('f-clim');
+    const avec = (l, code, cout) => l.map((x) => (x.code === code ? { ...x, cout_cents: cout } : x));
+    const v4 = actuel();
+    const v3 = avec(v4, 'INST-MURAL-1T-12', 115000);
+    const v2 = avec(v3, 'INST-TETE-MULTI', 55000);
+    const v1 = v2.filter((x) => x.code !== 'EXTRA-POMPE-COND');
+    versionner('f-clim', 'Première version (reprise de la liste existante)', { quand: etat.maintenant - 45 * J, auteur: 'Simon Cardinal', parSt: false, lignes: v1 });
+    versionner('f-clim', 'Travaux confiés modifiés par Belleflamme', { quand: etat.maintenant - 33 * J, auteur: 'Simon Cardinal', parSt: false, lignes: v2 });
+    versionner('f-clim', 'Prix modifiés par le sous-traitant', { quand: etat.maintenant - 12 * J - 3 * H, auteur: 'Martin Lavoie (FICTIF)', parSt: true, lignes: v3 });
+    versionner('f-clim', 'Prix modifiés par le sous-traitant', { quand: etat.maintenant - 4 * J + 2 * H, auteur: 'Martin Lavoie (FICTIF)', parSt: true, lignes: v4 });
+  }
+
   const jourPlus = (j) => new Date(etat.maintenant + j * 24 * H).toISOString().slice(0, 10);
   const eng = (numero, ville, vendeur, code, travail, cout, jours, statut = 'envoye') => ({ fournisseur_id: 'f-clim', devis_id: `d-${numero}`, numero, statut, ville, vendeur_nom: vendeur,
     type_travail_id: tid(code), code, travail, quantite: 1, cout_cents: cout, honorer_jusqu: statut === 'accepte' ? null : jourPlus(jours) });
@@ -277,7 +325,11 @@
     'sites-save': { POST: (_q, b) => { const s = { id: `s-${etat.sites.length + 1}`, province: 'QC', ...b }; etat.sites.push(s); return s; } },
     'devis-create': { POST: () => { throw new Erreur(400, 'Le devis se fait dans l\'app de Mike (module en veille ici).'); } },
     'sous-traitant': {
-      GET: (q) => { const f = etat.fournisseurs.find((x) => x.id === q.id); if (!f) throw new Erreur(404, 'Sous-traitant introuvable'); return f; },
+      GET: (q) => {
+        const f = etat.fournisseurs.find((x) => x.id === q.id);
+        if (!f || (user().sousTraitantId && user().sousTraitantId !== f.id)) throw new Erreur(404, 'Sous-traitant introuvable');
+        return f;
+      },
       PATCH: (q, b) => {
         const f = etat.fournisseurs.find((x) => x.id === q.id);
         if (!f) throw new Erreur(404, 'Sous-traitant introuvable');
@@ -355,19 +407,34 @@
         let n = 0; const types = [];
         const jour = new Date(etat.maintenant).toISOString().slice(0, 10);
         for (const x of b.prix || []) {
-          exiger(etat.confies.some((c) => c.fournisseur_id === f && c.type_travail_id === x.type_travail_id), 'Ce travail n\'est pas confié à ce sous-traitant');
           exiger(Number.isInteger(x.cout_cents) && x.cout_cents > 0, 'Prix invalide');
+          if (!etat.confies.some((c) => c.fournisseur_id === f && c.type_travail_id === x.type_travail_id)) {
+            // Belleflamme qui met un prix confie le travail du même coup ; le sous-traitant, lui, est refusé
+            exiger(!user().sousTraitantId, 'Ce travail n\'est pas confié à ce sous-traitant');
+            etat.confies.push({ fournisseur_id: f, type_travail_id: x.type_travail_id });
+          }
+          const actuel = etat.tarifs.find((t) => t.fournisseur_id === f && t.type_travail_id === x.type_travail_id);
+          if (actuel && actuel.cout_cents === x.cout_cents) continue;
           etat.tarifs = etat.tarifs.filter((t) => !(t.fournisseur_id === f && t.type_travail_id === x.type_travail_id));
           etat.tarifs.push({ fournisseur_id: f, type_travail_id: x.type_travail_id, cout_cents: x.cout_cents, en_vigueur_du: jour }); n++; types.push(x.type_travail_id);
         }
-        return { changes: n, engagements: etat.engagements.filter((e) => e.fournisseur_id === f && types.includes(e.type_travail_id)) };
+        const version = versionner(f, user().sousTraitantId ? 'Prix modifiés par le sous-traitant' : 'Prix modifiés par Belleflamme');
+        return { changes: n, version, engagements: etat.engagements.filter((e) => e.fournisseur_id === f && types.includes(e.type_travail_id)) };
       },
     },
     'travaux-confies': { POST: (_q, b) => {
       if (!['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role)) throw new Erreur(403, 'Modification refusée');
       etat.confies = etat.confies.filter((c) => !(c.fournisseur_id === b.fournisseur_id && (b.retirer || []).includes(c.type_travail_id)));
       for (const t of b.ajouter || []) if (!etat.confies.some((c) => c.fournisseur_id === b.fournisseur_id && c.type_travail_id === t)) etat.confies.push({ fournisseur_id: b.fournisseur_id, type_travail_id: t });
-      return { ajoutes: (b.ajouter || []).length, retires: (b.retirer || []).length };
+      return { ajoutes: (b.ajouter || []).length, retires: (b.retirer || []).length, version: versionner(b.fournisseur_id, 'Travaux confiés modifiés par Belleflamme') };
+    } },
+    'listes-prix-versions': { GET: (q) => {
+      const f = user().sousTraitantId || q.fournisseur;
+      exiger(f, 'fournisseur requis');
+      exiger(user().sousTraitantId || ['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Registre réservé à Belleflamme et au sous-traitant');
+      const versions = etat.versions.filter((v) => v.fournisseur_id === f).sort((a, b) => b.numero - a.numero);
+      const n30 = versions.filter((v) => v.par_sous_traitant && new Date(v.cree_le).getTime() > etat.maintenant - 30 * 24 * H).length;
+      return { versions, n30, seuil: 3, alerte: n30 >= 3, jours: 30 };
     } },
     'types-travaux': { PATCH: (q, b) => {
       if (user().role !== 'Admin tout') throw new Erreur(403, 'Modification refusée (Simon ou Mike seulement)');

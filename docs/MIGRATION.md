@@ -38,3 +38,9 @@
 - Variable Netlify `URL` : Netlify la fournit automatiquement. Elle sert à construire le lien `…/prix#jeton`. À la greffe, ce sera le domaine de l'app de Mike.
 - Page publique `/prix` : aucune session. Vérifier que la CSP de Mike permet les images `data:` (signature).
 - Envoi automatique du lien par courriel : à brancher sur le fournisseur de courriel de Mike (à confirmer).
+
+## Registre des listes de prix des sous-traitants (ADR-065)
+- Table `listes_prix_versions` : à migrer telle quelle, **sans jamais réécrire les lignes** (preuve). Garder `cree_le`, `auteur_nom` et `empreinte` d'origine.
+- Fonctions : `hvac_maj_mes_prix`, `hvac_confier_travaux`, `hvac_versionner_liste`. Tout chemin qui modifie un tarif ou un travail confié chez Mike doit appeler `hvac_versionner_liste`, sinon le registre aura des trous.
+- PDF produit dans le navigateur avec `public/js/vendor/pdf-lib-1.17.1.esm.min.js` (MIT). Chez Mike, on peut le remplacer par une fonction `generate-*` côté serveur, à condition de partir de la même copie figée.
+- Paramètre `seuil_versions_liste_30j` (3 par défaut).

@@ -277,3 +277,11 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 @media (max-width: 560px) { .bf-prix--public { grid-template-columns: 1fr; } .bf-prix--public .bf-prix__droite { grid-column: 1; justify-items: start; } }
 .bf-attestation { font-weight: 600; align-items: flex-start; }
 .bf-avis-engagement { border-color: #e2a01b; border-left: 4px solid #e2a01b; }
+
+/* Registre des versions de la liste de prix (ADR-065) */
+.bf-registre__liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bf-registre__version { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; background: var(--surface); }
+.bf-registre__version--courante { border-color: var(--vert); box-shadow: inset 4px 0 0 var(--vert); }
+.bf-registre__tete { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.bf-registre__details ul { margin: 4px 0; padding-left: 20px; }
+.bf-registre__empreinte { font-size: 12px; overflow-wrap: anywhere; }
