@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detecterChamps, genererSql } from '../../scripts/municipalites/convertir.mjs';
+import { detecterChamps, genererSql, proprietesCarte } from '../../scripts/municipalites/convertir.mjs';
 
 test('détection des champs : forcés, sinon erreur claire (on ne devine pas)', () => {
   assert.throws(() => detecterChamps({ A: 1, B: 2 }), /Champs disponibles : A, B/);
@@ -17,4 +17,11 @@ test('SQL généré : apostrophes échappées, doublons ignorés, tri par code',
   assert.match(sql, /\('1', 'A', null, 'R'\),\n {2}\('2', 'L''Île', 'M', 'R'\)/);
   assert.doesNotMatch(sql, /Doublon/);
   assert.match(sql, /CC-BY 4\.0/);
+});
+
+test('GeoJSON de la carte : code, nom, MRC et région (vides omis)', () => {
+  const champs = { code: 'c', nom: 'n', mrc: 'm', region: 'r' };
+  assert.deepEqual(proprietesCarte({ c: ' 75017 ', n: 'Saint-Jérôme', m: 'La Rivière-du-Nord', r: 'Laurentides', x: 1 }, champs),
+    { code: '75017', nom: 'Saint-Jérôme', mrc: 'La Rivière-du-Nord', region: 'Laurentides' });
+  assert.deepEqual(proprietesCarte({ c: '1', n: 'A', m: '', r: null }, champs), { code: '1', nom: 'A' });
 });

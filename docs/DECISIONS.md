@@ -354,3 +354,14 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   4. **Au dépôt payé** (facture de type dépôt) **ou au financement Financeit approuvé**, la base crée le BT `RV001` et les BC brouillons, une seule fois, et le projet passe à « à cédule ». Remplace le point 2 de l'ADR-047 et le premier point de l'ADR-048.
   5. **Solde 72 h avant** : seulement pour la voie dépôt 40 %. Un projet financé par Financeit n'a aucune date de solde.
 - **Retour arrière** : la migration `20261024000200_sequence_hvac.sql` redéfinit les fonctions, on la retire et on rejoue les migrations en local. Pour garder l'ordre sans bloquer l'envoi, mettre `exiger_preinstallation` à `false`.
+
+## ADR-050 | Carte du territoire : noms des régions, des MRC et des villes
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : afficher le nom du territoire et des villes, au moins les grandes villes connues, pour que le sous-traitant choisisse facilement.
+- **Décisions** :
+  1. L'affichage dépend du zoom. De loin, on voit les **régions administratives** (Laurentides, Lanaudière, Laval...) et les **villes repères**. En zoomant, on voit les **MRC**, puis le nom de chaque municipalité dès qu'il tient dans sa forme.
+  2. Les étiquettes ne se chevauchent jamais. Ordre de priorité : grandes villes, régions, villes secondaires, MRC, autres municipalités. Une étiquette coupée par le bord n'est pas affichée.
+  3. Un trait plus épais marque les frontières entre régions.
+  4. Villes repères : `public/data/villes-reperes.json`, tenu à la main (1 = toujours nommée, 2 = en priorité). La couche officielle ne donne pas la population, d'où cette liste.
+  5. Le GeoJSON garde la MRC et la région de chaque municipalité, tirées de la couche officielle. L'infobulle affiche « Ville (MRC, région) ».
+- **À confirmer** : par « territoire », Simon voulait-il dire la région, la MRC, ou un nom de secteur propre au sous-traitant ?

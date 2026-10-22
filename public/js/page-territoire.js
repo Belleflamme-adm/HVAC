@@ -4,7 +4,7 @@ import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
-import { creerCarte, chargerMunicipalites } from './bf-carte.js?v=0.4.0';
+import { creerCarte, chargerMunicipalites, chargerReperes } from './bf-carte.js?v=0.4.0';
 
 const COULEURS = { accepte: '#2e9d63', supplement: '#e2a01b', refuse: '#c9483f', aucun: '#d9dee6',
   principal: '#1d47c2', sans_principal: '#e2a01b' };
@@ -22,7 +22,7 @@ if (user) {
   let principaux = new Map();      // code -> fournisseur_id
   const selection = new Set();
 
-  const geo = await chargerMunicipalites();
+  const [geo, reperes] = await Promise.all([chargerMunicipalites(), chargerReperes()]);
   if (!geo) {
     remplir(zone, h('h1', {}, 'Territoire'), h('p', { class: 'bf-message bf-message--alerte' },
       'Les limites municipales ne sont pas encore installées. Il faut charger le jeu officiel « Découpages administratifs » '
@@ -39,10 +39,11 @@ if (user) {
     };
     const titre = (f) => {
       const t = territoire.get(f.properties.code);
-      return `${f.properties.nom} | ${LIBELLES[t?.statut || 'aucun']}${t?.supplement_cents ? ` (+${formatCents(t.supplement_cents)})` : ''}`;
+      const lieu = [f.properties.mrc, f.properties.region].filter(Boolean).join(', ');
+      return `${f.properties.nom}${lieu ? ` (${lieu})` : ''} | ${LIBELLES[t?.statut || 'aucun']}${t?.supplement_cents ? ` (+${formatCents(t.supplement_cents)})` : ''}`;
     };
     const carte = creerCarte(carteZone, geo, {
-      couleur, titre,
+      couleur, titre, reperes,
       onClic: (f) => {
         const code = f.properties.code;
         if (mode === 'principaux') { selection.clear(); selection.add(code); }

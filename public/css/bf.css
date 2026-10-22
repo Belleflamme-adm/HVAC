@@ -110,6 +110,14 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-geo path { stroke: #ffffff; stroke-width: .6; }
 .bf-geo path:hover { stroke: var(--ink); stroke-width: 1.4; }
 .bf-geo path.selection { stroke: var(--ink); stroke-width: 2.5; }
+.bf-geo path.bf-geo__region { fill: none; stroke: #0f1a33; stroke-width: 1.8; stroke-opacity: .55; pointer-events: none; }
+.bf-geo__etiquettes { pointer-events: none; }
+.bf-geo__etiquette { text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: #ffffff; stroke-opacity: .85;
+  stroke-linejoin: round; fill: #0f1a33; font-family: var(--f); }
+.bf-geo__etiquette--ville1 { font-weight: 700; }
+.bf-geo__etiquette--ville2 { font-weight: 600; }
+.bf-geo__etiquette--region { font-weight: 700; letter-spacing: .12em; fill: #3b4766; }
+.bf-geo__etiquette--mrc { font-style: italic; letter-spacing: .06em; fill: #4a5672; }
 .bf-carte-panneau { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
 .bf-legende { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--muted); }
 .bf-legende__item { display: inline-flex; align-items: center; gap: 6px; }

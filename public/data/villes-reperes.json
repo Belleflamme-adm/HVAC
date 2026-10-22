@@ -1,0 +1,12 @@
+{
+  "_note": "Villes repères de la carte du territoire. 1 = toujours nommée, 2 = nommée en priorité. Les noms doivent être identiques aux noms officiels de la couche des municipalités (MRNF). Liste tenue à la main.",
+  "Montréal": 1, "Laval": 1, "Québec": 1, "Gatineau": 1, "Longueuil": 1, "Sherbrooke": 1,
+  "Trois-Rivières": 1, "Drummondville": 1, "Saint-Jérôme": 1, "Saguenay": 1, "Lévis": 1,
+  "Rosemère": 2, "Saint-Sauveur": 2, "Terrebonne": 2, "Repentigny": 2, "Mirabel": 2, "Blainville": 2,
+  "Sainte-Thérèse": 2, "Boisbriand": 2, "Saint-Eustache": 2, "Mascouche": 2, "Joliette": 2,
+  "Sainte-Adèle": 2, "Sainte-Agathe-des-Monts": 2, "Mont-Tremblant": 2, "Lachute": 2, "Prévost": 2,
+  "Saint-Colomban": 2, "Mont-Laurier": 2, "Saint-Lin–Laurentides": 2, "Saint-Hyacinthe": 2, "Granby": 2,
+  "Victoriaville": 2, "Saint-Jean-sur-Richelieu": 2, "Vaudreuil-Dorion": 2, "Brossard": 2, "Châteauguay": 2,
+  "Chelsea": 2, "Cantley": 2, "Val-des-Monts": 2, "Shawinigan": 2, "Sorel-Tracy": 2, "Rimouski": 2,
+  "Rouyn-Noranda": 2, "Val-d'Or": 2
+}

@@ -34,6 +34,16 @@ export function detecterChamps(proprietes, forces = {}) {
   return res;
 }
 
+// Propriétés gardées dans le GeoJSON de la carte
+export function proprietesCarte(p, champs) {
+  const texte = (c) => (c && p[c] !== null && p[c] !== undefined && String(p[c]).trim() !== '' ? String(p[c]).trim() : undefined);
+  const res = { code: String(p[champs.code]).trim(), nom: String(p[champs.nom]).trim() };
+  const mrc = texte(champs.mrc); const region = texte(champs.region);
+  if (mrc) res.mrc = mrc;
+  if (region) res.region = region;
+  return res;
+}
+
 const sql = (v) => (v === null || v === undefined || v === '' ? 'null' : `'${String(v).replace(/'/g, "''")}'`);
 
 export function genererSql(features, champs, date = new Date()) {
@@ -77,13 +87,13 @@ async function principal() {
   });
   console.log('Champs utilisés :', champs);
 
-  // 2. GeoJSON allégé pour la carte : seulement code et nom
+  // 2. GeoJSON allégé pour la carte : code, nom, MRC et région (étiquettes et frontières de région)
   const leger = {
     type: 'FeatureCollection',
     attribution: 'Découpages administratifs, MRNF, Données Québec (CC-BY 4.0)',
     features: geo.features.filter((f) => f.geometry).map((f) => ({
       type: 'Feature', geometry: f.geometry,
-      properties: { code: String(f.properties[champs.code]).trim(), nom: String(f.properties[champs.nom]).trim() },
+      properties: proprietesCarte(f.properties, champs),
     })),
   };
   mkdirSync('public/data', { recursive: true });
