@@ -96,7 +96,7 @@ Monday, Twilio (SMS/appels), AssemblyAI + Whisper, Claude, Stripe, Facebook, Ope
 - **Les colonnes exactes de ces boards sont INCONNUES.** Ne les invente pas : marque-les "à confirmer" dans le mapping.
 
 ### Codes de division et code projet (à reproduire exactement)
-- Code projet Macro : format `XXX-XXX-XXX`. 1er segment = succursale (2 lettres) + division (1 lettre).
+- Code projet Macro : format `XXX-XXX-XXX`. 1er segment = succursale (2 lettres) + division (1 lettre). **Format réel observé le 22 oct. 2026 (voir `docs/reference/FORMATS-MIKE.md`) : `[SUCC][DIV]-[3 lettres prénom]-[3 lettres nom]-[NNN]`, ex. `DRF-JEA-TRE-001`. Numéro de devis : entier global à 6 chiffres (`#120815`). BT : `BT#RV001 <code projet>`.**
 - Succursales : `HO` Head Office, `ST` St-Sauveur, `RO` Rosemère, `DR` Drummondville, `GA` Gatineau. **Code Saint-Jérôme inconnu : demande-moi.**
 - Divisions : `F` Foyer-Gaz, `V` Ventilation/Climatisation, `B` BBQ. Exemples HVAC : `ROV`, `GAV`, `STV`, `DRV`, `HOV`.
 - Codes génériques : `FYR` Foyer, `FYG` Foyer-Gaz, `VTC` Ventilation/Climatisation, `BBQ`, `PLB` Plomberie, `ASV` Appel de service ventilation, `ADM` admin.

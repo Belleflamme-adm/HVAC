@@ -234,3 +234,13 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   4. **Alertes** : notification de l'app, SMS et courriel.
 - **Source des limites municipales** : jeu « Découpages administratifs » du MRNF sur Données Québec, licence CC-BY 4.0 (attribution obligatoire), offert en SHP, FGDB et GPKG, sans GeoJSON provincial. Il faudra le convertir et le simplifier pour le web. Le MRNF précise que ces limites n'ont pas de valeur légale. Vérifié le 22 oct. 2026.
 - **Conséquences** : la carte est le morceau le plus long du module. Le SMS demande un compte payant (Twilio ou un autre fournisseur, prix à vérifier), au nom de Simon. Le courriel demande un service d'envoi, à choisir.
+
+## ADR-039 | Formats réels de Mike (devis signé et BT)
+- **Date** : 2026-10-22 | **Statut** : Constat (actions à confirmer)
+- **Source** : 2 PDF fournis par Simon, analysés dans `docs/reference/FORMATS-MIKE.md`. Les PDF ne sont pas versés au repo : ils contiennent des renseignements personnels.
+- **Constats** :
+  - Numéro de devis : entier global à 6 chiffres.
+  - Code projet : `[SUCC][DIV]-[PRÉ]-[NOM]-[NNN]`.
+  - BT : `BT#RV001 <projet>`, créé en brouillon à l'acceptation, avec toutes les lignes du devis, la localisation en entrepôt et l'état de réservation.
+  - Le devis compte une ligne « rabais supplémentaire » négative, des clauses en lignes à 0 $, une signature électronique avec IP et 12 conditions générales.
+- **Remplace** : les formats provisoires de l'ADR-022, dès que Simon aura confirmé les points ouverts (sens de `NNN`, numéro de départ des devis HVAC).
