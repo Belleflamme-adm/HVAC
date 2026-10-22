@@ -33,3 +33,8 @@
 | Comptes sous-traitants dans l'app de Mike | Mike n'a peut-être pas de rôle externe. Il faut décider si les sous-traitants entrent dans SON app (avec des droits limités) ou dans un portail séparé. Ils voient des renseignements de clients en Lot B : entente de confidentialité requise. |
 | Disponibilités vs Pointage (`belleflammetime`) | Vérifier si le calendrier de Mike peut accueillir les disponibilités des sous-traitants, pour éviter deux calendriers. |
 
+
+## Demandes de prix aux sous-traitants (ADR-061)
+- Variable Netlify `URL` : Netlify la fournit automatiquement. Elle sert à construire le lien `…/prix#jeton`. À la greffe, ce sera le domaine de l'app de Mike.
+- Page publique `/prix` : aucune session. Vérifier que la CSP de Mike permet les images `data:` (signature).
+- Envoi automatique du lien par courriel : à brancher sur le fournisseur de courriel de Mike (à confirmer).

@@ -36,6 +36,7 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   <button type="button" id="plus5">+5 min</button>
   <button type="button" id="plus30">+30 min</button>
   <button type="button" class="vert" id="arrive">Un lead arrive de Monday</button>
+  <button type="button" id="lien-st" hidden>Ouvrir le lien comme le sous-traitant</button>
   <span id="adresse"></span>
   <span class="version">Version __VERSION__ | données fictives, rien n'est enregistré</span>
 </div>
@@ -57,19 +58,23 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
     }
   } catch (e) { /* sans carte */ }
   const cadre = document.getElementById('app');
-  window.__demoCourant = { path: '/', search: '' };
+  window.__demoCourant = { path: '/', search: '', hash: '' };
   window.__naviguer = (url) => {
     const u = new URL(url, 'https://demo.local' + window.__demoCourant.path);
     let page = u.pathname.replace(/^\/|\.html$/g, '') || 'index';
     if (page === 'login') page = 'index';
-    window.__demoCourant = { path: u.pathname === '/login' ? '/' : u.pathname, search: u.search };
-    document.getElementById('adresse').textContent = `Page : ${u.pathname}${u.search}`;
+    window.__demoCourant = { path: u.pathname === '/login' ? '/' : u.pathname, search: u.search, hash: u.hash };
+    document.getElementById('adresse').textContent = `Page : ${u.pathname}${u.search}${u.hash ? '#…' : ''}`;
     const html = window.__demoPages[page] || `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px">
       <h1>Page en veille</h1><p>« ${u.pathname.replace(/[<>&]/g, '')} » n'est pas dans le HTML de test (module de l'app de Mike).</p>
       <p><a href="#" onclick="parent.__naviguer('/');return false">Retour à l'accueil</a></p></body>`;
     cadre.srcdoc = html;
   };
-  const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search);
+  const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search + (window.__demoCourant.hash || ''));
+  // Dernier lien de demande de prix créé : l'ouvrir comme le sous-traitant (sans compte)
+  const boutonLien = document.getElementById('lien-st');
+  setInterval(() => { boutonLien.hidden = !S.dernierLien(); }, 700);
+  boutonLien.addEventListener('click', () => window.__naviguer(S.dernierLien()));
   const heure = () => { document.getElementById('heure').textContent = S.heure().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }); };
   document.getElementById('qui').addEventListener('change', (e) => { S.changerUtilisateur(e.target.value); window.__naviguer('/'); });
   document.getElementById('plus5').addEventListener('click', () => { S.avancer(5); heure(); recharger(); });

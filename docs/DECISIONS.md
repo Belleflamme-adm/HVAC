@@ -507,3 +507,24 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Simon et Mike peuvent ajouter un travail, avec sa catégorie et son unité.
 - **À valider par un professionnel** : ce qui est réservé aux licences (électricité, gaz, halocarbures) et ce qui est inclus dans chaque forfait.
 - **Suite prévue** : le sous-traitant remplira lui-même sa liste dans son portail (« Ma liste de prix »), et Simon approuvera.
+
+## ADR-061 | Demande de prix par lien, signée par le sous-traitant, valide un an
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) :
+  - On coche les travaux à faire chiffrer par un sous-traitant, sans liste complète obligatoire.
+  - Chaque ligne se modifie dans l'app : titre, description, unité.
+  - On crée un lien à envoyer. Le sous-traitant le remplit, met son nom, sa signature électronique et la date, et ses prix sont **valides un an complet à partir de la date de signature**.
+- **Parcours** :
+  1. Dans « Listes de prix des sous-traitants », on choisit le sous-traitant, on coche les travaux (une case par ligne, « tout cocher » par catégorie), on ajoute un message au besoin, puis « Créer la demande de prix ». Admin et planification.
+  2. **Le lien est affiché une seule fois** : `…/prix#<jeton>`. Boutons Copier, Courriel (mailto) et Texto (sms).
+  3. Le sous-traitant ouvre le lien **sans compte**. Pour chaque ligne, il inscrit son prix ou coche « Je n'offre pas ce service », avec une note s'il le veut. Il inscrit son nom, signe dans le cadre (souris ou doigt) et coche l'attestation de validité d'un an. La date est celle du serveur.
+  4. Simon et Mike reçoivent une notification. Sur la page de révision, ils voient les prix donnés, les prix clients calculés, l'écart avec le prix en vigueur, la signature, la date et l'échéance. Ils peuvent **approuver** ou refuser.
+  5. À l'approbation, chaque prix devient un **tarif daté du jour de la signature, valide jusqu'à l'échéance d'un an**. La grille affiche l'échéance, en rouge une fois dépassée.
+- **Sécurité** :
+  - Le jeton fait 64 caractères. **La base n'en garde que l'empreinte SHA-256.** Il voyage dans le fragment `#`, donc il n'apparaît dans aucun journal de serveur, puis dans l'en-tête `X-Jeton`.
+  - Le lien expire après 30 jours et ne sert qu'une fois. Une demande annulée désactive le lien.
+  - Le public passe seulement par les fonctions de la base `hvac_demande_prix_lire` et `hvac_demande_prix_soumettre`, avec la clé publique. Aucune table n'est ouverte à `anon` et la clé `service_role` n'est pas utilisée.
+  - Une fois signée, une demande ne se modifie plus. Les lignes envoyées gardent le texte d'origine même si la liste change ensuite.
+  - Tout est journalisé : création, ouverture, signature avec l'adresse IP si elle est disponible, approbation.
+- **Envoi automatique par courriel** : plus tard, quand le fournisseur de courriel sera choisi (ADR-038). Pour l'instant, Simon envoie le lien lui-même.
+- **Valeur légale** : une signature dessinée avec nom, date et adresse IP est une preuve raisonnable de l'accord sur les prix. Son poids juridique au Québec est **à valider par un professionnel** (Loi concernant le cadre juridique des technologies de l'information).

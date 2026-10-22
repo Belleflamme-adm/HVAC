@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { TYPES_TRAVAUX, CATEGORIES } from '../reference/types-travaux.mjs';
 
-const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'installation-grille'];
+const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'installation-grille', 'demande-prix', 'prix'];
 const lire = (f) => readFileSync(f, 'utf8');
 const icone = `data:image/svg+xml;base64,${Buffer.from(lire('public/icons/icon.svg')).toString('base64')}`;
 
@@ -28,6 +28,7 @@ function adapter(code) {
     .replace(/location\.replace\(/g, '__nav(')
     .replace(/location\.pathname/g, '__demo.path')
     .replace(/location\.search/g, '__demo.search')
+    .replace(/location\.hash/g, '__demo.hash')
     .replaceAll('/icons/icon.svg', icone);
 }
 
@@ -42,7 +43,7 @@ window.__nav = (u) => parent.__naviguer(String(u));
     const u = new URL(String(url), 'https://demo.local' + __demo.path);
     if (u.pathname.startsWith('/.netlify/functions/')) {
       const fn = u.pathname.split('/').pop();
-      const r = S.appeler(fn, init.method || 'GET', Object.fromEntries(u.searchParams), init.body ? JSON.parse(init.body) : undefined);
+      const r = S.appeler(fn, init.method || 'GET', Object.fromEntries(u.searchParams), init.body ? JSON.parse(init.body) : undefined, init.headers || {});
       return new Response(JSON.stringify(r.body), { status: r.status, headers: { 'Content-Type': 'application/json' } });
     }
     if (u.pathname.startsWith('/data/')) {

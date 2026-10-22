@@ -44,6 +44,7 @@
       { fournisseur_id: 'f-outa', type_travail_id: 't-INST-MURAL-1T-12', cout_cents: 115000, en_vigueur_du: '2026-01-01' },
     ],
     margeBp: 2500,
+    demandes: [], dernierLien: null,
     municipalites: [],
   };
   const user = () => UTILISATEURS[etat.qui];
@@ -270,6 +271,69 @@
         return { ok: true };
       },
     },
+    'types-travaux': { PATCH: (q, b) => {
+      if (user().role !== 'Admin tout') throw new Erreur(403, 'Modification refusée (Simon ou Mike seulement)');
+      const t = etat.types.find((x) => x.id === q.id);
+      exiger(t, 'Ligne introuvable');
+      if (b.nom !== undefined) { exiger(String(b.nom).trim().length >= 3, 'Titre trop court'); t.nom = String(b.nom).trim(); }
+      if (b.description !== undefined) t.description = String(b.description || '').trim() || null;
+      if (b.unite) t.unite = b.unite;
+      return t;
+    } },
+    'prix-demandes': {
+      GET: (q) => etat.demandes.filter((d) => !q.fournisseur || d.fournisseur_id === q.fournisseur).map(({ jeton, lignes, signature_png, ...d }) => d).reverse(),
+      POST: (_q, b) => {
+        if (!['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role)) throw new Erreur(403, 'Seuls Simon, Mike et la planification envoient une demande de prix');
+        exiger((b.types || []).length, 'Coche au moins un travail');
+        const jeton = Array.from({ length: 64 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');
+        const d = { id: `dp-${etat.demandes.length + 1}`, jeton, fournisseur_id: b.fournisseur_id, statut: 'envoyee', message: b.message || null,
+          created_at: new Date(etat.maintenant).toISOString(), expire_le: new Date(etat.maintenant + 30 * 24 * H).toISOString(), ouverte_le: null,
+          signataire_nom: null, signe_le: null, valide_jusqu: null, signature_png: null,
+          lignes: etat.types.filter((t) => b.types.includes(t.id)).map((t) => ({ id: `${t.id}-l`, type_travail_id: t.id, code: t.code, nom: t.nom, description: t.description, unite: t.unite, categorie: t.categorie, ordre: t.ordre, cout_cents: null, non_offert: false, note: null })) };
+        etat.demandes.push(d);
+        etat.dernierLien = `/prix#${jeton}`;
+        return { id: d.id, expire_le: d.expire_le, lien: `https://hvac.belleflamme.exemple/prix#${jeton}` };
+      },
+    },
+    'prix-demande': {
+      GET: (q) => { const d = etat.demandes.find((x) => x.id === q.id); if (!d) throw new Erreur(404, 'Demande introuvable'); const { jeton, lignes, ...demande } = d; return { demande, lignes }; },
+      POST: (q) => {
+        const d = etat.demandes.find((x) => x.id === q.id);
+        if (q.action === 'annuler') { exiger(['envoyee', 'recue'].includes(d.statut), 'Déjà traitée'); d.statut = 'annulee'; return d; }
+        if (user().role !== 'Admin tout') throw new Erreur(403, 'Seuls Simon et Mike approuvent une liste de prix');
+        exiger(d.statut === 'recue', `Seule une liste reçue s'approuve (statut : ${d.statut})`);
+        const jour = d.signe_le.slice(0, 10);
+        let n = 0;
+        for (const l of d.lignes.filter((x) => x.cout_cents)) {
+          etat.tarifs = etat.tarifs.filter((x) => !(x.fournisseur_id === d.fournisseur_id && x.type_travail_id === l.type_travail_id));
+          etat.tarifs.push({ fournisseur_id: d.fournisseur_id, type_travail_id: l.type_travail_id, cout_cents: l.cout_cents, en_vigueur_du: jour, valide_jusqu: d.valide_jusqu }); n++;
+        }
+        d.statut = 'approuvee'; d.approuvee_le = new Date(etat.maintenant).toISOString();
+        return { tarifs: n };
+      },
+    },
+    'prix-public': {
+      GET: (_q, _b, entetes) => {
+        const d = etat.demandes.find((x) => x.jeton === entetes['X-Jeton']);
+        if (!d || d.statut === 'annulee') throw new Erreur(404, 'Lien invalide ou annulé. Communique avec Belleflamme.');
+        d.ouverte_le ||= new Date(etat.maintenant).toISOString();
+        return { statut: d.statut, message: d.message, expire_le: d.expire_le, fournisseur: etat.fournisseurs.find((f) => f.id === d.fournisseur_id)?.nom,
+          signataire_nom: d.signataire_nom, signe_le: d.signe_le, valide_jusqu: d.valide_jusqu, categories: etat.categories, lignes: d.lignes };
+      },
+      POST: (_q, b, entetes) => {
+        const d = etat.demandes.find((x) => x.jeton === entetes['X-Jeton']);
+        if (!d || d.statut === 'annulee') throw new Erreur(404, 'Lien invalide ou annulé');
+        exiger(d.statut === 'envoyee', 'Cette liste de prix a déjà été envoyée');
+        exiger(String(b.nom || '').trim().length >= 3, 'Nom du signataire requis');
+        exiger(String(b.signature || '').startsWith('data:image/png;base64,'), 'Signature requise');
+        exiger(b.atteste === true, 'Il faut confirmer que les prix sont valides un an');
+        for (const x of b.lignes || []) { const l = d.lignes.find((y) => y.id === x.id); if (l) Object.assign(l, { cout_cents: x.non_offert ? null : x.cout_cents, non_offert: !!x.non_offert, note: x.note || null }); }
+        exiger(d.lignes.every((l) => l.cout_cents || l.non_offert), 'Chaque ligne doit avoir un prix ou être marquée « je n\'offre pas ce service »');
+        const signe = new Date(etat.maintenant); const fin = new Date(signe); fin.setFullYear(fin.getFullYear() + 1);
+        Object.assign(d, { statut: 'recue', signataire_nom: String(b.nom).trim(), signature_png: b.signature, signe_le: signe.toISOString(), valide_jusqu: fin.toISOString().slice(0, 10) });
+        return { ok: true, signe_le: d.signe_le, valide_jusqu: d.valide_jusqu };
+      },
+    },
     'installation-options': { GET: () => ({ types: etat.types, categories: etat.categories, sousTraitants: etat.fournisseurs, grille: etat.tarifs, margeBp: etat.margeBp }) },
     'installation-tarifs': {
       POST: (_q, b) => {
@@ -295,14 +359,15 @@
     leadArrive: () => creerLead({}),
     heure: () => new Date(etat.maintenant),
     // Point d'entrée : (fonction, méthode, query, corps) -> { status, body }
-    appeler(fn, methode, query, corps) {
+    dernierLien: () => etat.dernierLien,
+    appeler(fn, methode, query, corps, entetes = {}) {
       const r = routes[fn];
       try {
         if (!r) return { status: 404, body: { error: { code: 'demo', message: `« ${fn} » n'existe pas dans le HTML de test` } } };
         const h = typeof r === 'function' ? r : r[methode];
         if (!h) return { status: 405, body: { error: { code: 'methode', message: `Méthode ${methode} non permise` } } };
-        const body = h(query, corps || {});
-        return { status: methode === 'POST' && ['leads', 'lead-activite', 'clients-create', 'sous-traitants'].includes(fn) ? 201 : 200, body: JSON.parse(JSON.stringify(body ?? {})) };
+        const body = h(query, corps || {}, entetes);
+        return { status: methode === 'POST' && ['leads', 'lead-activite', 'clients-create', 'sous-traitants', 'prix-demandes'].includes(fn) ? 201 : 200, body: JSON.parse(JSON.stringify(body ?? {})) };
       } catch (e) {
         return { status: e.status || 500, body: { error: { code: 'erreur', message: e.message } } };
       }

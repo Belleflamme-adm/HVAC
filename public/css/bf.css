@@ -240,7 +240,7 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 /* Liste de prix des sous-traitants (ADR-060), au style de la liste de prix de Mike */
 .bf-prix-section { display: grid; gap: 8px; margin: 18px 0; }
 .bf-prix-section__titre { color: var(--vert-texte); font-size: 20px; margin: 0; }
-.bf-prix { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: center;
+.bf-prix { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px 14px; align-items: center;
   padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
 .bf-prix__texte { display: grid; gap: 2px; min-width: 0; font-size: 15px; }
 .bf-prix__inclus { font-size: 13px; color: var(--muted); }
@@ -253,4 +253,22 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-prix__unite { font-size: 12px; color: var(--muted); min-width: 5.5em; }
 .bf-prix-barre { position: sticky; bottom: calc(70px + env(safe-area-inset-bottom)); z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
   padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--ombre); }
-@media (max-width: 560px) { .bf-prix { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .bf-prix { grid-template-columns: 22px minmax(0, 1fr); } .bf-prix__droite { grid-column: 2; } }
+.bf-prix__coche { width: 20px; height: 20px; accent-color: var(--vert); }
+.bf-prix__droite { display: grid; justify-items: end; gap: 4px; }
+.bf-prix__form { display: grid; gap: 6px; min-width: 0; }
+.bf-prix__edit { font: inherit; padding: 6px 8px; border: 1.5px solid var(--vert); border-radius: 8px; background: var(--bg); color: var(--ink); width: 100%; }
+.bf-prix-barre input { flex: 1 1 220px; min-width: 0; font: inherit; padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); }
+.bf-lien-demande { width: 100%; font: 14px ui-monospace, Menlo, monospace; padding: 10px 12px; border: 1.5px solid var(--vert); border-radius: 10px; background: var(--bg); color: var(--ink); }
+.bf-demande-ok { border-color: var(--vert); }
+.bf-pastille--demande-envoyee { background: #e3ecff; color: #1d47c2; }
+.bf-pastille--demande-recue { background: #fff3e4; color: #a24b05; }
+.bf-pastille--demande-approuvee { background: #e3f5ec; color: #11734a; }
+.bf-pastille--demande-annulee { background: #eceff3; color: #4a5672; }
+.bf-signature { margin: 12px 0 0; display: grid; gap: 4px; justify-items: start; }
+.bf-signature img { max-width: 320px; width: 100%; background: #ffffff; border: 1px solid var(--line); border-radius: 8px; }
+.bf-pave { display: block; width: 100%; max-width: 600px; aspect-ratio: 600 / 180; height: auto; background: #ffffff; border: 1.5px dashed var(--vert); border-radius: 10px; touch-action: none; cursor: crosshair; }
+.bf-prix__note { font: 13px var(--f); padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); margin-top: 4px; max-width: 420px; }
+.bf-prix--public { grid-template-columns: minmax(0, 1fr) auto; }
+@media (max-width: 560px) { .bf-prix--public { grid-template-columns: 1fr; } .bf-prix--public .bf-prix__droite { grid-column: 1; justify-items: start; } }
+.bf-attestation { font-weight: 600; align-items: flex-start; }
