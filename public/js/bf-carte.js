@@ -302,6 +302,17 @@ export function creerCarte(conteneur, geojson, options) {
     }
   }
 
+  // Cadre la vue sur un ensemble de municipalités (ex. le territoire déjà choisi), avec une marge
+  function cadrer(codes) {
+    const fs = [...codes].map((c) => parCode.get(c)).filter(Boolean);
+    if (!fs.length) return false;
+    const b = boite(fs);
+    const marge = Math.max(b.l, b.h) * 0.15 + total.l / 300;
+    vue = { x: b.x - marge, y: b.y - marge, l: b.l + 2 * marge, h: b.h + 2 * marge };
+    appliquer();
+    return true;
+  }
+
   function zoomSur(code) {
     const f = parCode.get(code);
     if (!f) return;
@@ -311,5 +322,5 @@ export function creerCarte(conteneur, geojson, options) {
     appliquer();
   }
 
-  return { redessiner, zoomSur, toutVoir: () => { vue = { ...total }; appliquer(); }, vueDepart: () => { vue = vueInitiale(); appliquer(); }, parCode };
+  return { redessiner, zoomSur, cadrer, toutVoir: () => { vue = { ...total }; appliquer(); }, vueDepart: () => { vue = vueInitiale(); appliquer(); }, parCode };
 }

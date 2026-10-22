@@ -23,6 +23,7 @@ if (user) {
   let territoire = new Map();      // code -> { statut, supplement_cents }
   let principaux = new Map();      // code -> fournisseur_id
   const selection = new Set();
+  let dejaCadre = false;
 
   const [geo, reperes] = await Promise.all([chargerMunicipalites(), chargerReperes()]);
   if (!geo) {
@@ -68,6 +69,8 @@ if (user) {
           ...['accepte', 'supplement', 'refuse', 'aucun'].map((s) => h('span', { class: 'bf-legende__item' },
             h('span', { class: `bf-pastille-couleur bf-c-${s}` }), `${LIBELLES[s]}${c[s] !== undefined ? ` (${c[s]})` : ''}`)));
         carte.redessiner(selection);
+        // Au premier affichage, on cadre sur le territoire déjà choisi (surtout utile sur téléphone)
+        if (!dejaCadre && territoire.size) dejaCadre = carte.cadrer(territoire.keys());
         rendrePanneau();
       } catch (e) { message(msg, e.message); }
     }
@@ -133,7 +136,7 @@ if (user) {
       const sts = await api.get('sous-traitants').catch(() => []);
       const choix = h('select', { 'aria-label': 'Sous-traitant' }, h('option', { value: '' }, 'Sous-traitant…'),
         sts.map((s) => h('option', { value: s.id, selected: s.id === fournisseur }, s.nom)));
-      choix.addEventListener('change', () => { fournisseur = choix.value || null; selection.clear(); charger(); });
+      choix.addEventListener('change', () => { fournisseur = choix.value || null; selection.clear(); dejaCadre = false; charger(); });
       const modeSel = h('select', { 'aria-label': 'Mode' },
         h('option', { value: 'territoire' }, 'Territoire d\'un sous-traitant'), h('option', { value: 'principaux' }, 'Sous-traitants principaux'));
       modeSel.addEventListener('change', () => { mode = modeSel.value; selection.clear(); charger(); });
