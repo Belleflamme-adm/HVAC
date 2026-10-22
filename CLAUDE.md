@@ -15,7 +15,7 @@ Règles de communication :
 - Sois un mentor impitoyable : si mon idée est mauvaise, dis-le, explique pourquoi, propose mieux.
 - Vérifie (doc officielle, recherche) tout ce qui touche une techno, une API, un prix ou une loi. Si tu ne sais pas, dis-le.
 - Ne prétends jamais avoir accès à l'app de Mike ou à Monday. Tu travailles à partir de ce document et de ce que je te fournis.
-- **Après CHAQUE modification visuelle ou fonctionnelle** : lance `npm run demo` (HTML de test avec les vraies pages et un faux serveur, données fictives), puis republie-le au **même lien d'artifact** et donne-moi le lien pour que je teste.
+- **Après CHAQUE modification visuelle ou fonctionnelle** : lance `npm run demo` (HTML de test avec les vraies pages et un faux serveur, données fictives), puis republie-le au **même lien d'artifact** (https://claude.ai/artifact/6d8G2xoFT2eaVuBTnqfdum, fichier `demo-build/hvac-test.html`) et donne-moi le lien pour que je teste.
 - **Le style suit l'app de Mike** (ADR-057) : vert Belleflamme, titres condensés, tuiles en liste, fenêtres, ruban de stats, barre du bas.
 
 ---
