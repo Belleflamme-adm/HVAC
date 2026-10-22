@@ -33,6 +33,8 @@
     clients: [], sites: [],
     fournisseurs: [
       { id: 'f-clim', nom: 'Clim Laurentides (FICTIF)', type: 'sous-traitant', telephone: '450-555-0190', courriel: 'clim@exemple.invalid', licence_rbq: '0000-0000-00', actif: true },
+      { id: 'f-rive', nom: 'Climatisation Rive-Nord (FICTIF)', type: 'sous-traitant', telephone: '450-555-0177', courriel: 'rivenord@exemple.invalid', licence_rbq: '0000-0000-02', actif: true },
+      { id: 'f-mauri', nom: 'Froid Centre-du-Québec (FICTIF)', type: 'sous-traitant', telephone: '819-555-0123', courriel: 'froid@exemple.invalid', licence_rbq: '0000-0000-03', actif: true },
       { id: 'f-outa', nom: 'Thermo Outaouais (FICTIF)', type: 'sous-traitant', telephone: '819-555-0144', courriel: 'thermo@exemple.invalid', licence_rbq: '0000-0000-01', actif: true },
     ],
     territoire: [], principaux: [], dispos: [],
@@ -157,6 +159,32 @@
   // ---------- Routeur des fonctions ----------
   class Erreur extends Error { constructor(status, message) { super(message); this.status = status; } }
   const exiger = (cond, msg) => { if (!cond) throw new Erreur(400, msg); };
+  // Territoires fictifs qui se chevauchent (carte comparative, ADR-063), semés une fois que les municipalités sont chargées
+  let semes = false;
+  function semerTerritoires() {
+    if (semes || !etat.municipalites.length) return;
+    semes = true;
+    const ajouter = (f, filtre, statut = 'accepte', supplement = null) => {
+      for (const m of etat.municipalites.filter(filtre)) {
+        if (etat.territoire.some((t) => t.fournisseur_id === f && t.municipalite_code === m.code)) continue;
+        etat.territoire.push({ fournisseur_id: f, municipalite_code: m.code, statut, supplement_cents: supplement });
+      }
+    };
+    const mrc = (...n) => (m) => n.includes(m.mrc);
+    const region = (...n) => (m) => n.includes(m.region);
+    ajouter('f-clim', mrc('Antoine-Labelle'), 'supplement', 15000);
+    ajouter('f-clim', region('Laurentides'));
+    ajouter('f-rive', mrc('Thérèse-De Blainville', 'Deux-Montagnes', 'Mirabel', 'La Rivière-du-Nord', 'Laval', 'Les Moulins'));
+    ajouter('f-mauri', mrc('La Rivière-du-Nord'), 'supplement', 25000);
+    ajouter('f-mauri', region('Centre-du-Québec', 'Mauricie'));
+    ajouter('f-outa', (m) => m.nom === 'Saint-Jérôme' || m.mrc === 'Argenteuil' || m.mrc === 'Comtés unis de Prescott and Russell', 'supplement', 20000);
+    ajouter('f-outa', (m) => m.region === 'Outaouais' || m.nom === 'Ottawa');
+    const code = (nom) => etat.municipalites.find((m) => m.nom === nom)?.code;
+    for (const [nom, f] of [['Saint-Jérôme', 'f-clim'], ['Gatineau', 'f-outa'], ['Mirabel', 'f-rive'], ['Drummondville', 'f-mauri'], ['Blainville', 'f-rive']]) {
+      if (code(nom)) etat.principaux.push({ municipalite_code: code(nom), fournisseur_id: f });
+    }
+  }
+
   const routes = {
     'session-me': () => ({ token: 'demo', user: user() }),
     'session-logout': () => ({ ok: true }),
@@ -253,7 +281,11 @@
       POST: (_q, b) => { exiger(b.nom, 'Champ requis : nom'); const f = { id: `f-${etat.fournisseurs.length + 1}`, type: 'sous-traitant', actif: true, ...b }; etat.fournisseurs.push(f); return { fournisseur: f, compte: { email: b.contact?.email } }; },
     },
     territoire: {
-      GET: (q) => { const f = user().sousTraitantId || q.fournisseur_id; return etat.territoire.filter((t) => t.fournisseur_id === f); },
+      GET: (q) => {
+        semerTerritoires();
+        if (q.tous) { exiger(!user().sousTraitantId, 'Réservé à Belleflamme'); return etat.territoire.filter((t) => t.statut !== 'refuse'); }
+        const f = user().sousTraitantId || q.fournisseur_id; return etat.territoire.filter((t) => t.fournisseur_id === f);
+      },
       POST: (_q, b) => {
         const f = user().sousTraitantId || b.fournisseur_id;
         exiger(Array.isArray(b.municipalites) && b.municipalites.length, 'Liste de municipalités invalide (1 à 2000)');
@@ -264,10 +296,11 @@
       },
     },
     principaux: {
-      GET: () => etat.principaux,
+      GET: () => { semerTerritoires(); return etat.principaux; },
       POST: (_q, b) => { etat.principaux = etat.principaux.filter((p) => p.municipalite_code !== b.municipalite_code); if (b.fournisseur_id) etat.principaux.push({ municipalite_code: b.municipalite_code, fournisseur_id: b.fournisseur_id }); return { ok: true }; },
     },
     municipalites: { GET: (q) => {
+      semerTerritoires();
       if (q.pour) {
         return etat.territoire.filter((t) => t.municipalite_code === q.pour && t.statut !== 'refuse').map((t) => ({
           fournisseur_id: t.fournisseur_id, nom: etat.fournisseurs.find((f) => f.id === t.fournisseur_id)?.nom, statut: t.statut, supplement_cents: t.supplement_cents,

@@ -544,3 +544,17 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Renouvellement** : le devis renouvelé recalcule déjà l'installation au prix en vigueur du sous-traitant attitré. Un déclencheur avise le vendeur de chaque écart avec le devis d'origine pour qu'il le renvoie au client ; la vue `devis_ecarts_prix_v` montre les écarts.
 - **Limite connue** : les devis vivent dans l'app de Mike (ADR-055). Le rapport des engagements s'appuie sur nos tables de devis (en veille) jusqu'à la greffe. Chez Mike, chaque ligne d'installation devra porter le type de travail et le sous-traitant pour que ce rapport fonctionne.
 - **À décider** : les prix changent tout de suite, sans approbation. Simon est avisé. Une approbation pourra être ajoutée si Simon le demande.
+
+## ADR-063 | Carte comparative des sous-traitants : une couleur chacun, rayures quand ils se chevauchent
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : en mode « Sous-traitants principaux », voir tous les sous-traitants en même temps, chacun dans sa couleur. Une municipalité desservie par plusieurs est divisée par le nombre de couleurs.
+- **Affichage** :
+  - Le 2e menu affiche « Tous » par défaut. Choisir un sous-traitant n'affiche que lui.
+  - Couleurs automatiques, bien distinctes, sans vert, orange ni rouge (réservés à accepte, supplément, refuse). Elles suivent l'ordre de la liste des sous-traitants (par nom) : un nouveau sous-traitant peut décaler les couleurs des suivants.
+  - Plusieurs sous-traitants : **rayures diagonales égales**, une bande par sous-traitant, toujours dans le même ordre. Les bandes gardent la même largeur à l'écran quel que soit le zoom. Un vrai découpage de la forme a été écarté : illisible sur les petites municipalités.
+  - « Accepte » : couleur pleine. « Avec supplément » : même teinte, pâle. « Refuse » : n'apparaît pas.
+  - Le principal désigné : contour épais, version foncée de sa couleur.
+  - Légende : chaque sous-traitant, sa couleur, son nombre de municipalités, et le nombre de municipalités desservies par 2 sous-traitants ou plus.
+  - Clic sur une municipalité : liste des sous-traitants qui la desservent, avec leur couleur ; un clic choisit le principal.
+- **Données** : `GET territoire?tous=1` rend tous les territoires desservis. Réservé à Belleflamme : un sous-traitant reçoit un refus (403) et la RLS ne lui montrerait que le sien de toute façon.
+- **Limite** : vue à l'échelle du Québec, les rayures des petites municipalités de la couronne de Montréal ne se voient qu'en zoomant.

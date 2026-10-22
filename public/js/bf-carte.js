@@ -11,6 +11,19 @@ const COS0 = Math.cos((LAT0 * Math.PI) / 180);
 // Projection équirectangulaire corrigée : suffisante pour cliquer des municipalités.
 export const projeter = ([lon, lat]) => [lon * COS0 * ECHELLE, -lat * ECHELLE];
 
+// Couleurs propres aux sous-traitants (ADR-063) : bien distinctes, sans vert, orange ni rouge
+// (réservés à accepte / supplément / refuse).
+export const PALETTE_ST = ['#1d4ed8', '#9333ea', '#db2777', '#0e7490', '#854d0e', '#4338ca', '#c026d3', '#475569', '#0f766e', '#7c2d12'];
+export const couleurSt = (i) => PALETTE_ST[((i % PALETTE_ST.length) + PALETTE_ST.length) % PALETTE_ST.length];
+
+// Mélange une couleur #rrggbb avec du blanc (t > 0) ou du noir (t < 0)
+export function nuancer(hex, t) {
+  const n = parseInt(String(hex).slice(1), 16);
+  const cible = t >= 0 ? 255 : 0; const a = Math.abs(t);
+  const c = [n >> 16, (n >> 8) & 255, n & 255].map((v) => Math.round(v + (cible - v) * a));
+  return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
 function anneaux(geometrie) {
   if (!geometrie) return [];
   if (geometrie.type === 'Polygon') return geometrie.coordinates;
@@ -136,7 +149,9 @@ export async function chargerReperes(url = '/data/villes-reperes.json?v=0.4.0') 
   try { const r = await fetch(url); return r.ok ? r.json() : {}; } catch { return {}; }
 }
 
-// creerCarte(conteneur, geojson, { couleur(code), titre(feature), onClic(feature, evenement), reperes, vueDepart })
+// creerCarte(conteneur, geojson, { couleur(code), contour(code), titre(feature), onClic(feature, evenement), reperes, vueDepart })
+// couleur(code) : une couleur, ou une liste de couleurs (la municipalité est alors rayée en bandes égales, une par couleur).
+// contour(code) : couleur d'un contour épais (ex. le sous-traitant principal), ou rien.
 // reperes : { "Nom officiel": 1 | 2 } (1 = toujours nommée, 2 = nommée en priorité)
 export function creerCarte(conteneur, geojson, options) {
   const features = geojson.features;
@@ -154,7 +169,39 @@ export function creerCarte(conteneur, geojson, options) {
   const groupeEtiquettes = document.createElementNS(NS, 'g');
   groupeEtiquettes.setAttribute('class', 'bf-geo__etiquettes');
   groupeEtiquettes.setAttribute('aria-hidden', 'true');
-  svg.append(groupe, traitRegions, groupeEtiquettes);
+  const defs = document.createElementNS(NS, 'defs');
+  svg.append(defs, groupe, traitRegions, groupeEtiquettes);
+  // Rayures : un motif par combinaison de couleurs, bandes de LARGEUR_BANDE pixels à l'écran, quel que soit le zoom
+  const LARGEUR_BANDE = 7;
+  const motifs = new Map();
+  const remplissage = (c) => {
+    if (!Array.isArray(c)) return c;
+    if (c.length === 1) return c[0];
+    const cle = c.join('|');
+    if (!motifs.has(cle)) {
+      const m = document.createElementNS(NS, 'pattern');
+      m.setAttribute('id', `bf-motif-${motifs.size + 1}`);
+      m.setAttribute('patternUnits', 'userSpaceOnUse');
+      m.setAttribute('width', c.length * LARGEUR_BANDE);
+      m.setAttribute('height', LARGEUR_BANDE);
+      c.forEach((couleur, i) => {
+        const r = document.createElementNS(NS, 'rect');
+        r.setAttribute('x', i * LARGEUR_BANDE); r.setAttribute('y', 0);
+        r.setAttribute('width', LARGEUR_BANDE); r.setAttribute('height', LARGEUR_BANDE);
+        r.setAttribute('fill', couleur);
+        m.append(r);
+      });
+      defs.append(m);
+      motifs.set(cle, m);
+      majMotifs();
+    }
+    return `url(#${motifs.get(cle).getAttribute('id')})`;
+  };
+  function majMotifs() {
+    const v = visibleEtK();
+    if (!v) return;
+    for (const m of motifs.values()) m.setAttribute('patternTransform', `rotate(45) scale(${v.k})`);
+  }
 
   const chemins = new Map();
   for (const f of features) {
@@ -235,7 +282,7 @@ export function creerCarte(conteneur, geojson, options) {
   let attente = 0;
   const appliquer = () => {
     svg.setAttribute('viewBox', `${vue.x} ${vue.y} ${vue.l} ${vue.h}`);
-    if (!attente) attente = requestAnimationFrame(() => { attente = 0; majEtiquettes(); });
+    if (!attente) attente = requestAnimationFrame(() => { attente = 0; majEtiquettes(); majMotifs(); });
   };
   appliquer();
   if (typeof ResizeObserver !== 'undefined') new ResizeObserver(() => appliquer()).observe(svg);
@@ -297,11 +344,18 @@ export function creerCarte(conteneur, geojson, options) {
   svg.addEventListener('pointercancel', fin);
 
   function redessiner(selection = new Set()) {
+    const avant = [];
     for (const [code, p] of chemins) {
-      p.setAttribute('fill', options.couleur(code));
+      p.setAttribute('fill', remplissage(options.couleur(code)));
       p.setAttribute('class', selection.has(code) ? 'selection' : '');
-      if (selection.has(code)) groupe.append(p); // contour au premier plan
+      const contour = !selection.has(code) && options.contour ? options.contour(code) : null;
+      p.style.stroke = contour || '';
+      p.style.strokeWidth = contour ? '2.6' : '';
+      if (contour) avant.push(p);
     }
+    // Contours, puis sélection, au premier plan
+    for (const p of avant) groupe.append(p);
+    for (const code of selection) { const p = chemins.get(code); if (p) groupe.append(p); }
   }
 
   // Cadre la vue sur un ensemble de municipalités (ex. le territoire déjà choisi), avec une marge

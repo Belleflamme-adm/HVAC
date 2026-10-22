@@ -202,6 +202,8 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-c-supplement { background: #e2a01b; }
 .bf-c-refuse, .bf-cal-indisponible { background: #c9483f; }
 .bf-c-aucun { background: #d9dee6; }
+.bf-pastille-contour { background: transparent; border: 2.5px solid var(--ink); box-sizing: border-box; }
+.bf-ligne .bf-pastille-couleur { flex: none; }
 .bf-attribution { font-size: 12px; margin-top: 8px; }
 .bf-calendrier { display: grid; gap: 6px; margin: 12px 0; }
 .bf-cal-entete, .bf-cal-semaine { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }

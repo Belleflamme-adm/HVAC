@@ -2,7 +2,7 @@
 // Les réponses des fonctions (/.netlify/functions/*) ne sont JAMAIS mises en cache :
 // elles contiennent des données personnelles et des jetons.
 // La file de synchronisation hors ligne des BT (IndexedDB) arrive avec le module BT (ADR-011).
-const VERSION = 'hvac-0.4.3';
+const VERSION = 'hvac-0.4.4';
 const COQUILLE = [
   '/', '/login', '/css/bf.css?v=0.4.0', '/js/bf-theme-init.js?v=0.4.0', '/js/bf-session.js?v=0.4.0',
   '/js/bf-tuiles.js?v=0.4.0', '/js/bf-bandeau.js?v=0.4.0', '/js/accueil.js?v=0.4.0', '/js/login.js?v=0.4.0',

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fournisseurCible, majTerritoire, majDisponibilites, creerSousTraitant, designerPrincipal } from '../../lib/modules/sous-traitants.js';
+import { fournisseurCible, lireTousTerritoires, majTerritoire, majDisponibilites, creerSousTraitant, designerPrincipal } from '../../lib/modules/sous-traitants.js';
 import { grilleMois } from '../../public/js/bf-calendrier.js';
-import { projeter, cheminSvg, boite, centroide, regrouper, frontieres, choisirEtiquettes } from '../../public/js/bf-carte.js';
+import { projeter, cheminSvg, boite, centroide, regrouper, frontieres, choisirEtiquettes, PALETTE_ST, couleurSt, nuancer } from '../../public/js/bf-carte.js';
 import { readFileSync } from 'node:fs';
 import { tuilesPour } from '../../public/js/bf-tuiles.js';
 import { liensPour } from '../../public/js/bf-page.js';
@@ -22,6 +22,26 @@ test('un sous-traitant agit toujours sur son propre fournisseur, même s\'il en 
   const coord = { session: async () => ({ employe: { id: 'e', fournisseur_id: null } }) };
   assert.equal(await fournisseurCible(coord, 't', AUTRE), AUTRE);
   await assert.rejects(() => fournisseurCible(coord, 't', 'pas-un-uuid'), /invalide/);
+});
+
+test('carte comparative : un sous-traitant ne voit pas le territoire des autres ; refus exclus', async () => {
+  const st = { session: async () => ({ employe: { id: 'e', fournisseur_id: F } }) };
+  await assert.rejects(() => lireTousTerritoires(fauxRepo(), st, 't'), /Réservé/);
+  const repo = fauxRepo();
+  await lireTousTerritoires(repo, { session: async () => ({ employe: { id: 'e', fournisseur_id: null } }) }, 't');
+  const [op, table, opts] = repo.appels[0];
+  assert.equal(op, 'list'); assert.equal(table, 'territoires_sous_traitants');
+  assert.deepEqual(opts.filtre.statut.val, ['accepte', 'supplement']);
+});
+
+test('couleurs des sous-traitants : distinctes, sans vert / orange / rouge, nuances correctes', () => {
+  assert.equal(new Set(PALETTE_ST).size, PALETTE_ST.length);
+  for (const c of ['#2e9d63', '#e2a01b', '#c9483f']) assert.ok(!PALETTE_ST.includes(c));
+  assert.equal(couleurSt(0), PALETTE_ST[0]);
+  assert.equal(couleurSt(PALETTE_ST.length), PALETTE_ST[0]);
+  assert.equal(nuancer('#000000', 0.5), '#808080');
+  assert.equal(nuancer('#ffffff', -1), '#000000');
+  assert.equal(nuancer('#1d4ed8', 0), '#1d4ed8');
 });
 
 test('territoire : statut et supplément validés, « aucun » efface', async () => {
