@@ -103,7 +103,7 @@ Ces règles tiennent même si le front ou une fonction a un bogue :
    - devis `D-2026-00001`
    - facture `F-2026-00001`
    - note de crédit `NC-2026-00001`
-   - projet `ROV-001-26`. ⚠️ Ce n'est **pas** le format `XXX-XXX-XXX` de Mike : il me faut 3 vrais codes pour le reproduire.
+   - projet : **réglé** (ADR-040) : `STV-JEA-TRE-001`, attribué à chaque devis.
 2. **Libellés des rôles** chez Mike, sauf « Admin tout ».
 3. **Rabais sur un kit** : pour l'instant, seul le plafond délégué s'applique (aucun plafond automatique). Faut-il utiliser l'escompte de la marque principale du kit ?
 4. **Vendeurs et factures** : en lecture seule. Doivent-ils pouvoir créer la facture de dépôt ?

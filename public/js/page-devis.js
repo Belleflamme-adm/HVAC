@@ -18,7 +18,7 @@ if (user) {
     try {
       const devis = await api.get('devis-list', { statut: filtre.value, vendeur_id: miens.checked ? user.id : undefined });
       liste.replaceChildren(...(devis.length ? devis.map((d) => h('a', { class: 'bf-ligne', href: `/devis-edition?id=${d.id}` },
-        h('strong', {}, d.numero), pastilleStatut(d.statut_effectif),
+        h('strong', {}, d.numero), h('span', { class: 'bf-muet' }, d.code_projet), pastilleStatut(d.statut_effectif),
         h('span', {}, [d.client_prenom, d.client_nom].filter(Boolean).join(' ') || d.client_entreprise),
         h('span', {}, formatCents(d.total_cents)),
         d.bloque_par_rabais ? h('span', { class: 'bf-pastille bf-pastille--attente' }, 'Rabais à approuver') : null,

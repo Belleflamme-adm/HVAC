@@ -244,3 +244,14 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - BT : `BT#RV001 <projet>`, créé en brouillon à l'acceptation, avec toutes les lignes du devis, la localisation en entrepôt et l'état de réservation.
   - Le devis compte une ligne « rabais supplémentaire » négative, des clauses en lignes à 0 $, une signature électronique avec IP et 12 conditions générales.
 - **Remplace** : les formats provisoires de l'ADR-022, dès que Simon aura confirmé les points ouverts (sens de `NNN`, numéro de départ des devis HVAC).
+
+## ADR-040 | Code projet Belleflamme
+- **Date** : 2026-10-22 | **Statut** : Acceptée (remplace le format projet provisoire de l'ADR-022)
+- **Décision** (Simon) : `[SUCC][DIV]-[3 lettres prénom]-[3 lettres nom]-[NNN]`, ex. `STV-JEA-TRE-001`. Le code est attribué à chaque **devis**, et `NNN` compte les devis : 001 pour le 1er, 002 pour le 2e, etc. Le projet issu d'un devis accepté reprend son code.
+- **Règles techniques ajoutées par Claude** (à valider par Simon) :
+  1. Le compteur est tenu **par préfixe** (ex. `STV-JEA-TRE`), et non par client : Jean et Jeanne Tremblay ne recevront jamais le même code. Pour un client seul, le résultat est identique (001, 002...).
+  2. Les lettres sont en majuscules, sans accents ni tirets ni apostrophes (`Pierre-Luc` = PIE, `O'Brien` = OBR). Un nom de moins de 3 lettres est complété avec X (`Li` = LIX).
+  3. Pour une entreprise sans prénom, le nom de l'entreprise remplace le prénom.
+  4. Le client d'un devis ne peut plus être changé (le code en dépend) : on crée un nouveau devis.
+  5. Un renouvellement de devis reçoit un nouveau code (002...), puisque c'est un nouveau devis.
+- **Implémentation** : `app.code3`, `app.prochain_code_projet` (compteurs sans trou, jamais décrémentés), `public/js/bf-project-code.js` (mêmes règles, testées des deux côtés).

@@ -11,8 +11,8 @@ begin
     raise exception 'le devis de démo 2 doit attendre une approbation'; end if;
   if not exists (select 1 from public.factures where numero like 'F-%-00001' and statut = 'payee') then
     raise exception 'facture de dépôt attendue émise et payée'; end if;
-  if not exists (select 1 from public.projets where code_projet like 'ROV-001-%') then
-    raise exception 'projet ROV-001 attendu'; end if;
+  if not exists (select 1 from public.projets where code_projet = 'ROV-JUL-TRE-001') then
+    raise exception 'projet ROV-JUL-TRE-001 attendu'; end if;
   if exists (select 1 from public.produits where not fictif) then raise exception 'produit non marqué FICTIF'; end if;
   if not exists (select 1 from public.devis_lignes where type_ligne = 'installation' and prix_unitaire_cents = 86667) then
     raise exception 'installation de démo attendue : 650 $ avec marge 25 %% = 866,67 $'; end if;

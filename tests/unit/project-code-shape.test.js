@@ -1,18 +1,30 @@
 // Même nom que le test de Mike (tests/project-code-shape.test.js) pour faciliter la greffe.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bfProjectCodeOf, bfParseProjectCode, estCodeProjet } from '../../public/js/bf-project-code.js';
+import { bfProjectCodeOf, bfParseProjectCode, estCodeProjet, code3 } from '../../public/js/bf-project-code.js';
 
-test('préfixe : succursale + lettre de division', () => {
-  assert.equal(bfProjectCodeOf({ succursale: 'RO', division: 'Ventilation' }), 'ROV');
-  assert.equal(bfProjectCodeOf({ succursale: 'GA', division: 'Climatisation' }), 'GAV');
-  assert.equal(bfProjectCodeOf({ succursale_code: 'ST', division: 'V' }), 'STV');
-  assert.equal(bfProjectCodeOf({ succursale: 'dr', division: 'ventilation' }), 'DRV');
-  assert.equal(bfProjectCodeOf({ succursale: 'HO', division: 'Foyer-Gaz' }), 'HOF');
+test('code complet : [SUCC][DIV]-[PRÉ]-[NOM]-[NNN]', () => {
+  assert.equal(bfProjectCodeOf({ succursale: 'ST', division: 'Ventilation', prenom: 'Jean', nom: 'Tremblay', sequence: 1 }), 'STV-JEA-TRE-001');
+  assert.equal(bfProjectCodeOf({ succursale: 'GA', division: 'Climatisation', prenom: 'Émilie', nom: 'Côté', sequence: 12 }), 'GAV-EMI-COT-012');
+  assert.equal(bfProjectCodeOf({ succursale: 'DR', division: 'Foyer', prenom: 'Pierre-Luc', nom: 'Lévesque', sequence: 1 }), 'DRF-PIE-LEV-001');
 });
 
-test('Saint-Jérôme utilise HO (ADR-003)', () => {
+test('préfixe sans numéro (le numéro vient de la base)', () => {
+  assert.equal(bfProjectCodeOf({ succursale: 'RO', division: 'Ventilation', prenom: 'Julie', nom: 'Tremblay' }), 'ROV-JUL-TRE');
+  assert.equal(bfProjectCodeOf({ succursale: 'RO', division: 'Ventilation' }), 'ROV');
   assert.equal(bfProjectCodeOf({ succursale: 'HO', division: 'Ventilation' }), 'HOV');
+});
+
+test('mêmes règles de lettres que la base (app.code3)', () => {
+  assert.equal(code3('Pierre-Luc'), 'PIE');
+  assert.equal(code3('Émilie'), 'EMI');
+  assert.equal(code3("O'Brien"), 'OBR');
+  assert.equal(code3('Li'), 'LIX');
+  assert.equal(code3('Œuvre'), 'OEU');
+});
+
+test('entreprise sans prénom : le nom de l\'entreprise remplace le prénom', () => {
+  assert.equal(bfProjectCodeOf({ succursale: 'ST', division: 'V', entreprise: 'Constructions Éco', nom: 'Gagnon', sequence: 1 }), 'STV-CON-GAG-001');
 });
 
 test('entrées invalides : chaîne vide', () => {
@@ -22,13 +34,13 @@ test('entrées invalides : chaîne vide', () => {
 });
 
 test('un code attribué par la base est retourné tel quel', () => {
-  assert.equal(bfProjectCodeOf({ code_projet: 'rov-001-26' }), 'ROV-001-26');
+  assert.equal(bfProjectCodeOf({ code_projet: 'stv-jea-tre-001' }), 'STV-JEA-TRE-001');
 });
 
-test('analyse d\'un code XXX-XXX-XXX', () => {
-  assert.deepEqual(bfParseProjectCode('ROV-001-26'),
-    { succursale: 'RO', division: 'V', segment2: '001', segment3: '26', prefixe: 'ROV' });
-  assert.equal(estCodeProjet('ROV-123-456'), true);
-  assert.equal(estCodeProjet('XXV-001-26'), false);
-  assert.equal(estCodeProjet('ROV001'), false);
+test('analyse d\'un code', () => {
+  assert.deepEqual(bfParseProjectCode('STV-JEA-TRE-002'),
+    { succursale: 'ST', division: 'V', prenom: 'JEA', nom: 'TRE', sequence: 2, prefixe: 'STV' });
+  assert.equal(estCodeProjet('DRF-NOR-DUB-001'), true);
+  assert.equal(estCodeProjet('XXV-JEA-TRE-001'), false);
+  assert.equal(estCodeProjet('ROV-001-26'), false);
 });

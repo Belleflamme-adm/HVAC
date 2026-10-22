@@ -23,7 +23,7 @@ if (await exigerSession()) {
           dv.statut !== 'brouillon' ? h('p', {}, `Valide jusqu'au : ${dateFr(dv.valide_jusqu)}`) : null,
           h('p', {}, `Statut : ${LIBELLES_STATUT[dv.statut_effectif] || dv.statut_effectif}`),
           h('p', {}, `Conseiller : ${dv.vendeur_nom || ''}`))),
-      h('section', { class: 'client' }, h('h3', {}, 'Client'), h('p', {}, nomClient),
+      h('section', { class: 'client' }, h('h3', {}, 'Client'), h('p', {}, nomClient), h('p', {}, `Code projet : ${dv.code_projet}`),
         c.telephone ? h('p', {}, c.telephone) : null, c.courriel ? h('p', {}, c.courriel) : null,
         site ? h('p', {}, `Lieu des travaux : ${site.adresse}, ${site.ville} ${site.code_postal || ''}`) : null),
       h('table', {},

@@ -156,7 +156,7 @@ if (user) {
       h('p', {}, h('a', { href: '/devis' }, '← Devis'), ' | ', h('a', { href: `/client?id=${c.id}` }, nomClient)),
       h('div', { class: 'bf-titre' }, h('h1', {}, `Devis ${dv.numero}`), pastilleStatut(statut)),
       h('p', { class: 'bf-muet' },
-        `${dv.succursale_code} | ${dv.vendeur_nom || ''} | créé le ${dateFr(dv.date_devis)}`,
+        `Projet ${dv.code_projet} | ${dv.succursale_code} | ${dv.vendeur_nom || ''} | créé le ${dateFr(dv.date_devis)}`,
         dv.statut !== 'brouillon' ? ` | valide jusqu'au ${dateFr(dv.valide_jusqu)}` : '',
         site ? ` | ${site.adresse}, ${site.ville}` : ''),
       msg,

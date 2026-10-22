@@ -153,8 +153,8 @@ reset request.jwt.claims;
 insert into public.projets(id, succursale_code, client_id, devis_id, installation_prevue_le) values
   ('70000000-0000-0000-0000-000000000001','RO','30000000-0000-0000-0000-000000000001',
    '40000000-0000-0000-0000-000000000001', '2026-11-20 08:00-05');
-select test.ok((select code_projet = 'ROV-001-' || to_char(current_date,'YY') from public.projets
-                 where id = '70000000-0000-0000-0000-000000000001'), 'code projet ROV-001-AA (format provisoire)');
+select test.ok((select code_projet = 'ROV-JUL-TRE-001' from public.projets
+                 where id = '70000000-0000-0000-0000-000000000001'), 'code projet ROV-JUL-TRE-001 (repris du devis)');
 select test.ok((select solde_du_le = '2026-11-17 08:00-05'::timestamptz from public.projets
                  where id = '70000000-0000-0000-0000-000000000001'), 'solde dû 72 h avant l''installation');
 

@@ -35,7 +35,7 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 | `types_travaux`, `tarifs_sous_traitants` | BD - Fournisseurs ? (grilles de sous-traitants) | à confirmer | à confirmer. Chez Mike, les prix des sous-traitants sont peut-être dans des factures payables ou des documents, pas dans un board. |
 | `devis`, `devis_lignes` | Ventes et Devis 2.0 | à confirmer | à confirmer. Format du numéro de devis de Mike : à confirmer (ADR-004). |
 | `approbations_rabais`, `delegations_rabais` | (aucun board connu) | | Probablement nouveau. À confirmer : comment Mike trace les approbations aujourd'hui. |
-| `projets` | Plan de charge - Macro | à confirmer | `code_projet` = code Macro `XXX-XXX-XXX` (1er segment = succursale + division). 2e et 3e segments : à confirmer. |
+| `projets` | Plan de charge - Macro | à confirmer | `code_projet` = code Macro `[SUCC][DIV]-[PRÉ]-[NOM]-[NNN]` (ADR-040), identique à celui du devis d'origine. Autres colonnes : à confirmer. |
 | `equipements_installes` | Section équipements HVAC du détail Macro | à confirmer | Numéros de série int./ext./thermopompes poussés vers LogisVert : noms de champs à confirmer. |
 | `bons_travail`, `bt_lignes` | BT | à confirmer | à confirmer |
 | `appels_service` | Appels de service V2 ; Service App | à confirmer | à confirmer. Code générique ASV. |
