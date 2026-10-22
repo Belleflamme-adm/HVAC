@@ -84,7 +84,7 @@ if (user) {
         const coutGrille = (st, ty) => grille.find((g) => g.fournisseur_id === st && g.type_travail_id === ty)?.cout_cents;
         const selType = h('select', { name: 'type', required: true, 'aria-label': 'Type de travail' },
           h('option', { value: '' }, 'Type de travail…'), types.map((t) => h('option', { value: t.id }, t.nom)));
-        const selSt = h('select', { name: 'st', 'aria-label': 'Sous-traitant' },
+        const selSt = h('select', { name: 'st', required: true, 'aria-label': 'Sous-traitant' },
           h('option', { value: '' }, 'Sous-traitant…'), sousTraitants.map((f) => h('option', { value: f.id }, f.nom)));
         const soum = h('input', { type: 'checkbox', name: 'soumission' });
         const cout = h('input', { name: 'cout', inputmode: 'decimal', placeholder: 'Coût soumission $', class: 'bf-court', hidden: true, 'aria-label': 'Coût de la soumission' });
@@ -99,7 +99,7 @@ if (user) {
         [selType, selSt, cout].forEach((el) => el.addEventListener('input', majApercu));
         formInst.addEventListener('submit', (ev) => {
           ev.preventDefault();
-          const corps = { devis_id: dv.id, type_ligne: 'installation', type_travail_id: selType.value, sous_traitant_id: selSt.value || undefined, quantite: 1 };
+          const corps = { devis_id: dv.id, type_ligne: 'installation', type_travail_id: selType.value, sous_traitant_id: selSt.value, quantite: 1 };
           if (soum.checked) Object.assign(corps, { source_cout: 'soumission', reference_soumission: ref.value,
             cout_cents: Math.round(Number(String(cout.value).replace(',', '.').replace(/\s/g, '')) * 100) });
           action(() => api.post('devis-lignes', corps));

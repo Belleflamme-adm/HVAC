@@ -35,7 +35,8 @@ test('installation selon la grille : sous-traitant obligatoire', async () => {
 });
 
 test('soumission : coût et numéro de soumission obligatoires', async () => {
-  const base = { devis_id: D, type_ligne: 'installation', type_travail_id: T, source_cout: 'soumission', description: 'Toit plat' };
+  const base = { devis_id: D, type_ligne: 'installation', type_travail_id: T, sous_traitant_id: S, source_cout: 'soumission', description: 'Toit plat' };
+  await assert.rejects(() => ajouterLigne(fauxRepo(), { ...base, sous_traitant_id: undefined, cout_cents: 1, reference_soumission: 'X' }), /Sous-traitant requis/);
   await assert.rejects(() => ajouterLigne(fauxRepo(), { ...base, reference_soumission: 'ST-1' }), /Coût de la soumission/);
   await assert.rejects(() => ajouterLigne(fauxRepo(), { ...base, cout_cents: 175000 }), /Numéro de soumission/);
   const l = await ajouterLigne(fauxRepo(), { ...base, cout_cents: 175000, reference_soumission: 'ST-1' });

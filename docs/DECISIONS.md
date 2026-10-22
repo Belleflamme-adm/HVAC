@@ -198,3 +198,11 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Conséquences** : les kits ne contiennent plus de main-d'oeuvre ; l'installation est une ligne séparée. Le coût et la marge s'affichent dans l'écran du devis (usage interne), jamais sur le PDF du client.
 - **Risque** : une soumission saisie trop basse donne un prix trop bas. La vraie protection viendra en facturation : comparer la facture réelle du sous-traitant au coût du devis (rapport de marge réelle par projet).
 - **À confirmer** : le taux réel de la marge ; le prix quand l'installation est faite par **nos employés** (ADR-005) plutôt que par un sous-traitant.
+
+## ADR-036 | Marge par défaut de 25 % et installation par sous-traitants seulement
+- **Date** : 2026-10-22 | **Statut** : Acceptée
+- **Décision** (Simon) :
+  1. Marge par défaut sur l'installation : **25 % du prix de vente** (remplace la valeur provisoire de 30 % de l'ADR-035). Mike et Simon la fixent et l'ajustent dans la page Grille d'installation. Exemple : un coût de 1 000 $ donne 1 333,33 $.
+  2. **Aucun employé n'installe** : toute installation est faite par un sous-traitant. Le sous-traitant est obligatoire sur chaque ligne d'installation, même pour une soumission (contrainte en base).
+- **Conséquences** : si Belleflamme engage un jour des installateurs, on créera une liste de prix interne (nouveau type de source de coût). Rien n'est à prévoir d'ici là.
+- **Interprétation à confirmer** : « 25 % par-dessus » est lu comme une **marge de 25 % du prix de vente** (choix de Simon dans l'ADR-035). Une majoration de 25 % du coût donnerait plutôt 1 250 $.

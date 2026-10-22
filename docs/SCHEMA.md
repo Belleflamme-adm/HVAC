@@ -123,7 +123,7 @@ Ces règles tiennent même si le front ou une fonction a un bogue :
 | Trigger de statut | Brouillon -> envoyé -> accepté ou refusé ; devis vide refusé ; devis expiré non acceptable |
 | `types_travaux` | Types de travail d'installation (murale, centrale, échangeur...) |
 | `tarifs_sous_traitants` | Grille datée des coûts par sous-traitant et type de travail. Non modifiable : on ajoute un tarif. Invisible aux techniciens. |
-| Paramètre `marge_installation_bp` | Marge sur le prix de vente (provisoire : 30 %) |
+| Paramètre `marge_installation_bp` | Marge sur le prix de vente, 25 % par défaut (ADR-036), ajustable par Simon et Mike |
 | `devis_lignes.type_ligne` | `produit`, `kit`, `installation`, `libre` |
-| Ligne d'installation | Coût (grille ou soumission), marge figée, prix = coût / (1 − marge), plafond de rabais 0 % |
+| Ligne d'installation | Sous-traitant obligatoire, coût (grille ou soumission), marge figée, prix = coût / (1 − marge), plafond de rabais 0 % |
 
