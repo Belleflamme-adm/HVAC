@@ -558,3 +558,18 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Clic sur une municipalité : liste des sous-traitants qui la desservent, avec leur couleur ; un clic choisit le principal.
 - **Données** : `GET territoire?tous=1` rend tous les territoires desservis. Réservé à Belleflamme : un sous-traitant reçoit un refus (403) et la RLS ne lui montrerait que le sien de toute façon.
 - **Limite** : vue à l'échelle du Québec, les rayures des petites municipalités de la couronne de Montréal ne se voient qu'en zoomant.
+
+## ADR-064 | Fiche du sous-traitant, modifiable
+- **Date** : 2026-10-22 | **Statut** : Livrée (en local)
+- **Demande** (Simon) : dans Sous-traitants, cliquer sur un sous-traitant pour ouvrir sa fiche et la modifier au besoin.
+- **Champs** :
+  - La compagnie : nom, licence RBQ (si disponible), NEQ, téléphone, courriel, adresse.
+  - Propriétaire et responsable : nom du propriétaire, nom, téléphone et courriel du responsable.
+  - Actif ou non.
+- **Règles** :
+  - Page `/sous-traitant?id=`. Seuls les champs changés partent au serveur (`PATCH sous-traitant`).
+  - Modification réservée à la planification (Simon, Mike, coordination), par la RLS existante. Un vendeur ou le sous-traitant lui-même ne modifie pas la fiche.
+  - Licence RBQ : 10 chiffres, enregistrée au format 1234-5678-90, vérifiée par le serveur et par la base. La contrainte ne s'applique qu'aux nouvelles écritures (`not valid`) pour ne pas bloquer d'anciennes données.
+  - Courriels vérifiés. Chaque modification est journalisée (Loi 25 : noms et coordonnées de personnes).
+  - À la création, le contact qui reçoit l'accès devient le responsable par défaut.
+- **Liste** : le nom est un lien vers la fiche, avec un bouton « Fiche ». La ligne montre le responsable, ses coordonnées et la licence RBQ (« RBQ à inscrire » si absente).

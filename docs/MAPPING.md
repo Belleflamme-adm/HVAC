@@ -24,7 +24,7 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 | `succursales` | BD - Divisions ? | à confirmer | à confirmer. Codes HO, ST, RO, DR, GA connus. Saint-Jérôme = HO (ADR-003). |
 | `divisions` | BD - Divisions | à confirmer | `nom` = valeur du champ `division` de Mike (Foyer, Foyer-Gaz, Gaz, Ventilation, Climatisation). `lettre`, `code_generique` : connus (CLAUDE.md §3). |
 | `employes` | BD - Employés | à confirmer | `id` / `monday_item_id` / `email` / `prenom`+`nom` / `role` = contrat `session-me` de Mike (`id, itemId, email, name, role`). Libellés des rôles autres que « Admin tout » : à confirmer. |
-| `fournisseurs` | BD - Fournisseurs | à confirmer | à confirmer |
+| `fournisseurs` | BD - Fournisseurs | à confirmer | à confirmer. Fiche sous-traitant (ADR-064) : `nom`, `licence_rbq` (format 1234-5678-90), `neq`, `telephone`, `courriel`, `adresse`, `responsable_nom`, `responsable_telephone`, `responsable_courriel`, `proprietaire_nom`, `actif`. Colonnes équivalentes chez Mike : à confirmer. |
 | `clients` | BD - Clients | à confirmer | à confirmer. Champs LogisVert (`est_proprietaire`, `nom_preuve_propriete`, numéros HQ) : probablement absents chez Mike. |
 | `sites` | (aucun board connu) | | Adresses probablement dans BD - Clients ou Ventes et Devis 2.0 : à confirmer |
 | `leads` | Lead Réseaux Ventilation (180 items) ; Lead Réseaux | à confirmer | à confirmer. `source` et `statut` : valeurs Monday à confirmer. |

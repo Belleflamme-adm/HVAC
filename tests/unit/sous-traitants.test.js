@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fournisseurCible, lireTousTerritoires, majTerritoire, majDisponibilites, creerSousTraitant, designerPrincipal } from '../../lib/modules/sous-traitants.js';
+import { fournisseurCible, lireTousTerritoires, normaliserRbq, modifierSousTraitant, majTerritoire, majDisponibilites, creerSousTraitant, designerPrincipal } from '../../lib/modules/sous-traitants.js';
 import { grilleMois } from '../../public/js/bf-calendrier.js';
 import { projeter, cheminSvg, boite, centroide, regrouper, frontieres, choisirEtiquettes, PALETTE_ST, couleurSt, nuancer } from '../../public/js/bf-carte.js';
 import { readFileSync } from 'node:fs';
@@ -42,6 +42,26 @@ test('couleurs des sous-traitants : distinctes, sans vert / orange / rouge, nuan
   assert.equal(nuancer('#000000', 0.5), '#808080');
   assert.equal(nuancer('#ffffff', -1), '#000000');
   assert.equal(nuancer('#1d4ed8', 0), '#1d4ed8');
+});
+
+test('fiche : numéro RBQ normalisé (10 chiffres), vide = aucun', () => {
+  assert.equal(normaliserRbq('1234567890'), '1234-5678-90');
+  assert.equal(normaliserRbq(' 1234 5678 90 '), '1234-5678-90');
+  assert.equal(normaliserRbq('1234-5678-90'), '1234-5678-90');
+  assert.equal(normaliserRbq(''), null);
+  assert.throws(() => normaliserRbq('12345'), /RBQ/);
+  assert.throws(() => normaliserRbq('1234-5678-9A'), /RBQ/);
+});
+
+test('fiche : seuls les champs permis, courriels et nom validés', async () => {
+  const repo = { ...fauxRepo(), update: async (t, id, patch) => ({ t, id, patch }) };
+  const r = await modifierSousTraitant(repo, F, { responsable_nom: ' Jean ', proprietaire_nom: 'Luc', responsable_courriel: 'JEAN@Ex.ca',
+    licence_rbq: '1234567890', type: 'fournisseur', id: AUTRE });
+  assert.deepEqual(r.patch, { responsable_nom: 'Jean', proprietaire_nom: 'Luc', responsable_courriel: 'jean@ex.ca', licence_rbq: '1234-5678-90' });
+  await assert.rejects(() => modifierSousTraitant(repo, F, { responsable_courriel: 'pas-un-courriel' }), /Courriel/);
+  await assert.rejects(() => modifierSousTraitant(repo, F, { nom: ' ' }), /Nom/);
+  await assert.rejects(() => modifierSousTraitant(repo, F, {}), /Rien/);
+  await assert.rejects(() => modifierSousTraitant(repo, 'x', { nom: 'Abc' }), /invalide/);
 });
 
 test('territoire : statut et supplément validés, « aucun » efface', async () => {

@@ -32,10 +32,10 @@
     ],
     clients: [], sites: [],
     fournisseurs: [
-      { id: 'f-clim', nom: 'Clim Laurentides (FICTIF)', type: 'sous-traitant', telephone: '450-555-0190', courriel: 'clim@exemple.invalid', licence_rbq: '0000-0000-00', actif: true },
-      { id: 'f-rive', nom: 'Climatisation Rive-Nord (FICTIF)', type: 'sous-traitant', telephone: '450-555-0177', courriel: 'rivenord@exemple.invalid', licence_rbq: '0000-0000-02', actif: true },
-      { id: 'f-mauri', nom: 'Froid Centre-du-Québec (FICTIF)', type: 'sous-traitant', telephone: '819-555-0123', courriel: 'froid@exemple.invalid', licence_rbq: '0000-0000-03', actif: true },
-      { id: 'f-outa', nom: 'Thermo Outaouais (FICTIF)', type: 'sous-traitant', telephone: '819-555-0144', courriel: 'thermo@exemple.invalid', licence_rbq: '0000-0000-01', actif: true },
+      { id: 'f-clim', nom: 'Clim Laurentides (FICTIF)', type: 'sous-traitant', telephone: '450-555-0190', courriel: 'clim@exemple.invalid', licence_rbq: '0000-0000-00', responsable_nom: 'Martin Lavoie (FICTIF)', responsable_telephone: '450-555-0191', responsable_courriel: 'martin@exemple.invalid', proprietaire_nom: 'Paul Lavoie (FICTIF)', actif: true },
+      { id: 'f-rive', nom: 'Climatisation Rive-Nord (FICTIF)', type: 'sous-traitant', telephone: '450-555-0177', courriel: 'rivenord@exemple.invalid', licence_rbq: '0000-0000-02', responsable_nom: 'Julie Roy (FICTIF)', responsable_telephone: '450-555-0178', responsable_courriel: 'julie@exemple.invalid', proprietaire_nom: 'Julie Roy (FICTIF)', actif: true },
+      { id: 'f-mauri', nom: 'Froid Centre-du-Québec (FICTIF)', type: 'sous-traitant', telephone: '819-555-0123', courriel: 'froid@exemple.invalid', licence_rbq: '0000-0000-03', responsable_nom: 'Éric Bélanger (FICTIF)', responsable_telephone: '819-555-0124', responsable_courriel: 'eric@exemple.invalid', proprietaire_nom: 'Nadia Côté (FICTIF)', actif: true },
+      { id: 'f-outa', nom: 'Thermo Outaouais (FICTIF)', type: 'sous-traitant', telephone: '819-555-0144', courriel: 'thermo@exemple.invalid', licence_rbq: null, responsable_nom: 'Kevin Hall (FICTIF)', responsable_telephone: '819-555-0145', responsable_courriel: 'kevin@exemple.invalid', proprietaire_nom: null, actif: true },
     ],
     territoire: [], principaux: [], dispos: [],
     types: (window.__demoTypesTravaux || []).map((x, i) => ({ id: `t-${x.code}`, code: x.code, nom: x.nom, description: x.inclus, categorie: x.categorie, unite: x.unite, ordre: i })),
@@ -276,6 +276,25 @@
     } },
     'sites-save': { POST: (_q, b) => { const s = { id: `s-${etat.sites.length + 1}`, province: 'QC', ...b }; etat.sites.push(s); return s; } },
     'devis-create': { POST: () => { throw new Erreur(400, 'Le devis se fait dans l\'app de Mike (module en veille ici).'); } },
+    'sous-traitant': {
+      GET: (q) => { const f = etat.fournisseurs.find((x) => x.id === q.id); if (!f) throw new Erreur(404, 'Sous-traitant introuvable'); return f; },
+      PATCH: (q, b) => {
+        const f = etat.fournisseurs.find((x) => x.id === q.id);
+        if (!f) throw new Erreur(404, 'Sous-traitant introuvable');
+        exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à la planification');
+        const c = { ...b };
+        for (const k of Object.keys(c)) if (typeof c[k] === 'string') c[k] = c[k].trim() || null;
+        if ('nom' in c) exiger(c.nom && c.nom.length >= 2, 'Nom de la compagnie requis');
+        if (c.licence_rbq) {
+          const d = c.licence_rbq.replace(/\D/g, '');
+          exiger(d.length === 10 && !/[^\d\s-]/.test(c.licence_rbq), 'Numéro RBQ : 10 chiffres (ex. 1234-5678-90)');
+          c.licence_rbq = `${d.slice(0, 4)}-${d.slice(4, 8)}-${d.slice(8)}`;
+        }
+        for (const k of ['courriel', 'responsable_courriel']) if (c[k]) exiger(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c[k]), 'Courriel invalide');
+        Object.assign(f, c);
+        return f;
+      },
+    },
     'sous-traitants': {
       GET: () => etat.fournisseurs,
       POST: (_q, b) => { exiger(b.nom, 'Champ requis : nom'); const f = { id: `f-${etat.fournisseurs.length + 1}`, type: 'sous-traitant', actif: true, ...b }; etat.fournisseurs.push(f); return { fournisseur: f, compte: { email: b.contact?.email } }; },

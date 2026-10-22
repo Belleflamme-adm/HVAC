@@ -13,9 +13,14 @@ if (user) {
   async function charger() {
     try {
       const sts = await api.get('sous-traitants');
+      // Clic sur le nom : fiche du sous-traitant, modifiable (ADR-064)
       remplir(liste, ...(sts.length ? sts.map((s) => h('div', { class: 'bf-ligne' },
-        h('strong', {}, s.nom), h('span', { class: 'bf-muet' }, [s.telephone, s.courriel, s.licence_rbq ? `RBQ ${s.licence_rbq}` : null].filter(Boolean).join(' | ')),
+        h('a', { class: 'bf-lien-fort', href: `/sous-traitant?id=${s.id}` }, s.nom),
+        s.actif === false ? h('span', { class: 'bf-pastille' }, 'Inactif') : null,
+        h('span', { class: 'bf-muet' }, [s.responsable_nom ? `Responsable : ${s.responsable_nom}` : null, s.responsable_telephone || s.telephone,
+          s.responsable_courriel || s.courriel, s.licence_rbq ? `RBQ ${s.licence_rbq}` : 'RBQ à inscrire'].filter(Boolean).join(' | ')),
         h('span', { class: 'bf-actions' },
+          h('a', { class: 'bf-bouton', href: `/sous-traitant?id=${s.id}` }, 'Fiche'),
           h('a', { class: 'bf-bouton bf-bouton--discret', href: `/territoire?fournisseur=${s.id}` }, 'Territoire'),
           h('a', { class: 'bf-bouton bf-bouton--discret', href: `/disponibilites?fournisseur=${s.id}` }, 'Disponibilités'))))
         : [h('p', { class: 'bf-muet' }, 'Aucun sous-traitant.')]));
@@ -27,10 +32,11 @@ if (user) {
     h('h2', {}, 'Nouveau sous-traitant'),
     h('div', { class: 'bf-grille2' },
       champ('Entreprise *', 'nom', { required: true }), champ('Téléphone', 'telephone', { type: 'tel' }),
-      champ('Courriel de l\'entreprise', 'courriel', { type: 'email' }), champ('Licence RBQ', 'licence_rbq'),
+      champ('Courriel de l\'entreprise', 'courriel', { type: 'email' }), champ('Licence RBQ', 'licence_rbq', { placeholder: '1234-5678-90' }),
+      champ('Nom du propriétaire', 'proprietaire_nom'),
       champ('Prénom du contact *', 'prenom', { required: true }), champ('Nom du contact *', 'contact_nom', { required: true }),
       champ('Courriel de connexion *', 'email', { type: 'email', required: true })),
-    h('p', { class: 'bf-muet' }, 'Le contact recevra un accès limité : son territoire, ses disponibilités et, plus tard, ses jobs. '
+    h('p', { class: 'bf-muet' }, 'Le contact devient le responsable (modifiable dans la fiche). Il recevra un accès limité : son territoire, ses disponibilités et, plus tard, ses jobs. '
       + 'Avant l\'accès, faire signer une entente de confidentialité (Loi 25). L\'invitation se fait dans Supabase Auth (même courriel).'),
     h('div', { class: 'bf-actions' },
       h('button', { class: 'bf-bouton', type: 'submit' }, 'Créer'),
@@ -40,7 +46,7 @@ if (user) {
     const f = new FormData(form);
     const v = (k) => (f.get(k) || '').toString().trim() || undefined;
     try {
-      await api.post('sous-traitants', { nom: v('nom'), telephone: v('telephone'), courriel: v('courriel'), licence_rbq: v('licence_rbq'),
+      await api.post('sous-traitants', { nom: v('nom'), telephone: v('telephone'), courriel: v('courriel'), licence_rbq: v('licence_rbq'), proprietaire_nom: v('proprietaire_nom'),
         contact: { prenom: v('prenom'), nom: v('contact_nom'), email: v('email') } });
       form.reset(); form.hidden = true; message(msg, 'Sous-traitant créé.', 'ok'); charger();
     } catch (e) { message(msg, e.message); }
