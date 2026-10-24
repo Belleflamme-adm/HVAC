@@ -367,12 +367,12 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dash__filtres { display: flex; flex-wrap: wrap; gap: 8px; }
 .bf-dash__filtres select { font: inherit; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--d-ligne); background: var(--d-carte); color: var(--d-texte); flex: 1 1 180px; max-width: 260px; }
 .bf-dash__corps { display: grid; gap: 16px; }
-.bf-dash__tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-.bf-dash__tuile { background: var(--d-carte); border: 1px solid var(--d-ligne); border-radius: 14px; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+.bf-dash__tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 10px; }
+.bf-dash__tuile { background: var(--d-carte); border: 1px solid var(--d-ligne); border-radius: 14px; padding: 12px; display: flex; gap: 12px; align-items: flex-start; }
 .bf-dash__tuile-icone { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #23314f; color: #9ec5f4; flex: none; }
 .bf-dash__tuile-icone svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .bf-dash__tuile-libelle { color: var(--d-texte2); font-size: 14px; }
-.bf-dash__tuile-valeur { font-size: 30px; font-weight: 700; line-height: 1.15; }
+.bf-dash__tuile-valeur { font-size: clamp(22px, 1.9vw, 28px); font-weight: 700; line-height: 1.15; white-space: nowrap; }
 .bf-dash__delta { font-size: 13px; color: var(--d-texte2); margin-top: 2px; }
 .bf-dash__delta--bon { color: var(--d-bon); }
 .bf-dash__delta--mauvais { color: var(--d-mauvais); }
@@ -436,3 +436,12 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dash__bulle-ligne span:last-child { color: var(--d-texte2); }
 .bf-dash__bulle .bf-dash__cle { width: 12px; height: 3px; border-radius: 2px; margin-right: 4px; }
 @media (max-width: 640px) { .bf-dash { padding: 14px; margin-inline: 0; border-radius: 12px; } .bf-dash__tuile-valeur { font-size: 24px; } }
+/* Vendeurs et stock (ADR-069) */
+.bf-dash__barre-piste--empilee { display: flex; gap: 2px; align-items: stretch; }
+.bf-dash__seg-h { display: block; height: 14px; min-width: 2px; }
+.bf-dash__seg-h:last-child { border-radius: 0 4px 4px 0; }
+.bf-dash__vendeurs .bf-dash__vendeur td { font-weight: 700; border-top: 2px solid var(--d-ligne); }
+.bf-dash__vendeurs .bf-dash__territoire td { color: var(--d-texte2); font-size: 13px; padding-top: 5px; padding-bottom: 5px; }
+.bf-dash__vendeurs .bf-dash__territoire td:first-child { padding-left: 22px; }
+.bf-dash__vendeurs th .bf-dash__cle { margin-right: 5px; }
+.bf-dash__tuile-icone { width: 34px; height: 34px; }

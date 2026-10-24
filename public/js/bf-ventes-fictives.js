@@ -23,19 +23,31 @@ export const FOURNISSEURS = {
   ont: 'Importation Est ontarien (FICTIF)',
 };
 
-// Marques et modèles fictifs
+// Vendeurs fictifs : poids de vente par succursale (certains vendent dans deux territoires)
+export const VENDEURS = {
+  'e-marc': { nom: 'Marc Vendeur (FICTIF)', succ: { HO: 5, ST: 1.5 } },
+  'e-julie': { nom: 'Julie Gagnon (FICTIF)', succ: { HO: 3, RO: 1 } },
+  'e-sophie': { nom: 'Sophie Vente (FICTIF)', succ: { RO: 5, HO: 1 } },
+  'e-eric': { nom: 'Éric Lavoie (FICTIF)', succ: { RO: 3.5 } },
+  'e-annie': { nom: 'Annie Roy (FICTIF)', succ: { ST: 4 } },
+  'e-karim': { nom: 'Karim Ventes (FICTIF)', succ: { GA: 4.5 } },
+  'e-melanie': { nom: 'Mélanie Côté (FICTIF)', succ: { GA: 2.5 } },
+  'e-patrick': { nom: 'Patrick Fortin (FICTIF)', succ: { DR: 4, GA: 0.4 } },
+};
+
+// Marques et modèles fictifs (marge : part du prix qui reste après le coût de la machine et de l'installation)
 export const MODELES = [
-  { code: 'ARC-MS12', nom: 'Arctica MS-12 (12 000 BTU)', marque: 'Arctica', type: 'mural_simple', prix: 395000, fournisseur: 'laur', poids: 6 },
-  { code: 'ARC-MS18', nom: 'Arctica MS-18 (18 000 BTU)', marque: 'Arctica', type: 'mural_simple', prix: 465000, fournisseur: 'laur', poids: 3 },
-  { code: 'BOR-HX12', nom: 'Boréal HX-12 Hyper-chaleur', marque: 'Boréal', type: 'mural_simple', prix: 449000, fournisseur: 'mtl', poids: 5 },
-  { code: 'BOR-HX24', nom: 'Boréal HX-24 Hyper-chaleur', marque: 'Boréal', type: 'mural_simple', prix: 579000, fournisseur: 'mtl', poids: 2 },
-  { code: 'NOR-M2Z', nom: 'Nordair M2 (2 zones)', marque: 'Nordair', type: 'mural_multi', prix: 789000, fournisseur: 'ont', poids: 4 },
-  { code: 'NOR-M3Z', nom: 'Nordair M3 (3 zones)', marque: 'Nordair', type: 'mural_multi', prix: 965000, fournisseur: 'ont', poids: 3 },
-  { code: 'ARC-MZ4', nom: 'Arctica MZ-4 (4 zones)', marque: 'Arctica', type: 'mural_multi', prix: 1189000, fournisseur: 'laur', poids: 1.5 },
-  { code: 'BOR-CT2', nom: 'Boréal CT centrale 2 tonnes', marque: 'Boréal', type: 'central', prix: 1095000, fournisseur: 'mtl', poids: 2.5 },
-  { code: 'BOR-CT3', nom: 'Boréal CT centrale 3 tonnes', marque: 'Boréal', type: 'central', prix: 1285000, fournisseur: 'mtl', poids: 2 },
-  { code: 'NOR-BI25', nom: 'Nordair Bi-énergie 2,5 tonnes', marque: 'Nordair', type: 'bienergie', prix: 1165000, fournisseur: 'ont', poids: 2.5 },
-  { code: 'ARC-BI3', nom: 'Arctica Bi-énergie 3 tonnes', marque: 'Arctica', type: 'bienergie', prix: 1245000, fournisseur: 'laur', poids: 1.5 },
+  { code: 'ARC-MS12', nom: 'Arctica MS-12 (12 000 BTU)', marque: 'Arctica', type: 'mural_simple', prix: 395000, fournisseur: 'laur', marge: 0.38, poids: 6 },
+  { code: 'ARC-MS18', nom: 'Arctica MS-18 (18 000 BTU)', marque: 'Arctica', type: 'mural_simple', prix: 465000, fournisseur: 'laur', marge: 0.36, poids: 3 },
+  { code: 'BOR-HX12', nom: 'Boréal HX-12 Hyper-chaleur', marque: 'Boréal', type: 'mural_simple', prix: 449000, fournisseur: 'mtl', marge: 0.40, poids: 5 },
+  { code: 'BOR-HX24', nom: 'Boréal HX-24 Hyper-chaleur', marque: 'Boréal', type: 'mural_simple', prix: 579000, fournisseur: 'mtl', marge: 0.37, poids: 2 },
+  { code: 'NOR-M2Z', nom: 'Nordair M2 (2 zones)', marque: 'Nordair', type: 'mural_multi', prix: 789000, fournisseur: 'ont', marge: 0.35, poids: 4 },
+  { code: 'NOR-M3Z', nom: 'Nordair M3 (3 zones)', marque: 'Nordair', type: 'mural_multi', prix: 965000, fournisseur: 'ont', marge: 0.34, poids: 3 },
+  { code: 'ARC-MZ4', nom: 'Arctica MZ-4 (4 zones)', marque: 'Arctica', type: 'mural_multi', prix: 1189000, fournisseur: 'laur', marge: 0.33, poids: 1.5 },
+  { code: 'BOR-CT2', nom: 'Boréal CT centrale 2 tonnes', marque: 'Boréal', type: 'central', prix: 1095000, fournisseur: 'mtl', marge: 0.30, poids: 2.5 },
+  { code: 'BOR-CT3', nom: 'Boréal CT centrale 3 tonnes', marque: 'Boréal', type: 'central', prix: 1285000, fournisseur: 'mtl', marge: 0.29, poids: 2 },
+  { code: 'NOR-BI25', nom: 'Nordair Bi-énergie 2,5 tonnes', marque: 'Nordair', type: 'bienergie', prix: 1165000, fournisseur: 'ont', marge: 0.31, poids: 2.5 },
+  { code: 'ARC-BI3', nom: 'Arctica Bi-énergie 3 tonnes', marque: 'Arctica', type: 'bienergie', prix: 1245000, fournisseur: 'laur', marge: 0.30, poids: 1.5 },
 ];
 
 // PRNG déterministe (mulberry32)
@@ -74,15 +86,34 @@ export function ventesFictives(fin = '2026-10') {
       for (let k = 0; k < n; k++) {
         const type = tirer(r, Object.entries(s.types));
         const modele = tirer(r, MODELES.filter((x) => x.type === type).map((x) => [x, x.poids]));
+        const vendeur = tirer(r, Object.entries(VENDEURS).filter(([, v]) => v.succ[code]).map(([id, v]) => [id, v.succ[code]]));
         const direct = modele.type === 'central' || modele.type === 'bienergie' ? r() < 0.45 : r() < 0.15;
         ventes.push({
           mois, jour: 1 + Math.floor(r() * 28), succursale: code, municipalite: tirer(r, s.villes).replace('--', '–'),
           modele: modele.code, type, marque: modele.marque, fournisseur: modele.fournisseur,
           provenance: direct ? 'direct' : 'entrepot', delai_jours: Math.round((direct ? 6 : 2) + r() * (direct ? 8 : 4)),
-          prix_cents: Math.round(modele.prix * (0.92 + r() * 0.12) / 100) * 100,
+          vendeur, prix_cents: Math.round(modele.prix * (0.92 + r() * 0.12) / 100) * 100,
         });
+        const v = ventes[ventes.length - 1];
+        // Coût : marge du modèle, moins le rabais consenti (prix sous la liste = marge plus mince)
+        v.cout_cents = Math.round(modele.prix * (1 - modele.marge) * (0.97 + r() * 0.06) / 100) * 100;
       }
     }
   });
   return ventes;
+}
+
+// Inventaire fictif au dernier jour du mois `fin` : par modèle et par lieu (entrepôt central ou succursale)
+export const LIEUX_STOCK = { entrepot: 'Entrepôt central', HO: 'Saint-Jérôme', RO: 'Rosemère', ST: 'Saint-Sauveur', GA: 'Gatineau', DR: 'Drummondville' };
+export function stockFictif() {
+  const r = hasard(777);
+  const stock = [];
+  for (const m of MODELES) {
+    for (const lieu of Object.keys(LIEUX_STOCK)) {
+      const base = lieu === 'entrepot' ? m.poids * 3.2 : m.poids * 0.5;
+      const qte = Math.max(0, Math.round(base * (0.4 + r() * 1.2) - (m.type === 'bienergie' && lieu !== 'entrepot' ? 1 : 0)));
+      if (qte) stock.push({ modele: m.code, type: m.type, marque: m.marque, lieu, qte, valeur_cents: qte * Math.round(m.prix * (1 - m.marge) * 0.7) });
+    }
+  }
+  return stock;
 }

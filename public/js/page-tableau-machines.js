@@ -1,11 +1,11 @@
-// Tableau exécutif des machines HVAC (ADR-068) : d'où viennent les machines, où elles sont vendues,
-// quels modèles se vendent le plus, dans quel territoire. Données FICTIVES tant que l'app de Mike n'est pas branchée.
+// Tableau exécutif des machines HVAC (ADR-068, ADR-069) : d'où viennent les machines, où elles sont vendues,
+// quels modèles se vendent le plus, dans quel territoire, par quel vendeur ; marge brute et stock. Données FICTIVES tant que l'app de Mike n'est pas branchée.
 // Graphiques en SVG maison (aucune librairie) ; couleurs validées sur le fond sombre (outil de validation dataviz).
 import { initPage } from './bf-page.js?v=0.4.0';
 import { h, remplir } from './bf-dom.js?v=0.4.0';
 import { voitBoard } from './bf-crm.js?v=0.4.0';
 import { creerCarte, chargerMunicipalites, chargerReperes } from './bf-carte.js?v=0.4.0';
-import { TYPES, SUCCURSALES, FOURNISSEURS, MODELES, ventesFictives, moisJusqua } from './bf-ventes-fictives.js?v=0.4.0';
+import { TYPES, SUCCURSALES, FOURNISSEURS, MODELES, VENDEURS, LIEUX_STOCK, ventesFictives, stockFictif, moisJusqua } from './bf-ventes-fictives.js?v=0.4.0';
 
 const NS = 'http://www.w3.org/2000/svg';
 const FIN = '2026-10';
@@ -55,18 +55,37 @@ const ICONES = {
   moyenne: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
   carte: 'M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21zM12 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5z',
   entrepot: 'M3 10l9-6 9 6v10H3zM7 20v-6h10v6M7 17h10',
+  marge: 'M19 5L5 19M7.5 9a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM16.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
+  stock: 'M3 8l9-4 9 4-9 4zM3 8v8l9 4 9-4V8M12 12v8',
 };
 const icone = (nom) => { const s = svg('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' }); s.append(svg('path', { d: ICONES[nom] })); return s; };
 
-function tuile(ic, libelle, valeur, delta, compare, hausseBonne = true) {
+// delta : variation relative (0,12 = +12 %) ; avec points: true, écart en points de pourcentage (marge)
+function tuile(ic, libelle, valeur, delta, compare, { hausseBonne = true, points = false, note = null } = {}) {
   let d = null;
   if (delta !== null && Number.isFinite(delta)) {
     const bon = delta === 0 ? null : (delta > 0) === hausseBonne;
+    const n = (delta * 100).toLocaleString('fr-CA', { maximumFractionDigits: 1 });
     d = h('p', { class: `bf-dash__delta${bon === true ? ' bf-dash__delta--bon' : bon === false ? ' bf-dash__delta--mauvais' : ''}` },
-      `${delta > 0 ? '▲ +' : delta < 0 ? '▼ ' : ''}${(delta * 100).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} %`, h('span', {}, ` ${compare}`));
+      `${delta > 0 ? '▲ +' : delta < 0 ? '▼ ' : ''}${n}${points ? ' pt' : ' %'}`, h('span', {}, ` ${compare}`));
   }
   return h('div', { class: 'bf-dash__tuile' }, h('span', { class: 'bf-dash__tuile-icone' }, icone(ic)),
-    h('div', {}, h('p', { class: 'bf-dash__tuile-libelle' }, libelle), h('p', { class: 'bf-dash__tuile-valeur' }, valeur), d));
+    h('div', {}, h('p', { class: 'bf-dash__tuile-libelle' }, libelle), h('p', { class: 'bf-dash__tuile-valeur' }, valeur),
+      note ? h('p', { class: 'bf-dash__delta' }, h('span', {}, note)) : null, d));
+}
+
+// Barres empilées par type, une ligne par élément : [{ libelle, sous, parType: {type: n}, total, bulle }]
+function barresEmpilees(lignes, typesVisibles) {
+  const max = Math.max(1, ...lignes.map((l) => l.total));
+  return h('ol', { class: 'bf-dash__barres' }, lignes.map((l, i) => {
+    const piste = h('span', { class: 'bf-dash__barre-piste bf-dash__barre-piste--empilee' },
+      ...typesVisibles.filter((t) => l.parType[t]).map((t) => h('span', { class: 'bf-dash__seg-h', style: `width:${(l.parType[t] / max) * 100}%;background:${COULEUR_TYPE[t]}` })));
+    const li = h('li', {}, h('span', { class: 'bf-dash__rang' }, String(i + 1)),
+      h('span', { class: 'bf-dash__barre-libelle' }, h('span', {}, l.libelle), l.sous ? h('span', { class: 'bf-dash__muet' }, l.sous) : null),
+      piste, h('strong', { class: 'num' }, entier(l.total)));
+    survol(li, () => [[`${entier(l.total)}`, l.libelle], ...typesVisibles.map((t) => [String(l.parType[t] || 0), TYPES[t], COULEUR_TYPE[t]]), ...(l.bulle || [])]);
+    return li;
+  }));
 }
 
 // Colonnes empilées par type, un mois par colonne ; mois de la période en plein, les autres atténués
@@ -178,7 +197,8 @@ if (user) {
       return codesDe.get(cle);
     };
 
-    const filtres = { periode: '12m', succursale: '', type: '', marque: '' };
+    const stock = stockFictif();
+    const filtres = { periode: '12m', succursale: '', type: '', marque: '', vendeur: '' };
     const choix = (nom, libelle, options) => {
       const sel = h('select', { 'aria-label': libelle }, options.map(([v, t]) => h('option', { value: v, selected: filtres[nom] === v }, t)));
       sel.addEventListener('change', () => { filtres[nom] = sel.value; rendre(); });
@@ -188,7 +208,8 @@ if (user) {
       choix('periode', 'Période', Object.entries(PERIODES).map(([k, p]) => [k, p.libelle])),
       choix('succursale', 'Succursale', [['', 'Toutes les succursales'], ...Object.entries(SUCCURSALES).map(([k, s]) => [k, s.nom])]),
       choix('type', 'Type de système', [['', 'Tous les types'], ...Object.entries(TYPES)]),
-      choix('marque', 'Marque', [['', 'Toutes les marques'], ...[...new Set(MODELES.map((m) => m.marque))].map((m) => [m, m])]));
+      choix('marque', 'Marque', [['', 'Toutes les marques'], ...[...new Set(MODELES.map((m) => m.marque))].map((m) => [m, m])]),
+      choix('vendeur', 'Vendeur', [['', 'Tous les vendeurs'], ...Object.entries(VENDEURS).map(([k, v]) => [k, v.nom])]));
 
     const corps = h('div', { class: 'bf-dash__corps' });
     const panneau = h('div', { class: 'bf-dash' },
@@ -207,12 +228,25 @@ if (user) {
     function rendre() {
       cacherBulle();
       const P = PERIODES[filtres.periode];
-      const garder = (v) => (!filtres.succursale || v.succursale === filtres.succursale) && (!filtres.type || v.type === filtres.type) && (!filtres.marque || v.marque === filtres.marque);
+      const garder = (v) => (!filtres.succursale || v.succursale === filtres.succursale) && (!filtres.type || v.type === filtres.type)
+        && (!filtres.marque || v.marque === filtres.marque) && (!filtres.vendeur || v.vendeur === filtres.vendeur);
       const base = toutes.filter(garder);
       const ventes = base.filter((v) => P.mois.includes(v.mois));
       const avant = base.filter((v) => P.avant.includes(v.mois));
       const somme = (l) => l.reduce((s, v) => s + v.prix_cents, 0);
       const delta = (a, b) => (b ? (a - b) / b : null);
+      const marge = (l) => { const p = somme(l); return p ? (p - l.reduce((s, v) => s + v.cout_cents, 0)) / p : 0; };
+      // Stock au dernier jour : selon la succursale (son stock, plus l'entrepôt central qui la sert), le type et la marque
+      const stockVu = stock.filter((x) => (!filtres.type || x.type === filtres.type) && (!filtres.marque || x.marque === filtres.marque)
+        && (!filtres.succursale || x.lieu === filtres.succursale || x.lieu === 'entrepot'));
+      const enStock = stockVu.reduce((s, x) => s + x.qte, 0);
+      const ventes3m = base.filter((v) => moisJusqua(FIN, 3).includes(v.mois)).length;
+      const semaines = ventes3m ? enStock / (ventes3m / 13) : null;
+      // Vendeurs
+      const parVendeur = Object.entries(VENDEURS).map(([id, vd]) => ({ id, vd, v: ventes.filter((x) => x.vendeur === id) }))
+        .filter((x) => x.v.length).sort((a, b) => b.v.length - a.v.length);
+      const compte = (l, t) => l.filter((x) => x.type === t).length;
+      const parLieu = Object.entries(LIEUX_STOCK).map(([k, nom]) => ({ k, nom, l: stockVu.filter((x) => x.lieu === k) })).filter((x) => x.l.length);
       const typesVisibles = filtres.type ? [filtres.type] : Object.keys(TYPES);
       const munis = new Set(ventes.map((v) => `${v.succursale}|${v.municipalite}`));
       const partEntrepot = ventes.length ? ventes.filter((v) => v.provenance === 'entrepot').length / ventes.length : 0;
@@ -248,6 +282,10 @@ if (user) {
           tuile('argent', 'Ventes avant taxes', compact(somme(ventes) / 100), delta(somme(ventes), somme(avant)), P.compare),
           tuile('moyenne', 'Prix moyen par machine', ventes.length ? `${entier(somme(ventes) / ventes.length / 100)} $` : 'n/d',
             delta(ventes.length ? somme(ventes) / ventes.length : 0, avant.length ? somme(avant) / avant.length : 0), P.compare),
+          tuile('marge', 'Marge brute', pctTxt(marge(ventes)), avant.length ? marge(ventes) - marge(avant) : null, P.compare,
+            { points: true, note: `${compact((somme(ventes) - ventes.reduce((s, v) => s + v.cout_cents, 0)) / 100)} de marge` }),
+          tuile('stock', 'Machines en stock', entier(enStock), null, '',
+            { note: semaines ? `≈ ${semaines.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} semaines de ventes | ${compact(stockVu.reduce((s, x) => s + x.valeur_cents, 0) / 100)} au coût` : 'au dernier jour du mois' }),
           tuile('carte', 'Municipalités desservies', entier(munis.size), null, ''),
           tuile('entrepot', 'Livrées de l\'entrepôt', pctTxt(partEntrepot), partAvant ? (partEntrepot - partAvant) / partAvant : null, P.compare)),
         h('div', { class: 'bf-dash__rangee bf-dash__rangee--2-1' },
@@ -274,6 +312,30 @@ if (user) {
               h('thead', {}, h('tr', {}, h('th', {}, 'Fournisseur'), h('th', { class: 'num' }, 'Machines'), h('th', { class: 'num' }, 'Part'), h('th', { class: 'num' }, 'Délai moyen'))),
               h('tbody', {}, parFour.map((f) => h('tr', {}, h('td', {}, f.nom), h('td', { class: 'num' }, entier(f.n)),
                 h('td', { class: 'num' }, pctTxt(f.n / (ventes.length || 1))), h('td', { class: 'num' }, `${f.delai.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} j`)))))))),
+        h('div', { class: 'bf-dash__rangee bf-dash__rangee--2-1' },
+          carteGraph('Ventes par vendeur', `${P.libelle} | unités par type de système`,
+            h('div', { class: 'bf-dash__legende' }, typesVisibles.map((t) => h('span', {}, h('span', { class: 'bf-dash__cle', style: `background:${COULEUR_TYPE[t]}` }), TYPES[t]))),
+            parVendeur.length ? barresEmpilees(parVendeur.map(({ vd, v }) => ({
+              libelle: vd.nom, sous: `${compact(somme(v) / 100)} | marge ${pctTxt(marge(v))}`, total: v.length,
+              parType: Object.fromEntries(typesVisibles.map((t) => [t, compte(v, t)])), bulle: [[compact(somme(v) / 100), 'avant taxes'], [pctTxt(marge(v)), 'de marge brute']] })), typesVisibles)
+              : h('p', { class: 'bf-dash__muet' }, 'Aucune vente.')),
+          carteGraph('Machines en stock', 'Au 31 octobre 2026 | par lieu et par type',
+            parLieu.length ? barresEmpilees(parLieu.map(({ nom, l }) => ({ libelle: nom, total: l.reduce((s, x) => s + x.qte, 0),
+              sous: `${compact(l.reduce((s, x) => s + x.valeur_cents, 0) / 100)} au coût`,
+              parType: Object.fromEntries(typesVisibles.map((t) => [t, l.filter((x) => x.type === t).reduce((s, x) => s + x.qte, 0)])) })), typesVisibles)
+              : h('p', { class: 'bf-dash__muet' }, 'Aucune machine en stock.'))),
+        carteGraph('Vendeurs par territoire et type de machine', `${P.libelle} | unités vendues par chaque vendeur, dans chaque territoire`,
+          parVendeur.length ? h('div', { class: 'bf-dash__defile' }, h('table', { class: 'bf-dash__table bf-dash__vendeurs' },
+            h('thead', {}, h('tr', {}, h('th', {}, 'Vendeur | territoire'),
+              ...typesVisibles.map((t) => h('th', { class: 'num' }, h('span', { class: 'bf-dash__cle', style: `background:${COULEUR_TYPE[t]}` }), TYPES[t])),
+              h('th', { class: 'num' }, 'Total'), h('th', { class: 'num' }, 'Ventes'), h('th', { class: 'num' }, 'Marge'))),
+            h('tbody', {}, parVendeur.flatMap(({ vd, v }) => {
+              const territoires = Object.entries(SUCCURSALES).map(([k, sc]) => ({ sc, l: v.filter((x) => x.succursale === k) })).filter((x) => x.l.length);
+              const ligne = (libelle, l, classe) => h('tr', { class: classe }, h('td', {}, libelle),
+                ...typesVisibles.map((t) => h('td', { class: 'num' }, compte(l, t) ? entier(compte(l, t)) : '')),
+                h('td', { class: 'num' }, h('strong', {}, entier(l.length))), h('td', { class: 'num' }, compact(somme(l) / 100)), h('td', { class: 'num' }, pctTxt(marge(l))));
+              return [ligne(vd.nom, v, 'bf-dash__vendeur'), ...(territoires.length > 1 || filtres.succursale === '' ? territoires.map(({ sc, l }) => ligne(`↳ ${sc.nom}`, l, 'bf-dash__territoire')) : [])];
+            })))) : h('p', { class: 'bf-dash__muet' }, 'Aucune vente.')),
         carteGraph('Modèles par territoire', `${P.libelle} | les 6 modèles les plus vendus, en unités`,
           topMatrice.length ? h('div', { class: 'bf-dash__defile' }, h('table', { class: 'bf-dash__table bf-dash__matrice' },
             h('thead', {}, h('tr', {}, h('th', {}, 'Modèle'), ...succMat.map(([, s]) => h('th', { class: 'num' }, s.nom)), h('th', { class: 'num' }, 'Total'))),

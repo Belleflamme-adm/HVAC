@@ -632,3 +632,16 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Infobulle au survol et au clavier, données en tableau pour le graphique mensuel.
 - **Couleurs** : 4 couleurs de catégorie pour les types et une échelle bleue pour les quantités, vérifiées avec l'outil de validation (daltonisme, contraste) sur le fond sombre.
 - **Données** : générateur déterministe `public/js/bf-ventes-fictives.js` (marques, modèles et fournisseurs inventés). À la greffe : ventes réelles de l'app de Mike (devis acceptés, équipements HVAC du Macro, bons de commande et réceptions pour la provenance).
+
+## ADR-069 | Tableau des machines : marge brute, stock et ventes par vendeur
+- **Date** : 2026-10-24 | **Statut** : Maquette (données fictives)
+- **Demande** (Simon) : ajouter la marge brute et les machines en stock dans les tuiles, et une section par vendeur : ce qu'il a vendu, et quel type de machine il a vendu dans chaque territoire.
+- **Tuiles** :
+  - Marge brute : pourcentage, montant en dollars, écart en points par rapport à la période précédente. Marge = prix de vente moins le coût de la machine et de l'installation (définition à confirmer avec Simon et la comptabilité de Mike).
+  - Machines en stock : nombre au dernier jour du mois, couverture en semaines de ventes (moyenne des 3 derniers mois) et valeur au coût. Avec une succursale choisie : son stock plus celui de l'entrepôt central qui la sert.
+- **Nouveau filtre** : vendeur.
+- **Sections** :
+  - Ventes par vendeur : barres empilées par type de système, ventes en dollars et marge de chacun.
+  - Machines en stock : par lieu (entrepôt central et succursales), empilées par type.
+  - Vendeurs par territoire et type de machine : chaque vendeur avec ses totaux, puis une ligne par territoire où il a vendu, avec les unités par type, les ventes et la marge.
+- **À la greffe** : vendeurs et marges depuis les devis et factures de Mike ; stock depuis son module d'inventaire (relevé, réceptions, réservations).
