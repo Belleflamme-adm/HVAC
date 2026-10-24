@@ -49,6 +49,11 @@ select test.ok((select count(*) = 2 from public.hvac_mes_projets() j, jsonb_arra
 select test.ok((select extras_en_attente_cents = 43000 and total_final_cents = 210000 from public.hvac_mes_projets() where id = (select id from t_px)),
                'en attente : 250 $ + 180 $ ; total final sans extras non approuvés');
 select test.echec(format($$select public.hvac_facture_finale('%s')$$, (select id from t_px)), 'facture finale avec des brouillons', 'job est en cours');
+-- Photo obligatoire pour le hors liste (imprévu de chantier) : refusé sans photo, accepté avec
+select test.echec($$select public.hvac_extras_envoyer((select id from t_px))$$, 'hors liste sans photo', 'Photo obligatoire');
+create temp table t_ph_g as select public.hvac_extra_photo_preparer((select id from t_e2), 'image/jpeg', 200000) as p;
+insert into storage.objects (bucket_id, name) select 'extras-photos', p->>'chemin' from t_ph_g;
+select public.hvac_extra_photo_confirmer((select (p->>'id')::uuid from t_ph_g));
 select test.ok((select public.hvac_extras_envoyer((select id from t_px)) = 2), 'feuille d''extra envoyée : 2 lignes');
 select test.echec($$select public.hvac_extra_decider((select id from t_e1), true)$$, 'le sous-traitant n''approuve pas ses extras', 'réservée');
 

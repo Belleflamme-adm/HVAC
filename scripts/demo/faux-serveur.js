@@ -633,6 +633,8 @@
         if (b.action === 'envoyer') {
           const p = sien(etat.projets.find((y) => y.id === b.projet));
           const l = extrasDe(p, 'brouillon');
+          const sans = l.filter((x) => (x.hors_liste || x.cause === 'imprevu_chantier') && !nbPhotos(x));
+          exiger(!sans.length, `Photo obligatoire pour un extra hors liste ou un imprévu de chantier : ${sans.map((x) => x.description).join(', ')}`);
           exiger(l.length, 'Aucun extra à envoyer');
           l.forEach((x) => { x.statut = 'soumis'; x.soumis_le = iso(etat.maintenant); });
           return { envoyes: l.length };

@@ -48,20 +48,29 @@ if (user) {
       h('label', {}, 'Description *', h('input', { name: 'description', maxlength: 200, placeholder: 'Support mural renforcé' })),
       h('label', {}, 'Ton prix unitaire ($) *', h('input', { name: 'prix', inputmode: 'decimal', placeholder: '180' })),
       h('label', { class: 'bf-pleine' }, 'Justification * (pourquoi ce n\'est pas dans ta liste, ce qui s\'est passé)', h('textarea', { name: 'justification', rows: 2, minlength: 10 })));
-    mode.addEventListener('change', () => { deListe.hidden = mode.value !== 'liste'; horsListe.hidden = mode.value === 'liste'; });
+    // Photo obligatoire pour un extra hors liste ou un imprévu de chantier (ADR-083)
+    const libPhotos = h('span', {});
+    const photoRequise = () => mode.value === 'hors' || form.querySelector('[name=cause]').value === 'imprevu_chantier';
+    const majPhotos = () => { libPhotos.textContent = photoRequise() ? '📷 Photos * (obligatoire : hors liste ou imprévu de chantier ; 5 au plus)' : '📷 Photos (5 au plus, recommandées : c\'est ta preuve)'; };
+    mode.addEventListener('change', () => { deListe.hidden = mode.value !== 'liste'; horsListe.hidden = mode.value === 'liste'; majPhotos(); });
     const form = h('form', { class: 'bf-form bf-form--compact bf-jobs__form' },
       h('h3', {}, 'Nouvel extra'),
       h('div', { class: 'bf-grille2' }, h('label', {}, 'Provenance', mode), deListe,
         h('label', {}, 'Quantité', h('input', { name: 'qte', inputmode: 'decimal', value: '1' })),
-        h('label', {}, 'Cause *', h('select', { name: 'cause', required: true }, h('option', { value: '' }, 'Choisir…'),
+        h('label', {}, 'Cause *', h('select', { name: 'cause', required: true, onchange: () => majPhotos() }, h('option', { value: '' }, 'Choisir…'),
           Object.entries(CAUSES).map(([k, t]) => h('option', { value: k }, t))))),
       horsListe,
       h('label', {}, 'Note (facultatif)', h('input', { name: 'note', maxlength: 500 })),
-      h('label', {}, '📷 Photos (5 au plus, recommandées : c\'est ta preuve)', h('input', { type: 'file', name: 'photos', accept: 'image/*', multiple: true })),
+      h('label', {}, libPhotos, h('input', { type: 'file', name: 'photos', accept: 'image/*', multiple: true })),
       h('div', { class: 'bf-actions' }, h('button', { class: 'bf-bouton', type: 'submit' }, 'Ajouter au brouillon'),
         h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => zoneForm.replaceChildren() }, 'Annuler')));
+    majPhotos();
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
+      if (photoRequise() && !form.querySelector('[name=photos]').files.length) {
+        message(msg, 'Photo obligatoire pour un extra hors liste ou un imprévu de chantier : ajoute au moins une photo.');
+        return;
+      }
       const f = new FormData(form);
       const corps = { cause: f.get('cause'), quantite: Number(String(f.get('qte')).replace(',', '.')) || 1, note: f.get('note') || undefined };
       if (mode.value === 'liste') corps.type_travail_id = f.get('travail');
@@ -80,8 +89,10 @@ if (user) {
     zoneForm.replaceChildren(form);
   }
 
+  const manquePhoto = (x) => (x.hors_liste || x.cause === 'imprevu_chantier') && !x.nb_photos;
   function feuilleExtras(j) {
     const ext = j.extras || [];
+    const sansPhoto = ext.filter((x) => x.statut === 'brouillon' && manquePhoto(x)).length;
     const brouillons = ext.filter((x) => x.statut === 'brouillon').length;
     const enAttente = ext.some((x) => ['brouillon', 'soumis'].includes(x.statut));
     const zoneForm = h('div');
@@ -92,6 +103,7 @@ if (user) {
         h('thead', {}, h('tr', {}, ['Extra', 'Qté', 'Ton prix', 'Total', 'Statut', ''].map((t, i) => h('th', { class: i && i < 4 ? 'num' : null }, t)))),
         h('tbody', {}, ext.map((x) => h('tr', { class: x.statut === 'refuse' ? 'bf-jobs__refuse' : null },
           h('td', {}, x.description, ' ', x.hors_liste ? marqueHorsListe() : null,
+            x.statut === 'brouillon' && manquePhoto(x) ? [' ', h('span', { class: 'bf-pastille bf-extra--refuse' }, '📷 Photo obligatoire')] : null,
             h('div', { class: 'bf-muet' }, [CAUSES[x.cause], x.justification, x.note].filter(Boolean).join(' | ')),
             x.raison_refus ? h('div', { class: 'bf-jobs__raison' }, `Refusé : ${x.raison_refus}`) : null,
             galeriePhotos(x, { titre: x.description, peutRetirer: estSt && x.statut === 'brouillon', apres: recharger }),
@@ -117,6 +129,7 @@ if (user) {
             faire({ action: 'facture', projet: j.id }, (r) => `Facture finale soumise : ${formatCents(r.total_cents)} avant taxes. Envoie ta facture à Belleflamme pour ce montant.`);
           }
         } }, 'Soumettre ma facture finale') : null) : null,
+      estSt && sansPhoto ? h('p', { class: 'bf-jobs__raison' }, `${sansPhoto} extra(s) sans photo : la photo est obligatoire pour un extra hors liste ou un imprévu de chantier avant l'envoi.`) : null,
       estSt && j.extras_ouverts && enAttente && ['en_cours', 'termine'].includes(j.statut)
         ? h('p', { class: 'bf-muet' }, 'La facture finale se soumet quand tous tes extras sont approuvés ou refusés.') : null,
       zoneForm);

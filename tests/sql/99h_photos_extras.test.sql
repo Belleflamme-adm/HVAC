@@ -28,12 +28,17 @@ select test.echec($$insert into storage.objects (bucket_id, name) values ('extra
 insert into storage.objects (bucket_id, name) select 'extras-photos', p->>'chemin' from t_ph;
 select public.hvac_extra_photo_confirmer((select (p->>'id')::uuid from t_ph));
 select test.ok((select count(*) = 1 from public.hvac_extra_photos((select id from t_ex))), 'le sous-traitant voit sa photo');
-select test.ok((select count(*) = 1 from storage.objects where bucket_id = 'extras-photos'), 'il peut signer l''URL de sa photo (SELECT permis)');
+select test.ok((select count(*) = 1 from storage.objects where bucket_id = 'extras-photos' and name = (select p->>'chemin' from t_ph)), 'il peut signer l''URL de sa photo (SELECT permis)');
 select test.ok((select (x->>'nb_photos')::int = 1 from public.hvac_mes_projets() j, jsonb_array_elements(j.extras) x where j.id = (select id from t_pp)),
                'Mes jobs : 1 photo sur l''extra');
 -- 5 au plus
 select test.ok((select count(*) = 4 from (select public.hvac_extra_photo_preparer((select id from t_ex), 'image/jpeg', 1000) from generate_series(1, 4)) s), '4 photos de plus : 5 en tout');
 select test.echec($$select public.hvac_extra_photo_preparer((select id from t_ex), 'image/jpeg', 1000)$$, '6e photo', '5 photos');
+-- Imprévu de sa liste sans photo : refusé à l'envoi ; un oubli du vendeur de sa liste part sans photo
+create temp table t_imp as select public.hvac_extra_ajouter((select id from t_pp),
+  format('{"type_travail_id":"%s","cause":"imprevu_chantier"}', (select type_id from t_ph_inst))::jsonb) as id;
+select test.echec($$select public.hvac_extras_envoyer((select id from t_pp))$$, 'imprévu sans photo', 'Photo obligatoire');
+select public.hvac_extra_retirer((select id from t_imp));
 -- Après l'envoi : plus d'ajout ni de retrait
 select test.ok((select public.hvac_extras_envoyer((select id from t_pp)) = 1), 'extra envoyé avec sa photo');
 select test.echec($$select public.hvac_extra_photo_preparer((select id from t_ex), 'image/jpeg', 1000)$$, 'photo après l''envoi', 'brouillon');
@@ -43,7 +48,7 @@ select test.echec($$select public.hvac_extra_photo_retirer((select (p->>'id')::u
 select test.comme('00000000-0000-0000-0000-00000000000a');
 select test.ok((select nb_photos = 1 from public.extras_v where id = (select id from t_ex)), 'file d''approbation : 1 photo');
 select test.ok((select count(*) = 1 from public.hvac_extra_photos((select id from t_ex))), 'Simon voit la photo');
-select test.ok((select count(*) = 1 from storage.objects where bucket_id = 'extras-photos'), 'Simon peut signer l''URL');
+select test.ok((select count(*) = 1 from storage.objects where bucket_id = 'extras-photos' and name = (select p->>'chemin' from t_ph)), 'Simon peut signer l''URL');
 reset role;
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000d9', 'personne@test');
 set role authenticated;

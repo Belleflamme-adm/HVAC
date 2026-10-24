@@ -807,3 +807,12 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - la base confirme la photo seulement si le fichier est bien dans le bucket.
 - **Loi 25** : les photos montrent la maison du client. Elles restent privées, et une photo retirée n'est plus montrée mais son fichier reste pour la trace. **À décider avec Simon** : la durée de conservation (par exemple, purge X ans après la fin des garanties), puis une tâche de purge.
 - **Pas fait** : photo obligatoire. Simon pourrait l'exiger pour les extras hors liste ou les imprévus de chantier : une règle en base, facile à ajouter.
+
+## ADR-083 | Photo obligatoire pour un extra hors liste ou un imprévu de chantier
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon) : rendre la photo obligatoire pour les extras hors liste et les imprévus de chantier.
+- **Règle en base** (`hvac_extras_envoyer`, migration `20261024001700_photo_obligatoire.sql`) : la feuille ne part pas pour approbation tant qu'un de ces extras en brouillon n'a pas au moins une photo téléversée. Le message nomme les extras visés. La règle joue à l'envoi, car on crée le brouillon puis on y ajoute la photo.
+- **Dans le navigateur** :
+  - le champ Photos devient « obligatoire » selon la provenance et la cause choisies, et le formulaire refuse de créer l'extra sans photo ;
+  - si une photo est retirée, la pastille « 📷 Photo obligatoire » s'affiche avec un avertissement au-dessus du bouton d'envoi.
+- Les extras déjà envoyés ou décidés avant cette règle ne sont pas touchés. Un oubli du vendeur ou une demande du client tiré de sa liste reste sans photo obligatoire (photo recommandée).
