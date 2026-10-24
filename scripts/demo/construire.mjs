@@ -69,7 +69,7 @@ window.__nav = (u) => parent.__naviguer(String(u));
     const a = e.target.closest && e.target.closest('a[href]');
     if (!a) return;
     const h = a.getAttribute('href');
-    if (h.startsWith('/')) { e.preventDefault(); __nav(h); }
+    if (h.startsWith('/')) { e.preventDefault(); (window.__bfApresFenetre || ((f) => f()))(() => __nav(h)); }
   }, true);
 })();`;
 

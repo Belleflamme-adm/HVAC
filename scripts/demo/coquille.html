@@ -59,8 +59,19 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   } catch (e) { /* sans carte */ }
   const cadre = document.getElementById('app');
   window.__demoCourant = { path: '/', search: '', hash: '' };
-  window.__naviguer = (url) => {
+  // Historique (flèche Retour d'Android, bouton Précédent) : chaque changement de page s'inscrit dans l'historique
+  // du navigateur, sans changer l'adresse ; Retour réaffiche la page d'avant. mode : 'ajouter' | 'remplacer' | 'aucun'
+  const inscrire = (url, mode) => {
+    try {
+      if (mode === 'ajouter') history.pushState({ demoUrl: url }, '');
+      else if (mode === 'remplacer') history.replaceState({ demoUrl: url }, '');
+    } catch (e) { /* cadre qui refuse l'historique : navigation sans Retour */ }
+  };
+  window.addEventListener('popstate', (e) => { if (e.state && e.state.demoUrl) window.__naviguer(e.state.demoUrl, 'aucun'); });
+  window.__naviguer = (url, mode = 'ajouter') => {
     const u = new URL(url, 'https://demo.local' + window.__demoCourant.path);
+    const courant = window.__demoCourant.path + window.__demoCourant.search;
+    if (mode === 'ajouter' && `${u.pathname}${u.search}` === courant) mode = 'remplacer';   // même page : pas de doublon
     let page = u.pathname.replace(/^\/|\.html$/g, '') || 'index';
     if (page === 'login') page = 'index';
     window.__demoCourant = { path: u.pathname === '/login' ? '/' : u.pathname, search: u.search, hash: u.hash };
@@ -68,9 +79,10 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
     const html = window.__demoPages[page] || `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px">
       <h1>Page en veille</h1><p>« ${u.pathname.replace(/[<>&]/g, '')} » n'est pas dans le HTML de test (module de l'app de Mike).</p>
       <p><a href="#" onclick="parent.__naviguer('/');return false">Retour à l'accueil</a></p></body>`;
+    inscrire(`${u.pathname}${u.search}${u.hash}`, mode);
     cadre.srcdoc = html;
   };
-  const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search + (window.__demoCourant.hash || ''));
+  const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search + (window.__demoCourant.hash || ''), 'remplacer');
   // Dernier lien de demande de prix créé : l'ouvrir comme le sous-traitant (sans compte)
   const boutonLien = document.getElementById('lien-st');
   setInterval(() => { boutonLien.hidden = !S.dernierLien(); }, 700);
@@ -84,6 +96,6 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   const depart = (location.hash || '').slice(1);
   if (S.UTILISATEURS[depart]) { S.changerUtilisateur(depart); document.getElementById('qui').value = depart; }
   heure();
-  window.__naviguer('/');
+  window.__naviguer('/', 'remplacer');
 })();
 </script>

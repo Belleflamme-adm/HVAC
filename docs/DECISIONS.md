@@ -849,3 +849,10 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **À valider** :
   - exigences LogisVert vérifiées dans des sources secondaires seulement : le guide officiel d'Hydro-Québec n'a pas pu être ouvert depuis la session. Avant la mise en ligne, Simon ou un professionnel confirme la liste des pièces (photo de la plaque avec ENERGY STAR, numéro AHRI ou ENERGY STAR sur la facture, dépôt dans les 9 mois) ;
   - projets annulés : leurs photos n'ont pas de date de fin, donc pas encore de purge (règle à décider).
+
+## ADR-085 | Flèche Retour d'Android : page précédente, fenêtre fermée
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon, sur Android) : la flèche Retour standard doit ramener à la page d'avant.
+- **App** : chaque page a sa propre adresse (pretty URLs), donc Retour fonctionne nativement. Ajout : une **fenêtre** ouverte (groupe de tuiles, photo agrandie) s'inscrit dans l'historique, et Retour la **ferme** au lieu de quitter la page. Un lien cliqué dans une fenêtre retire d'abord l'entrée de la fenêtre : un seul Retour ramène ensuite à la page d'origine. ✕, Échap et clic à côté retirent aussi l'entrée, sans Retour « mort ».
+- **HTML de test** : les pages y sont simulées dans une seule adresse, donc l'historique restait vide et Retour quittait le test. La coquille inscrit maintenant chaque changement de page (`history.pushState`, sans changer l'adresse) et réaffiche la page d'avant sur Retour. Le changement d'heure simulée remplace l'entrée au lieu d'en ajouter.
+- **Limite** : dans l'app Claude, l'afficheur d'artifact peut capter le geste Retour pour se fermer, ce qu'on ne contrôle pas. Dans Chrome, et dans la vraie app installée (PWA), Retour suit l'historique.
