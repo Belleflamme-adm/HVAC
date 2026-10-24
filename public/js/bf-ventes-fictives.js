@@ -129,3 +129,17 @@ export function stockFictif() {
   }
   return stock;
 }
+
+// Régions de la carte où se trouvent les villes de chaque succursale (plusieurs municipalités portent le même nom)
+export const REGIONS_SUCC = { HO: ['Laurentides', 'Lanaudière'], RO: ['Laurentides', 'Laval', 'Lanaudière'], ST: ['Laurentides'], GA: ['Outaouais'], DR: ['Centre-du-Québec', 'Montérégie'] };
+// geo -> fonction (succursale, nom de ville) -> codes de municipalités sur la carte
+export function indexVilles(geo) {
+  const cache = new Map();
+  return (succ, nom) => {
+    const cle = `${succ}|${nom}`;
+    if (!cache.has(cle)) {
+      cache.set(cle, (geo?.features || []).filter((f) => f.properties.nom === nom && REGIONS_SUCC[succ].includes(f.properties.region)).map((f) => f.properties.code));
+    }
+    return cache.get(cle);
+  };
+}

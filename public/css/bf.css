@@ -454,3 +454,15 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dash__etiquette-fin { fill: var(--d-texte); font-size: 13px; font-weight: 700; font-family: var(--f); }
 .bf-dash__cible--ligne:hover, .bf-dash__cible--ligne:focus { fill: transparent; }
 .bf-dash__cible--ligne:focus-visible { outline: none; stroke: var(--d-s1); stroke-width: 2; }
+
+/* Tableau marketing (ADR-072) : 6 sources, palette validée sur #182036 (bleu, orange, vert d'eau, ocre, magenta, violet) */
+.bf-dash { --d-s5: #d55181; --d-s6: #9085e9; }
+.bf-dash__entonnoir { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.bf-dash__entonnoir li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(80px, 1.4fr) 3.6em; gap: 10px; align-items: center; border-radius: 8px; padding: 2px 4px; }
+.bf-dash__entonnoir li:hover, .bf-dash__entonnoir li:focus { background: rgba(255, 255, 255, .05); outline: none; }
+.bf-dash__entonnoir strong { text-align: right; font-variant-numeric: tabular-nums; }
+.bf-dash__entonnoir .bf-dash__barre, .bf-dash__entonnoir .bf-dash__barre-piste { height: 18px; }
+.bf-dash__alerte { color: #f0a35e; font-weight: 700; }
+.bf-dash__pistes { margin: 0; padding-left: 18px; display: grid; gap: 10px; color: var(--d-texte); line-height: 1.45; }
+.bf-dash__note { font-size: 13px; padding: 0 4px; }
+.bf-dash__chaleur td.bf-dash__cellule { min-width: 54px; }

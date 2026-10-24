@@ -29,6 +29,7 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 | `clients` | BD - Clients | à confirmer | à confirmer. Champs LogisVert (`est_proprietaire`, `nom_preuve_propriete`, numéros HQ) : probablement absents chez Mike. |
 | `sites` | (aucun board connu) | | Adresses probablement dans BD - Clients ou Ventes et Devis 2.0 : à confirmer |
 | `leads` | Lead Réseaux Ventilation (180 items) ; Lead Réseaux | à confirmer | à confirmer. `source` et `statut` : valeurs Monday à confirmer. |
+| `campagnes_marketing` (à créer) | Lead Réseaux (colonne campagne ?) | à confirmer | Tableau marketing (ADR-072) : code, source, nom de la campagne Facebook ou Google, pour relier chaque lead à sa campagne. Dépenses, clics et auditoires agrégés : rapports Facebook (Meta) et Google Ads, jamais au dossier du lead (Loi 25). |
 | `inspections` | Rapport inspection pré-installation (1175) ; Bot - Rapport pré-install Ventilation (5) ; Rapport d'inspection Ventilation/Climatisation (0) | à confirmer | Colonnes inconnues : tout le formulaire va dans `donnees` (jsonb) en attendant. |
 | `marques` | (dans Catalogue ?) | à confirmer | `escompte_fournisseur_bp`, `plafond_rabais_exception_bp` : source chez Mike à confirmer |
 | `produits` | Catalogue (~29,7k items) | 9677840877 | à confirmer. Champs HVAC (`ahri`, `energy_star`, `btu_nominal`, `btu_moins8`) : à confirmer. |

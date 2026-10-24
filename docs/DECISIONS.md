@@ -662,3 +662,18 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Forme** : deux lignes sur un seul axe en pourcentage, 12 derniers mois : marge avec installation (référence, violet) et marge avant installation (magenta). Couleurs distinctes de celles des types de système, validées sur le fond sombre. Valeur du dernier mois au bout de chaque ligne.
 - **Lecture** : une ligne verticale suit le pointeur (ou les flèches du clavier) et l'infobulle donne, pour le mois, le nombre de machines, les deux marges et l'écart dû à l'installation. La période choisie est en surbrillance. Données en tableau sous le graphique.
 - Suit tous les filtres (succursale, type, marque, vendeur).
+
+## ADR-072 | Tableau marketing : sources des leads, coûts, rendement, secteurs, auditoire (maquette)
+- **Date** : 2026-10-24 | **Statut** : Maquette à modeler avec Simon (données fictives)
+- **Demande** (Simon) : une section marketing avec le même genre de graphiques, pour savoir d'où viennent les leads (Facebook, Google...), de quel secteur, qui les demande (hommes, femmes), et tout ce qui aide à décider où et vers quelle cible envoyer le budget.
+- **Page** `/tableau-marketing` (direction, gérants, coordination), tuile « Tableau marketing » à l'accueil. Même panneau sombre et mêmes filtres que le tableau des machines : période, succursale, source, type de demande.
+- **Tuiles** : leads reçus, dépenses, coût par lead, taux de conversion (lead -> vente), coût par vente, ventes générées, rendement (ventes par 1 $ dépensé), part des leads sans coût.
+- **Graphiques** : leads par mois et par source, répartition par source, coût par lead par mois (sources payantes), rendement par source, tableau de performance par source et par campagne (dépenses, clics, leads, coût par lead, visites, ventes, conversion, coût par vente, ventes $, rendement, alerte sous 10 $ par 1 $), entonnoir du lead à la vente, types de demande par source, carte des leads par municipalité, conversion par secteur, genre et âge, jour et heure d'arrivée des leads, pistes pour le budget calculées automatiquement.
+- **Règles de calcul** :
+  - Coût par lead, coût par vente et rendement : sur les leads des campagnes payées seulement. Une référence gratuite ne doit pas faire paraître une pub plus rentable.
+  - Avec une succursale ou un type choisi, la dépense d'une campagne est répartie au prorata de ses leads (une campagne couvre plusieurs succursales). Approximation, à remplacer par le ciblage réel des campagnes.
+  - Ventes $ = valeur des ventes conclues à partir des leads (le lien lead -> vente viendra des devis de Mike).
+- **Loi 25 (genre et âge)** : rien n'est inscrit au dossier d'un lead, et le genre n'est jamais deviné à partir du prénom. On utilise seulement les rapports d'auditoire agrégés de Facebook (Meta) et Google Ads, qui donnent des totaux par tranche sans nommer personne. Les références, le site web et les appels n'ont donc pas de genre ni d'âge.
+- **Composants communs** : `public/js/bf-dash.js` (tuiles, infobulle, barres, colonnes empilées, anneau, lignes, panneau), partagé avec le tableau des machines. Correction au passage : la carte du tableau des machines gardait les bornes de couleur du premier affichage ; elle suit maintenant les filtres.
+- **À brancher plus tard** : leads de Monday et du CRM (source, campagne, ville, type, résultat) ; dépenses, clics et auditoires par les rapports Facebook et Google Ads (API à vérifier au moment de le faire, accès donnés par Simon) ; ventes par les devis de Mike.
+- **Couleurs** : 6 sources (bleu, orange, vert d'eau, ocre, magenta, violet), validées sur le fond sombre.
