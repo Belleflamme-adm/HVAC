@@ -479,3 +479,13 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dash__saisie { display: inline-flex; gap: 6px; align-items: center; color: var(--d-texte2); font-size: 13px; }
 .bf-dash__saisie input { width: 110px; font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--d-ligne); background: var(--d-bg); color: var(--d-texte); }
 .bf-dash__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Vendeurs : performance et rémunération (ADR-074) */
+.bf-dash__champ { width: 86px; font: inherit; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--d-ligne); background: var(--d-bg); color: var(--d-texte); text-align: right; }
+.bf-dash__paie td { white-space: nowrap; }
+.bf-dash__paie td:first-child { white-space: normal; min-width: 150px; }
+.bf-dash__point { cursor: pointer; }
+.bf-dash__point:focus { outline: none; }
+.bf-dash__point:focus circle:last-of-type, .bf-dash__point:hover circle:last-of-type { stroke: var(--d-texte); }
+.bf-dash__etiquette-point { fill: var(--d-texte2); font-size: 12px; font-family: var(--f); paint-order: stroke; stroke: #182036; stroke-width: 3px; }
+.bf-dash input.bf-dash__champ, .bf-dash__saisie input { height: auto; min-height: 0; background: var(--d-bg); color: var(--d-texte); border: 1px solid var(--d-ligne); box-shadow: none; padding: 4px 6px; font-size: 14px; }
+.bf-dash__barres li { grid-template-columns: 1.4em minmax(0, 1.2fr) minmax(60px, 1fr) minmax(3.2em, max-content); }

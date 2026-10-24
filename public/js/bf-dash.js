@@ -92,16 +92,16 @@ export function barres(lignes, { couleur = 'var(--d-s1)' } = {}) {
   }));
 }
 
-// Barres empilées : [{ libelle, sous, parts: { cle: n }, total, bulle }], séries dans l'ordre fixe
-export function barresEmpilees(lignes, series) {
+// Barres empilées : [{ libelle, sous, parts: { cle: n }, total, bulle }], séries dans l'ordre fixe ; format des nombres
+export function barresEmpilees(lignes, series, { format = entier } = {}) {
   const max = Math.max(1, ...lignes.map((l) => l.total));
   return h('ol', { class: 'bf-dash__barres' }, lignes.map((l, i) => {
     const piste = h('span', { class: 'bf-dash__barre-piste bf-dash__barre-piste--empilee' },
       ...series.filter((s) => l.parts[s.cle]).map((s) => h('span', { class: 'bf-dash__seg-h', style: `width:${(l.parts[s.cle] / max) * 100}%;background:${s.couleur}` })));
     const li = h('li', {}, h('span', { class: 'bf-dash__rang' }, String(i + 1)),
       h('span', { class: 'bf-dash__barre-libelle' }, h('span', {}, l.libelle), l.sous ? h('span', { class: 'bf-dash__muet' }, l.sous) : null),
-      piste, h('strong', { class: 'num' }, entier(l.total)));
-    survol(li, () => [[entier(l.total), l.libelle], ...series.map((s) => [String(l.parts[s.cle] || 0), s.libelle, s.couleur]), ...(l.bulle || [])]);
+      piste, h('strong', { class: 'num' }, format(l.total)));
+    survol(li, () => [[format(l.total), l.libelle], ...series.map((s) => [format(l.parts[s.cle] || 0), s.libelle, s.couleur]), ...(l.bulle || [])]);
     return li;
   }));
 }

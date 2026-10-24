@@ -54,3 +54,7 @@
 5. **Carte** : remplacer le lien Google Maps par la carte du client de l'app de Mike, et remplir `sites.latitude` / `sites.longitude` depuis ses données.
 6. **Avis d'enregistrement** : vérifier que la téléphonie de Mike annonce l'enregistrement au début de chaque appel, entrant et sortant (à valider par un professionnel).
 7. Une fois les communications automatiques en place, mettre en veille les boutons manuels Appel, Courriel et Texto de la fiche du lead, pour éviter les doublons.
+
+## Tableau des vendeurs (ADR-074)
+- Les taux de commission et salaires de base saisis dans la maquette ne sont pas la source de vérité : à la greffe, lire ceux du module Commissions de Mike (taux par vendeur, règles, exceptions), sans en garder une copie.
+- Heures travaillées : Pointage de Mike. Soumissions : ses devis envoyés. Ventes et marges : ses devis acceptés et factures (même définition de marge que la comptabilité, avec installation).

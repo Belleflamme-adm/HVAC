@@ -9,7 +9,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { TYPES_TRAVAUX, CATEGORIES } from '../reference/types-travaux.mjs';
 
-const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'sous-traitant', 'tableau-machines', 'tableau-marketing', 'installation-grille', 'demande-prix', 'prix', 'mes-prix'];
+const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'sous-traitant', 'tableau-machines', 'tableau-marketing', 'tableau-vendeurs', 'installation-grille', 'demande-prix', 'prix', 'mes-prix'];
 const lire = (f) => readFileSync(f, 'utf8');
 const icone = `data:image/svg+xml;base64,${Buffer.from(lire('public/icons/icon.svg')).toString('base64')}`;
 

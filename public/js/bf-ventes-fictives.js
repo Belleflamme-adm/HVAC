@@ -143,3 +143,29 @@ export function indexVilles(geo) {
     return cache.get(cle);
   };
 }
+
+// Activité fictive des vendeurs par mois (ADR-074), cohérente avec leurs ventes : leads reçus, contacts (appels,
+// textos, courriels), visites, soumissions envoyées, heures travaillées. À la greffe : CRM (leads, contacts),
+// Pointage de Mike (heures), devis de Mike (soumissions).
+const PROFILS = {   // taux de closing (ventes / soumissions), heures par mois
+  'e-marc': { closing: 0.46, heures: 165 }, 'e-julie': { closing: 0.38, heures: 150 }, 'e-sophie': { closing: 0.41, heures: 160 },
+  'e-eric': { closing: 0.33, heures: 162 }, 'e-annie': { closing: 0.44, heures: 140 }, 'e-karim': { closing: 0.36, heures: 168 },
+  'e-melanie': { closing: 0.29, heures: 110 }, 'e-patrick': { closing: 0.49, heures: 158 },
+};
+export function activiteVendeurs(ventes) {
+  const r = hasard(8128);
+  const parCle = new Map();
+  for (const v of ventes) { const k = `${v.mois}|${v.vendeur}`; parCle.set(k, (parCle.get(k) || 0) + 1); }
+  const lignes = [];
+  for (const mois of [...new Set(ventes.map((v) => v.mois))]) {
+    for (const [id, p] of Object.entries(PROFILS)) {
+      const n = parCle.get(`${mois}|${id}`) || 0;
+      const soumissions = Math.max(n, Math.round(n / (p.closing * (0.9 + r() * 0.2))));
+      const visites = Math.round(soumissions * (1.1 + r() * 0.15));
+      const contacts = Math.round(visites * (1.7 + r() * 0.4));
+      const leads = Math.round(contacts * (0.55 + r() * 0.1));
+      lignes.push({ mois, vendeur: id, leads, contacts, visites, soumissions, heures: Math.round(p.heures * (0.92 + r() * 0.12)) });
+    }
+  }
+  return lignes;
+}
