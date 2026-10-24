@@ -1,5 +1,6 @@
 // Conventions de Mike vérifiées sur les fichiers statiques.
 import { test } from 'node:test';
+import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -58,4 +59,9 @@ test('aucun tiret cadratin dans les textes', () => {
   for (const f of [...HTML, ...JS, ...fichiers('docs', ['.md']), ...fichiers('netlify', ['.mjs']), ...fichiers('lib', ['.js'])]) {
     assert.doesNotMatch(readFileSync(f, 'utf8'), /\u2014/, f);
   }
+});
+
+// Une erreur de syntaxe dans une page ne serait vue qu'au chargement dans le navigateur : on la bloque ici
+test('syntaxe valide pour tous les scripts du front', () => {
+  for (const f of JS) execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' });
 });

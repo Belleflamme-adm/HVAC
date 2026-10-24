@@ -1,5 +1,6 @@
 // Performance et rémunération des vendeurs (ADR-074) : ce que chaque vendeur a rentré, sa commission (pourcentage
 // ajustable par vendeur, 10 % par défaut), son salaire par rapport au travail fourni et son taux de closing.
+// Chaque vendeur a son bouton : commission sur les ventes ou sur la marge brute (ADR-075).
 // Pour le directeur des ventes et la comptabilité. SIMULATION : la paie officielle reste dans le module Commissions de Mike.
 // Données FICTIVES tant que les devis, factures et le Pointage de Mike ne sont pas branchés.
 import { initPage } from './bf-page.js?v=0.4.0';
@@ -28,24 +29,42 @@ if (user) {
   } else {
     const ventesTout = ventesFictives(FIN);
     const activite = activiteVendeurs(ventesTout);
-    // Réglages par vendeur : % de commission et salaire de base annuel. Maquette : gardés dans ce navigateur ; app branchée : en base, avec historique.
+    // Réglages par vendeur : % de commission, calcul sur les ventes ou la marge, salaire de base annuel.
+    // Maquette : gardés dans ce navigateur ; app branchée : en base, avec historique et date d'effet.
     const CLE = 'bf_remuneration_vendeurs';
-    const defaut = () => ({ base: 'ventes', vendeurs: Object.fromEntries(Object.keys(VENDEURS).map((id) => [id, { pct: PCT_DEFAUT, salaire: 0 }])) });
+    const defaut = () => ({ vendeurs: Object.fromEntries(Object.keys(VENDEURS).map((id) => [id, { pct: PCT_DEFAUT, salaire: 0, sur: 'ventes' }])) });
     let reglages = defaut();
-    try { const r = JSON.parse(localStorage.getItem(CLE) || 'null'); if (r?.vendeurs) reglages = { ...reglages, ...r, vendeurs: { ...reglages.vendeurs, ...r.vendeurs } }; } catch { /* stockage indisponible */ }
+    try {
+      const r = JSON.parse(localStorage.getItem(CLE) || 'null');
+      if (r?.vendeurs) for (const [id, v] of Object.entries(r.vendeurs)) if (reglages.vendeurs[id]) reglages.vendeurs[id] = { ...reglages.vendeurs[id], sur: r.base || 'ventes', ...v };
+    } catch { /* stockage indisponible */ }
     const sauver = () => { try { localStorage.setItem(CLE, JSON.stringify(reglages)); } catch { /* stockage indisponible */ } };
     let edition = false;
+    let avis = null;   // message après un changement de mode de calcul
+
+    // Bouton par vendeur. En passant d'un mode à l'autre, le % est converti pour que la paie reste la même sur la période
+    // affichée (ex. 10 % des ventes = environ 32 % de la marge) ; Simon l'ajuste ensuite à son goût.
+    function basculer(x) {
+      const r = reglages.vendeurs[x.id];
+      const vers = r.sur === 'marge' ? 'ventes' : 'marge';
+      const assiette = vers === 'marge' ? x.marge : x.ventes;
+      const ancien = r.pct;
+      if (assiette > 0) r.pct = Math.round((x.commission / assiette) * 1000) / 10;
+      r.sur = vers;
+      sauver();
+      avis = `${x.nom} : commission maintenant sur ${vers === 'marge' ? 'la marge brute' : 'les ventes'}. ${ancien.toLocaleString('fr-CA')} % ${vers === 'marge' ? 'des ventes' : 'de la marge'} devient ${r.pct.toLocaleString('fr-CA')} % ${vers === 'marge' ? 'de la marge' : 'des ventes'} pour garder la même paie sur la période ; ajuste le pourcentage au besoin.`;
+      rendre();
+    }
 
     const filtres = { periode: '12m', vendeur: '' };
     const choix = (nom, libelle, options, surChange) => {
-      const sel = h('select', { 'aria-label': libelle }, options.map(([v, t]) => h('option', { value: v, selected: (nom === 'base' ? reglages.base : filtres[nom]) === v }, t)));
+      const sel = h('select', { 'aria-label': libelle }, options.map(([v, t]) => h('option', { value: v, selected: filtres[nom] === v }, t)));
       sel.addEventListener('change', () => { surChange(sel.value); rendre(); });
       return sel;
     };
     const barreFiltres = h('div', { class: 'bf-dash__filtres' },
       choix('periode', 'Période', Object.entries(PERIODES).map(([k, p]) => [k, p.libelle]), (v) => { filtres.periode = v; }),
-      choix('vendeur', 'Vendeur', [['', 'Tous les vendeurs'], ...Object.entries(VENDEURS).map(([k, v]) => [k, v.nom])], (v) => { filtres.vendeur = v; }),
-      choix('base', 'Commission calculée sur', [['ventes', 'Commission sur les ventes'], ['marge', 'Commission sur la marge brute']], (v) => { reglages.base = v; sauver(); }));
+      choix('vendeur', 'Vendeur', [['', 'Tous les vendeurs'], ...Object.entries(VENDEURS).map(([k, v]) => [k, v.nom])], (v) => { filtres.vendeur = v; }));
     const corps = h('div', { class: 'bf-dash__corps' });
     remplir(zone, panneauDash('Vendeurs | Performance et rémunération',
       'Ce que chaque vendeur a rentré, ce qu\'il gagne, le travail fourni et son taux de closing. Simulation : la paie officielle reste dans le module Commissions de l\'app de Mike.',
@@ -57,13 +76,14 @@ if (user) {
       const a = activite.filter((x) => x.vendeur === id && mois.includes(x.mois));
       const somme = (l, f) => l.reduce((t, x) => t + f(x), 0);
       const ventes = somme(v, (x) => x.prix_cents) / 100; const marge = ventes - somme(v, (x) => x.cout_cents) / 100;
-      const r = reglages.vendeurs[id] || { pct: PCT_DEFAUT, salaire: 0 };
-      const commission = (reglages.base === 'marge' ? marge : ventes) * (Number(r.pct) || 0) / 100;
+      const r = reglages.vendeurs[id] || { pct: PCT_DEFAUT, salaire: 0, sur: 'ventes' };
+      const surMarge = r.sur === 'marge';
+      const commission = (surMarge ? marge : ventes) * (Number(r.pct) || 0) / 100;
       const base = (Number(r.salaire) || 0) * mois.length / 12;
       const heures = somme(a, (x) => x.heures); const soumissions = somme(a, (x) => x.soumissions); const leads = somme(a, (x) => x.leads);
       const remuneration = commission + base;
       return {
-        id, nom: VENDEURS[id].nom, nb: v.length, ventes, marge, pctMarge: ventes ? marge / ventes : 0, pct: Number(r.pct) || 0, salaire: Number(r.salaire) || 0,
+        id, nom: VENDEURS[id].nom, surMarge, nb: v.length, ventes, marge, pctMarge: ventes ? marge / ventes : 0, pct: Number(r.pct) || 0, salaire: Number(r.salaire) || 0,
         commission, base, remuneration, heures, parHeure: heures ? remuneration / heures : 0, ventesHeure: heures ? ventes / heures : 0,
         leads, contacts: somme(a, (x) => x.contacts), visites: somme(a, (x) => x.visites), soumissions,
         closing: soumissions ? v.length / soumissions : 0, leadVente: leads ? v.length / leads : 0, panier: v.length ? ventes / v.length : 0,
@@ -85,14 +105,14 @@ if (user) {
       const Ta = { ventes: tot(Sa, 'ventes'), marge: tot(Sa, 'marge'), remuneration: tot(Sa, 'remuneration'), heures: tot(Sa, 'heures'), nb: tot(Sa, 'nb'), soumissions: tot(Sa, 'soumissions') };
       const delta = (a, b) => (b ? (a - b) / b : null);
       const closingEquipe = T.soumissions ? T.nb / T.soumissions : 0; const closingAvant = Ta.soumissions ? Ta.nb / Ta.soumissions : 0;
-      const surMarge = reglages.base === 'marge';
+      const nbMarge = S.filter((x) => x.surMarge).length;
       const mois12 = moisJusqua(FIN, 12);
 
       remplir(corps,
         h('div', { class: 'bf-dash__tuiles' },
           tuile('argent', 'Ventes rentrées', compact(T.ventes), delta(T.ventes, Ta.ventes), P.compare, { note: `${entier(T.nb)} ventes, avant taxes` }),
-          tuile('vente', `Commissions (${surMarge ? 'sur la marge' : 'sur les ventes'})`, compact(T.commission), null, '',
-            { note: `${pctTxt(T.ventes ? T.commission / T.ventes : 0, 1)} des ventes | ${pctTxt(T.marge ? T.commission / T.marge : 0, 1)} de la marge` }),
+          tuile('vente', 'Commissions', compact(T.commission), null, '',
+            { note: `${pctTxt(T.ventes ? T.commission / T.ventes : 0, 1)} des ventes | ${pctTxt(T.marge ? T.commission / T.marge : 0, 1)} de la marge | ${nbMarge} vendeur(s) payé(s) sur la marge` }),
           tuile('machines', 'Rémunération totale', compact(T.remuneration), delta(T.remuneration, Ta.remuneration), P.compare, { hausseBonne: false, note: 'commissions + salaires de base' }),
           tuile('marge', 'Coût de la force de vente', pctTxt(T.ventes ? T.remuneration / T.ventes : 0, 1), null, '', { note: 'rémunération / ventes' }),
           tuile('moyenne', 'Rémunération moyenne par heure', T.heures ? dollars(T.remuneration / T.heures) : 'n/d', null, '', { note: `${entier(T.heures)} heures travaillées (Pointage)` }),
@@ -101,16 +121,20 @@ if (user) {
           tuile('stock', 'Marge après rémunération', compact(T.marge - T.remuneration), delta(T.marge - T.remuneration, Ta.marge - Ta.remuneration), P.compare,
             { note: `${pctTxt(T.ventes ? (T.marge - T.remuneration) / T.ventes : 0, 1)} des ventes` })),
 
-        carteGraph('Ce que chaque vendeur a rentré et ce qu\'il gagne', `${P.libelle} | commission ${surMarge ? 'sur la marge brute' : 'sur les ventes avant taxes'}, salaire de base au prorata`,
+        carteGraph('Ce que chaque vendeur a rentré et ce qu\'il gagne', `${P.libelle} | clique sur « Ventes » ou « Marge » pour changer le calcul de la commission d'un vendeur | salaire de base au prorata`,
+          avis ? h('p', { class: 'bf-dash__avis', role: 'status' }, avis) : null,
           h('div', { class: 'bf-dash__actions' },
             h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { edition = !edition; rendre(); } }, edition ? 'Terminer' : 'Modifier les pourcentages et salaires de base'),
-            edition ? h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { reglages = defaut(); sauver(); rendre(); } }, `Remettre ${PCT_DEFAUT} % et 0 $ pour tous`) : null),
+            edition ? h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { reglages = defaut(); avis = null; sauver(); rendre(); } }, `Remettre ${PCT_DEFAUT} % des ventes et 0 $ pour tous`) : null),
           S.length ? h('div', { class: 'bf-dash__defile' }, h('table', { class: 'bf-dash__table bf-dash__vendeurs bf-dash__paie' },
-            h('thead', {}, h('tr', {}, ['Vendeur', 'Ventes', 'Nb', 'Marge', '% comm.', 'Base / an', 'Commission', 'Rémunération', 'Heures', '$ / heure', 'Leads', 'Visites', 'Soumissions', 'Closing', 'Lead → vente', 'Coût de vente']
+            h('thead', {}, h('tr', {}, ['Vendeur', 'Ventes', 'Nb', 'Marge', 'Commission sur', '% comm.', 'Base / an', 'Commission', 'Rémunération', 'Heures', '$ / heure', 'Leads', 'Visites', 'Soumissions', 'Closing', 'Lead → vente', 'Coût de vente']
               .map((t, i) => h('th', { class: i ? 'num' : '' }, t)))),
             h('tbody', {}, [...S.map((x) => h('tr', {},
               h('td', {}, h('strong', {}, x.nom), h('div', { class: 'bf-dash__muet' }, x.succursales.join(', '))),
               h('td', { class: 'num' }, compact(x.ventes)), h('td', { class: 'num' }, entier(x.nb)), h('td', { class: 'num' }, pctTxt(x.pctMarge)),
+              h('td', { class: 'num' }, h('span', { class: 'bf-dash__bascule', role: 'group', 'aria-label': `Commission de ${x.nom} calculée sur` },
+                h('button', { type: 'button', class: x.surMarge ? '' : 'actif', 'aria-pressed': String(!x.surMarge), onclick: () => { if (x.surMarge) basculer(x); } }, 'Ventes'),
+                h('button', { type: 'button', class: x.surMarge ? 'actif' : '', 'aria-pressed': String(x.surMarge), onclick: () => { if (!x.surMarge) basculer(x); } }, 'Marge'))),
               h('td', { class: 'num' }, edition ? h('input', { type: 'number', min: 0, max: 100, step: 0.5, value: x.pct, class: 'bf-dash__champ', 'aria-label': `Pourcentage de commission de ${x.nom}`,
                 onchange: (ev) => { reglages.vendeurs[x.id].pct = Math.min(100, Math.max(0, Number(ev.target.value) || 0)); sauver(); setTimeout(rendre, 0); } }) : `${x.pct.toLocaleString('fr-CA')} %`),
               h('td', { class: 'num' }, edition ? h('input', { type: 'number', min: 0, step: 1000, value: x.salaire, class: 'bf-dash__champ', 'aria-label': `Salaire de base annuel de ${x.nom}`,
@@ -120,17 +144,17 @@ if (user) {
               h('td', { class: 'num' }, entier(x.leads)), h('td', { class: 'num' }, entier(x.visites)), h('td', { class: 'num' }, entier(x.soumissions)),
               h('td', { class: 'num' }, pctTxt(x.closing, 1)), h('td', { class: 'num' }, pctTxt(x.leadVente, 1)), h('td', { class: 'num' }, pctTxt(x.coutVente, 1)))),
             h('tr', { class: 'bf-dash__vendeur' }, h('td', {}, 'Équipe'), h('td', { class: 'num' }, compact(T.ventes)), h('td', { class: 'num' }, entier(T.nb)),
-              h('td', { class: 'num' }, pctTxt(T.ventes ? T.marge / T.ventes : 0)), h('td', { class: 'num' }, ''), h('td', { class: 'num' }, ''),
+              h('td', { class: 'num' }, pctTxt(T.ventes ? T.marge / T.ventes : 0)), h('td', { class: 'num' }, ''), h('td', { class: 'num' }, ''), h('td', { class: 'num' }, ''),
               h('td', { class: 'num' }, dollars(T.commission)), h('td', { class: 'num' }, dollars(T.remuneration)), h('td', { class: 'num' }, entier(T.heures)),
               h('td', { class: 'num' }, T.heures ? dollars(T.remuneration / T.heures) : ''), h('td', { class: 'num' }, entier(tot(S, 'leads'))), h('td', { class: 'num' }, entier(tot(S, 'visites'))),
               h('td', { class: 'num' }, entier(T.soumissions)), h('td', { class: 'num' }, pctTxt(closingEquipe, 1)), h('td', { class: 'num' }, pctTxt(tot(S, 'leads') ? T.nb / tot(S, 'leads') : 0, 1)),
               h('td', { class: 'num' }, pctTxt(T.ventes ? T.remuneration / T.ventes : 0, 1)))]))) : vide('Aucun vendeur.'),
           h('p', { class: 'bf-dash__muet' }, `Closing = ventes / soumissions envoyées. Lead → vente = ventes / leads reçus. Coût de vente = rémunération / ventes. `
-            + (surMarge ? 'Commission sur la marge : le vendeur gagne moins s\'il donne des rabais.' : 'Commission sur les ventes : à surveiller avec la marge, un rabais ne coûte rien au vendeur.'))),
+            + 'Commission sur la marge : le vendeur gagne moins s\'il donne des rabais. Commission sur les ventes : un rabais ne lui coûte presque rien.')),
 
         h('div', { class: 'bf-dash__rangee' },
           carteGraph('Rémunération par vendeur', `${P.libelle} | commission et salaire de base`,
-            S.length ? barresEmpilees(S.map((x) => ({ libelle: x.nom, sous: `${compact(x.ventes)} rentrés | ${x.pct.toLocaleString('fr-CA')} % ${surMarge ? 'de la marge' : 'des ventes'}`,
+            S.length ? barresEmpilees(S.map((x) => ({ libelle: x.nom, sous: `${compact(x.ventes)} rentrés | ${x.pct.toLocaleString('fr-CA')} % ${x.surMarge ? 'de la marge' : 'des ventes'}`,
               total: x.remuneration, parts: { commission: x.commission, base: x.base },
               bulle: [[x.heures ? dollars(x.parHeure) : 'n/d', 'par heure travaillée'], [pctTxt(x.coutVente, 1), 'des ventes']] })), SERIES_PAIE, { format: dollars }) : vide()),
           carteGraph('Taux de closing par vendeur', `${P.libelle} | ventes / soumissions | équipe : ${pctTxt(closingEquipe, 1)}`,
@@ -204,10 +228,10 @@ if (user) {
       if (parH.length > 1) l.push(`Plus productif : ${parH[0].nom}, ${dollars(parH[0].ventesHeure)} de ventes par heure. Le moins : ${parH[parH.length - 1].nom}, ${dollars(parH[parH.length - 1].ventesHeure)}.`);
       for (const x of S) if (x.soumissions >= 20 && x.closing < closingEquipe - 0.06) l.push(`${x.nom} ferme ${pctTxt(x.closing, 1)} de ses soumissions, contre ${pctTxt(closingEquipe, 1)} pour l'équipe : coaching sur le suivi des soumissions ?`);
       const margeEquipe = T.ventes ? T.marge / T.ventes : 0;
-      for (const x of S) if (x.ventes > 0 && x.pctMarge < margeEquipe - 0.008) l.push(`${x.nom} vend avec une marge de ${pctTxt(x.pctMarge, 1)} (équipe : ${pctTxt(margeEquipe, 1)}) : rabais plus généreux ?${reglages.base === 'ventes' ? ' Avec une commission sur les ventes, ces rabais ne lui coûtent rien.' : ''}`);
+      for (const x of S) if (x.ventes > 0 && x.pctMarge < margeEquipe - 0.008) l.push(`${x.nom} vend avec une marge de ${pctTxt(x.pctMarge, 1)} (équipe : ${pctTxt(margeEquipe, 1)}) : rabais plus généreux ?${x.surMarge ? '' : ' Payé sur les ventes, ces rabais ne lui coûtent presque rien : passer sa commission sur la marge ?'}`);
       const cout = [...S].sort((a, b) => b.coutVente - a.coutVente)[0];
       if (cout && S.length > 1) l.push(`Coût de vente le plus élevé : ${cout.nom}, ${pctTxt(cout.coutVente, 1)} de ses ventes vont à sa rémunération.`);
-      if (reglages.base === 'ventes' && T.marge) l.push(`Info : payer ${pctTxt(T.ventes ? T.commission / T.ventes : 0, 1)} des ventes équivaut ici à ${pctTxt(T.commission / T.marge, 1)} de la marge brute. Change « Commission calculée sur » en haut pour comparer.`);
+      if (T.marge) l.push(`Info : la paie de l'équipe représente ${pctTxt(T.ventes ? T.commission / T.ventes : 0, 1)} des ventes, soit ${pctTxt(T.commission / T.marge, 1)} de la marge brute.`);
       return l.map((t) => h('li', {}, t));
     }
 

@@ -694,3 +694,11 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Graphiques** : rémunération par vendeur (commission + base), closing par vendeur par rapport à la moyenne, nuage « travail fourni et ventes rentrées » (heures et ventes, droite de la moyenne de ventes par heure), rémunération par mois, liste « À surveiller » (productivité, closing faible, marge plus basse que l'équipe, coût de vente le plus élevé, équivalence ventes / marge).
 - **Ne double pas Mike** : c'est une simulation et un outil d'analyse. La paie officielle des commissions reste dans le module Commissions de la comptabilité de Mike (ADR-055). À la greffe : lire ses taux et ses règles plutôt que d'en garder une deuxième copie.
 - **Sources à la greffe** : ventes et marges des devis et factures de Mike, heures du Pointage, leads et contacts du CRM, soumissions des devis.
+
+## ADR-075 | Commission sur la marge : un bouton par vendeur
+- **Date** : 2026-10-24 | **Statut** : Maquette (données fictives)
+- **Demande** (Simon) : une option qui met la commission sur la marge, avec un bouton à cliquer pour chaque vendeur.
+- **Fonctionnement** : colonne « Commission sur » avec deux boutons, « Ventes » et « Marge », dans chaque ligne de vendeur. Le choix global de l'ADR-074 est retiré : chaque vendeur a son propre mode.
+- **Conversion au changement** : en passant d'un mode à l'autre, le pourcentage est converti pour que la paie reste la même sur la période affichée (ex. 10 % des ventes = 33,6 % de la marge pour Mélanie). Un message l'indique ; Simon ajuste ensuite le pourcentage. Sans cette conversion, passer à 10 % de la marge diviserait la paie par trois sans prévenir.
+- La tuile « Commissions » indique combien de vendeurs sont payés sur la marge ; « À surveiller » suggère de passer sur la marge un vendeur payé sur les ventes dont la marge est plus basse que l'équipe.
+- **Qualité** : nouveau test qui vérifie la syntaxe de tous les scripts du front (une erreur de syntaxe dans une page n'était vue qu'au chargement).
