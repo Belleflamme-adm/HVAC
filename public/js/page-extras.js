@@ -6,6 +6,7 @@ import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
 import { CAUSES, pastilleExtra, marqueHorsListe } from './bf-extras.js?v=0.4.0';
+import { galeriePhotos } from './bf-photo.js?v=0.4.0';
 
 const PLANIF = ['Admin tout', 'Direction', 'Coordonnateur'];
 const qte = (n) => String(Number(n)).replace('.', ',');
@@ -39,11 +40,13 @@ if (user) {
     return h('div', { class: `bf-extra-ligne${x.hors_liste ? ' bf-extra-ligne--hors' : ''}` },
       h('div', { class: 'bf-extra-ligne__desc' },
         h('strong', {}, x.description), ' ', x.hors_liste ? marqueHorsListe() : null, ' ', pastilleExtra(x.statut),
+        x.nb_photos ? null : [' ', h('span', { class: 'bf-pastille bf-sans-photo' }, 'Aucune photo')],
         h('div', { class: 'bf-muet' }, [CAUSES[x.cause], x.soumis_le ? `envoyé le ${jour(x.soumis_le)}` : null].filter(Boolean).join(' | ')),
         x.justification ? h('div', {}, h('em', {}, 'Justification : '), x.justification) : null,
         x.note ? h('div', { class: 'bf-muet' }, `Note : ${x.note}`) : null,
         x.raison_refus ? h('div', { class: 'bf-jobs__raison' }, `Refusé : ${x.raison_refus}`) : null,
-        x.decide_par_nom ? h('div', { class: 'bf-muet' }, `Décidé par ${x.decide_par_nom} le ${jour(x.decide_le)}`) : null),
+        x.decide_par_nom ? h('div', { class: 'bf-muet' }, `Décidé par ${x.decide_par_nom} le ${jour(x.decide_le)}`) : null,
+        galeriePhotos(x, { titre: `${x.code_projet} | ${x.description}` })),
       h('div', { class: 'bf-extra-ligne__montant' }, `${qte(x.quantite)} × ${formatCents(x.cout_cents)}`, h('strong', {}, formatCents(x.total_cents))),
       x.statut === 'soumis' ? h('div', { class: 'bf-extra-ligne__actions' },
         h('button', { type: 'button', class: 'bf-bouton', onclick: () => decider(x, true) }, '✓ Approuver'),

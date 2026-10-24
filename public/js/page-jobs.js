@@ -11,6 +11,7 @@ import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
 import { pastilleType } from './bf-crm.js?v=0.4.0';
 import { CAUSES, pastilleExtra, marqueHorsListe } from './bf-extras.js?v=0.4.0';
+import { envoyerPhotos, galeriePhotos, boutonPhoto } from './bf-photo.js?v=0.4.0';
 
 const ETAPES = [
   ['attente_paiement', 'Nouveau | en attente du dépôt du client'], ['a_planifier', 'Dépôt reçu | à céduler'], ['planifie', 'Planifié'],
@@ -56,6 +57,7 @@ if (user) {
           Object.entries(CAUSES).map(([k, t]) => h('option', { value: k }, t))))),
       horsListe,
       h('label', {}, 'Note (facultatif)', h('input', { name: 'note', maxlength: 500 })),
+      h('label', {}, '📷 Photos (5 au plus, recommandées : c\'est ta preuve)', h('input', { type: 'file', name: 'photos', accept: 'image/*', multiple: true })),
       h('div', { class: 'bf-actions' }, h('button', { class: 'bf-bouton', type: 'submit' }, 'Ajouter au brouillon'),
         h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => zoneForm.replaceChildren() }, 'Annuler')));
     form.addEventListener('submit', async (ev) => {
@@ -64,8 +66,16 @@ if (user) {
       const corps = { cause: f.get('cause'), quantite: Number(String(f.get('qte')).replace(',', '.')) || 1, note: f.get('note') || undefined };
       if (mode.value === 'liste') corps.type_travail_id = f.get('travail');
       else Object.assign(corps, { description: f.get('description'), cout_cents: enCents(f.get('prix')), justification: f.get('justification') });
-      try { await api.post('extras', corps, { projet: j.id }); await recharger(); message(msg, 'Extra ajouté au brouillon. Envoie la feuille pour approbation quand elle est complète.', 'ok'); }
-      catch (e) { message(msg, e.message); }
+      const photos = [...form.querySelector('[name=photos]').files].slice(0, 5);
+      const bouton = form.querySelector('[type=submit]');
+      bouton.disabled = true;
+      try {
+        const { id } = await api.post('extras', corps, { projet: j.id });
+        let n = 0; let echec = '';
+        try { n = await envoyerPhotos(id, photos); } catch (e) { echec = ` Photo non envoyée : ${e.message}. Réessaie avec « Ajouter une photo ».`; }
+        await recharger();
+        message(msg, `Extra ajouté au brouillon${n ? ` avec ${n} photo(s)` : ''}. Envoie la feuille pour approbation quand elle est complète.${echec}`, echec ? 'erreur' : 'ok');
+      } catch (e) { message(msg, e.message); bouton.disabled = false; }
     });
     zoneForm.replaceChildren(form);
   }
@@ -83,7 +93,10 @@ if (user) {
         h('tbody', {}, ext.map((x) => h('tr', { class: x.statut === 'refuse' ? 'bf-jobs__refuse' : null },
           h('td', {}, x.description, ' ', x.hors_liste ? marqueHorsListe() : null,
             h('div', { class: 'bf-muet' }, [CAUSES[x.cause], x.justification, x.note].filter(Boolean).join(' | ')),
-            x.raison_refus ? h('div', { class: 'bf-jobs__raison' }, `Refusé : ${x.raison_refus}`) : null),
+            x.raison_refus ? h('div', { class: 'bf-jobs__raison' }, `Refusé : ${x.raison_refus}`) : null,
+            galeriePhotos(x, { titre: x.description, peutRetirer: estSt && x.statut === 'brouillon', apres: recharger }),
+            estSt && x.statut === 'brouillon' && (x.nb_photos || 0) < 5
+              ? boutonPhoto(x.id, { reste: 5 - (x.nb_photos || 0), apres: recharger, erreur: (e) => message(msg, e.message) }) : null),
           h('td', { class: 'num' }, qte(x.quantite)), h('td', { class: 'num' }, formatCents(x.prix_cents)),
           h('td', { class: 'num' }, h('strong', {}, formatCents(x.total_cents))), h('td', {}, pastilleExtra(x.statut)),
           h('td', {}, estSt && x.statut === 'brouillon' ? h('button', { type: 'button', class: 'bf-lien', onclick: () => faire({ action: 'retirer', id: x.id }, 'Extra retiré du brouillon.') }, 'Retirer') : null)))))) 

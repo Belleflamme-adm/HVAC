@@ -47,7 +47,7 @@
     ],
     margeBp: 2500,
     demandes: [], dernierLien: null,
-    confies: [], versions: [], comms: [], projets: [], extras: [],
+    confies: [], versions: [], comms: [], projets: [], extras: [], photos: [],
     // Soumissions actives fictives (devis faits dans l'app de Mike) qui utilisent les prix de Clim Laurentides
     engagements: [],
     municipalites: [],
@@ -377,10 +377,13 @@
     etat.extras.push(e);
     return e;
   }
+  // Photos (ADR-082) : en mémoire dans le HTML de test ; dans l'app, bucket privé Supabase et URL signées
+  const nbPhotos = (x) => etat.photos.filter((ph) => ph.extra_id === x.id && ph.statut === 'televersee').length;
+  const photoFictive = (texte, fond) => `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600"><rect width="800" height="600" fill="${fond}"/>${Array.from({ length: 12 }, (_, r) => Array.from({ length: 7 }, (_, c) => `<rect x="${c * 120 + (r % 2) * 60 - 40}" y="${r * 50}" width="112" height="44" fill="#a0522d" opacity="${0.55 + ((r * 7 + c) % 5) * 0.08}"/>`).join('')).join('')}<rect x="250" y="210" width="300" height="180" rx="10" fill="#e8e8e8" stroke="#555" stroke-width="6"/><text x="400" y="300" font-family="sans-serif" font-size="30" text-anchor="middle" fill="#333">${texte}</text><text x="400" y="560" font-family="sans-serif" font-size="26" text-anchor="middle" fill="#fff">PHOTO FICTIVE | HTML de test</text></svg>`)))}`;
   const vueExtra = (x) => {
     const p = etat.projets.find((y) => y.id === x.projet_id);
     return { ...x, code_projet: p.code_projet, projet_statut: p.statut, succursale_code: p.succursale_code, ville: p.ville, vendeur_id: p.vendeur_id,
-      vendeur_nom: p.vendeur_nom, sous_traitant_nom: p.sous_traitant_nom, total_cents: totalExtra(x) };
+      vendeur_nom: p.vendeur_nom, sous_traitant_nom: p.sous_traitant_nom, total_cents: totalExtra(x), nb_photos: nbPhotos(x) };
   };
   const vueMacro = (p) => ({ ...p, extras_a_approuver: extrasDe(p, 'soumis').length, extras_approuves_cents: somme(extrasDe(p, 'approuve')) || null });
   {
@@ -390,8 +393,10 @@
     const roy = parNom('Nathalie Roy (FICTIF)');
     ajouterExtraDemo(roy, { type_travail_id: tid('EXTRA-LIGNE-PI'), description: 'Ligne frigorifique supplémentaire (au-delà de 25 pi)', quantite: 10, cout_cents: prix('f-clim', 'EXTRA-LIGNE-PI'),
       cause: 'oubli_vendeur', note: 'Condenseur à l\'arrière de la maison, la soumission prévoyait le côté', statut: 'soumis' }, etat.maintenant - 5 * H);
-    ajouterExtraDemo(roy, { description: 'Support mural renforcé', quantite: 1, cout_cents: 18000, cause: 'imprevu_chantier',
+    const support = ajouterExtraDemo(roy, { description: 'Support mural renforcé', quantite: 1, cout_cents: 18000, cause: 'imprevu_chantier',
       justification: 'Mur de brique trop friable pour le support standard, il faut des ancrages chimiques', statut: 'soumis' }, etat.maintenant - 5 * H);
+    etat.photos.push({ id: 'ph-1', extra_id: support.id, url: photoFictive('Brique effritée', '#6b4f3a'), statut: 'televersee' },
+      { id: 'ph-2', extra_id: support.id, url: photoFictive('Ancrage arraché', '#5a4433'), statut: 'televersee' });
     const lev = parNom('Chantal Lévesque (FICTIF)');
     ajouterExtraDemo(lev, { type_travail_id: tid('EXTRA-LIGNE-PI'), description: 'Ligne frigorifique supplémentaire (au-delà de 25 pi)', quantite: 6, cout_cents: prix('f-clim', 'EXTRA-LIGNE-PI'),
       cause: 'demande_client', note: 'La cliente a déplacé la tête du salon', statut: 'approuve' }, etat.maintenant - 3 * J);
@@ -414,7 +419,7 @@
       installation_prevue_le: p.installation_prevue_le, client_nom: depot ? p.client_nom : null, client_telephone: depot ? p.client_telephone : null,
       adresse: depot ? p.adresse : null, lignes, total_cents: total,
       extras: extrasDe(p, 'brouillon', 'soumis', 'approuve', 'refuse').map((x) => ({ id: x.id, description: x.description, quantite: x.quantite, prix_cents: x.cout_cents,
-        total_cents: totalExtra(x), hors_liste: x.hors_liste, cause: x.cause, justification: x.justification, note: x.note, statut: x.statut, raison_refus: x.raison_refus })),
+        total_cents: totalExtra(x), hors_liste: x.hors_liste, cause: x.cause, justification: x.justification, note: x.note, statut: x.statut, raison_refus: x.raison_refus, nb_photos: nbPhotos(x) })),
       extras_approuves_cents: ok, extras_en_attente_cents: somme(extrasDe(p, 'brouillon', 'soumis')),
       total_final_cents: p.facture_st_total_cents ?? total + ok, facture_soumise_le: p.facture_st_soumise_le || null, extras_ouverts: extrasOuverts(p) };
   };
@@ -650,6 +655,37 @@
           return { ok: true };
         }
         throw new Erreur(400, 'Action inconnue');
+      },
+    },
+    'extra-photos': {
+      GET: (q) => {
+        const x = etat.extras.find((y) => y.id === q.extra);
+        const p = etat.projets.find((y) => y.id === x?.projet_id);
+        if (!x || !(user().sousTraitantId ? p.sous_traitant_id === user().sousTraitantId : !user().sousTraitantId)) throw new Erreur(403, 'Extra introuvable');
+        return etat.photos.filter((ph) => ph.extra_id === x.id && ph.statut === 'televersee').map((ph) => ({ id: ph.id, url: ph.url }));
+      },
+      POST: (q, b) => {
+        const x = etat.extras.find((y) => y.id === q.extra);
+        const p = etat.projets.find((y) => y.id === x?.projet_id);
+        if (!x || !user().sousTraitantId || p.sous_traitant_id !== user().sousTraitantId) throw new Erreur(403, 'Extra introuvable');
+        exiger(extrasOuverts(p), 'Extras fermés pour cette job');
+        exiger(x.statut === 'brouillon', 'Les photos s\'ajoutent au brouillon, avant l\'envoi pour approbation');
+        exiger(['image/jpeg', 'image/png', 'image/webp'].includes(b.type), 'Photo : JPEG, PNG ou WebP');
+        exiger(b.donnees && b.donnees.length * 0.75 <= 4 * 1024 * 1024, 'Photo trop lourde (4 Mo au plus)');
+        exiger(etat.photos.filter((ph) => ph.extra_id === x.id && ph.statut !== 'retiree').length < 5, '5 photos au plus par extra');
+        const ph = { id: `ph-${etat.photos.length + 1}`, extra_id: x.id, url: `data:${b.type};base64,${b.donnees}`, statut: 'televersee' };
+        etat.photos.push(ph);
+        return { id: ph.id };
+      },
+      PATCH: (_q, b) => {
+        exiger(b.action === 'retirer', 'Action inconnue');
+        const ph = etat.photos.find((y) => y.id === b.id);
+        const x = etat.extras.find((y) => y.id === ph?.extra_id);
+        const p = etat.projets.find((y) => y.id === x?.projet_id);
+        if (!ph || !user().sousTraitantId || p.sous_traitant_id !== user().sousTraitantId) throw new Erreur(403, 'Photo introuvable');
+        exiger(x.statut === 'brouillon', 'Une photo envoyée pour approbation ne se retire plus');
+        ph.statut = 'retiree';
+        return { ok: true };
       },
     },
     jobs: { GET: (q) => {

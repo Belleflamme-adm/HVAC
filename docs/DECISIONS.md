@@ -789,3 +789,21 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - photo par extra (Supabase Storage) ;
   - compte des oublis par vendeur dans le tableau des vendeurs (la cause est déjà tracée) ;
   - dépôt du PDF de facture.
+
+## ADR-082 | Photos des extras
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon) : une photo par extra, comme preuve d'un oubli ou d'un imprévu.
+- **Fonctionnement** :
+  - Le sous-traitant joint jusqu'à 5 photos par extra, depuis l'appareil photo ou la galerie du téléphone : dans le formulaire du nouvel extra, ou avec « 📷 Ajouter une photo » sur un brouillon.
+  - Il peut retirer une photo tant que l'extra est en brouillon. Une fois l'extra **envoyé pour approbation, ses photos sont figées**, comme preuve.
+  - L'approbateur voit les vignettes dans « Extras à approuver ». Il agrandit une photo d'un clic, et une pastille « Aucune photo » ressort les extras sans preuve. Le sous-traitant voit ses photos dans « Mes jobs ».
+- **Compression** : dans le navigateur, avant l'envoi (1600 px, JPEG). Une photo de cellulaire de plusieurs Mo devient quelques centaines de Ko : envoi rapide sur le chantier, sous la limite des fonctions Netlify (6 Mo).
+- **Sécurité, vérifiée dans la doc Supabase** (Storage Access Control) :
+  - **bucket privé** `extras-photos` (5 Mo, JPEG, PNG ou WebP) ;
+  - **aucune clé service_role** : la fonction `extra-photos` téléverse et signe avec le jeton de l'utilisateur ;
+  - RLS sur `storage.objects` : `INSERT` seulement au chemin préparé par la base pour ce sous-traitant ; `SELECT` (URL signée) pour Belleflamme selon le projet, ou pour le sous-traitant de l'extra ;
+  - URL signées de 10 minutes, jamais de lien public ;
+  - le serveur vérifie que le fichier est une vraie image du type annoncé ;
+  - la base confirme la photo seulement si le fichier est bien dans le bucket.
+- **Loi 25** : les photos montrent la maison du client. Elles restent privées, et une photo retirée n'est plus montrée mais son fichier reste pour la trace. **À décider avec Simon** : la durée de conservation (par exemple, purge X ans après la fin des garanties), puis une tâche de purge.
+- **Pas fait** : photo obligatoire. Simon pourrait l'exiger pour les extras hors liste ou les imprévus de chantier : une règle en base, facile à ajouter.

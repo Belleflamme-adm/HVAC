@@ -89,3 +89,13 @@
 - À la greffe :
   - la facture finale approuvée doit créer une facture payable dans l'app de Mike (board « Factures payables Bot » ou son équivalent Supabase). Format à confirmer avec Mike ;
   - les extras approuvés pour « oubli du vendeur » peuvent alimenter les commissions de Mike, si Simon le décide.
+
+## Photos des extras (ADR-082)
+- Migration `20261024001600_photos_extras.sql` :
+  - bucket privé `extras-photos` ;
+  - table `projet_extra_photos` ;
+  - politiques RLS sur `storage.objects` (insertion et lecture) ;
+  - fonctions `hvac_extra_photo_preparer`, `_confirmer`, `_retirer`, `hvac_extra_photos` ;
+  - colonne `nb_photos` (extras_v, hvac_mes_projets).
+- Mise en ligne : la migration crée le bucket. Vérifier dans le tableau de bord Supabase (Storage) qu'il est bien **privé**.
+- Chez Mike, les fichiers sont déjà dans Supabase Storage (Friday) : à la greffe, déplacer le bucket ou le renommer selon ses conventions (à confirmer).
