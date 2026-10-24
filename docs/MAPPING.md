@@ -67,6 +67,11 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 - `projet_extras` : aucun board connu chez Mike pour les extras des sous-traitants : à confirmer (« Factures payables Bot » pour la facture finale ?).
 - `projets.facture_st_total_cents` : montant de la facture payable du sous-traitant chez Mike : champ à confirmer.
 
+## Dossier de job LogisVert (ADR-084)
+- `projets.numero_ahri` : champ AHRI du Macro de Mike ou de la demande LogisVert : à confirmer.
+- `equipements_installes` (rôle, marque, modèle, numéro de série) : section « équipements HVAC » du détail Macro de Mike (numéros de série des unités intérieures, extérieures, thermopompes) : noms de champs à confirmer.
+- `projet_photos` : fichiers dans Supabase Storage chez Mike (Friday) : convention à confirmer.
+
 ## Comment compléter ce document
 
 Une fois que Claude aura un accès en lecture seule à Monday (exception dans `CLAUDE.md` §2) :

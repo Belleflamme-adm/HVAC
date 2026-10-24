@@ -8,6 +8,10 @@
 [functions]
   node_bundler = "esbuild"
 
+# Purge des photos 5 ans après « Terminé » (Loi 25, ADR-084) : chaque jour à 7 h 17 UTC
+[functions."photos-purge-cron"]
+  schedule = "17 7 * * *"
+
 [dev]
   publish = "public"
   functions = "netlify/functions"
@@ -26,4 +30,4 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     X-Frame-Options = "DENY"
     Permissions-Policy = "camera=(self), geolocation=(self), microphone=()"
-    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob:; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https://*.supabase.co; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

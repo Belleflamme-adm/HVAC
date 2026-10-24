@@ -26,7 +26,7 @@ export async function envoyerPhotos(extraId, fichiers) {
   return n;
 }
 
-function agrandir(url, titre) {
+export function agrandir(url, titre) {
   ouvrirFenetre(titre, (corps) => corps.replaceChildren(h('img', { src: url, alt: titre, class: 'bf-photo__grande' })));
 }
 
@@ -57,4 +57,12 @@ export function boutonPhoto(extraId, { reste = 5, apres = () => {}, erreur = () 
     catch (e) { erreur(e); bouton.disabled = false; bouton.textContent = '📷 Ajouter une photo'; }
   });
   return h('span', {}, bouton, choix);
+}
+
+// Vignettes à partir d'URL déjà signées (dossier de job, ADR-084)
+export function vignettes(photos, { titre = 'Photo', retirer = null } = {}) {
+  return h('div', { class: 'bf-photos' }, photos.map((p, i) => h('span', { class: 'bf-photo' },
+    h('button', { type: 'button', class: 'bf-photo__vignette', 'aria-label': `Agrandir : ${titre} ${i + 1}`, onclick: () => agrandir(p.url, `${titre} | photo ${i + 1}`) },
+      h('img', { src: p.url, alt: `${titre} ${i + 1}`, loading: 'lazy' })),
+    retirer ? h('button', { type: 'button', class: 'bf-photo__retirer', 'aria-label': `Retirer : ${titre} ${i + 1}`, title: 'Retirer', onclick: () => retirer(p) }, '×') : null)));
 }

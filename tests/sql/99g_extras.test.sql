@@ -10,6 +10,21 @@ insert into public.travaux_sous_traitants(fournisseur_id, type_travail_id)
   select 'f2000000-0000-0000-0000-000000000001', type_id from t_x on conflict do nothing;
 insert into public.leads (id, succursale_code, contact_nom, contact_tel, ville, type_demande, assigne_a) values
   ('1e000000-0000-0000-0000-0000000000b1', 'RO', 'Luc Fortin', '450-555-0166', 'Rosemère', 'mural_multi', '00000000-0000-0000-0000-00000000000c');
+-- Outil de test : dossier LogisVert complet (AHRI, appareils, photos), inscrit directement (ADR-084)
+create or replace function test.completer_dossier(p uuid) returns void language plpgsql security definer as $f$
+declare e1 uuid; e2 uuid; c uuid; serie text := upper(substr(md5(p::text), 1, 10));
+begin
+  select client_id into c from public.projets where id = p;
+  update public.projets set numero_ahri = '210123456' where id = p;
+  insert into public.equipements_installes (projet_id, client_id, role, marque, modele, numero_serie)
+  values (p, c, 'exterieur', 'Fujitsu', 'AOU18RLXFZ', 'E' || serie) returning id into e1;
+  insert into public.equipements_installes (projet_id, client_id, role, marque, modele, numero_serie)
+  values (p, c, 'interieur', 'Fujitsu', 'ASU9RLF1', 'I' || serie) returning id into e2;
+  insert into public.projet_photos (projet_id, equipement_id, categorie, chemin, type_mime, taille_octets, statut, ajoute_par_auth)
+  select p, e, cat, format('%s/%s.jpg', p, gen_random_uuid()), 'image/jpeg', 1000, 'televersee', '00000000-0000-0000-0000-00000000000a'
+    from unnest(array[e1, e2]) e, unnest(array['plaque','installe']) cat;
+end $f$;
+grant execute on function test.completer_dossier(uuid) to authenticated;
 set role authenticated;
 
 select test.comme('00000000-0000-0000-0000-00000000000a');
@@ -75,6 +90,8 @@ set role authenticated;
 select test.comme('00000000-0000-0000-0000-0000000000c1');
 select test.echec(format($$select public.hvac_facture_finale('%s')$$, (select id from t_px)), 'facture finale avant la job', 'en cours ou terminée');
 select test.comme('00000000-0000-0000-0000-00000000000a');
+select test.echec($$update public.projets set statut = 'termine' where id = (select id from t_px)$$, 'Terminé sans dossier LogisVert', 'Dossier LogisVert incomplet');
+select test.completer_dossier((select id from t_px));
 update public.projets set statut = 'termine' where id = (select id from t_px);
 select test.comme('00000000-0000-0000-0000-0000000000c1');
 select test.ok((select public.hvac_facture_finale((select id from t_px)) = 235000), 'facture finale : 2 100 $ + 250 $ approuvés = 2 350 $');

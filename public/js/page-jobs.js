@@ -12,6 +12,7 @@ import { formatCents } from './bf-money.js?v=0.4.0';
 import { pastilleType } from './bf-crm.js?v=0.4.0';
 import { CAUSES, pastilleExtra, marqueHorsListe } from './bf-extras.js?v=0.4.0';
 import { envoyerPhotos, galeriePhotos, boutonPhoto } from './bf-photo.js?v=0.4.0';
+import { sectionDossier } from './bf-dossier.js?v=0.4.0';
 
 const ETAPES = [
   ['attente_paiement', 'Nouveau | en attente du dépôt du client'], ['a_planifier', 'Dépôt reçu | à céduler'], ['planifie', 'Planifié'],
@@ -161,7 +162,8 @@ if (user) {
           install.length ? h('tr', { class: 'bf-jobs__groupe' }, h('td', { colspan: 4 }, 'Ton installation')) : null, install.map(ligne),
           !j.lignes.length ? h('tr', {}, h('td', { colspan: 4, class: 'bf-muet' }, 'Lignes à venir : Belleflamme les inscrit avec le projet.')) : null),
         h('tfoot', {}, h('tr', {}, h('th', { colspan: 3 }, 'Ton installation (avant taxes)'), h('th', { class: 'num' }, formatCents(j.total_cents)))))),
-      j.statut === 'attente_paiement' ? h('p', { class: 'bf-muet' }, 'La feuille d\'extra s\'ouvre quand le dépôt du client est reçu.') : feuilleExtras(j));
+      j.statut === 'attente_paiement' ? h('p', { class: 'bf-muet' }, 'Le dossier LogisVert et la feuille d\'extra s\'ouvrent quand le dépôt du client est reçu.')
+        : [sectionDossier(j, { modifiable: estSt && j.extras_ouverts, msg }), feuilleExtras(j)]);
   }
 
   async function charger(fournisseur) {

@@ -816,3 +816,36 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - le champ Photos devient « obligatoire » selon la provenance et la cause choisies, et le formulaire refuse de créer l'extra sans photo ;
   - si une photo est retirée, la pastille « 📷 Photo obligatoire » s'affiche avec un avertissement au-dessus du bouton d'envoi.
 - Les extras déjà envoyés ou décidés avant cette règle ne sont pas touchés. Un oubli du vendeur ou une demande du client tiré de sa liste reste sans photo obligatoire (photo recommandée).
+
+## ADR-084 | Dossier de job LogisVert obligatoire (AHRI, appareils, photos) et conservation 5 ans
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon) : pour chaque job, extras ou pas, le sous-traitant doit mettre les photos de la job et les codes AHRI dans le système, pour faire la demande LogisVert avec le client. Photos gardées 5 ans après la fin de la job.
+- **Choix de Simon** :
+  - le numéro AHRI **et** les numéros de série ;
+  - 4 photos obligatoires : plaque extérieure, plaques intérieures, unité extérieure installée, têtes intérieures installées ;
+  - blocage de la facture finale **et** de l'étape « Terminé » ;
+  - les 5 ans partent du passage à « Terminé ».
+- **Dossier** (section « Dossier LogisVert » de chaque job dans « Mes jobs », ouverte au dépôt reçu) :
+  - numéro de certificat AHRI du système (5 à 12 chiffres, à valider avec Hydro-Québec) ;
+  - au moins un appareil extérieur et un appareil intérieur (tête, serpentin ou fournaise), chacun avec marque, modèle et numéro de série (normalisé, unique pour une même marque) ;
+  - pour chaque appareil : photo de la plaque signalétique **et** photo de l'appareil installé.
+
+  La base calcule ce qui manque (`app.dossier_job`), et la liste s'affiche au sous-traitant comme à Belleflamme.
+- **Blocages en base** :
+  - `hvac_facture_finale` refuse sans dossier complet ;
+  - le trigger des étapes refuse le passage à « Terminé » (ou au-delà) d'une job de sous-traitant sans dossier complet. Le message nomme chaque manque.
+- **Après la facture finale** : dossier figé pour le sous-traitant. Simon, Mike et la planification peuvent encore corriger.
+- **Données** :
+  - appareils dans `equipements_installes` (table déjà prévue pour LogisVert et la section équipements du Macro de Mike) ;
+  - AHRI sur le projet et copié sur ses appareils ;
+  - photos dans `projet_photos`, bucket privé `jobs-photos`, mêmes protections que les photos d'extras.
+- **Macro** : pastille « 📋 Dossier LogisVert : n manque(s) » ou « complet ». Le lien ouvre le dossier, en lecture, pour préparer la demande avec le client.
+- **Conservation (Loi 25)** :
+  - `installation_terminee_le` est inscrite au passage à « Terminé » ;
+  - une tâche planifiée quotidienne (`photos-purge-cron`, horaire dans `netlify.toml`, syntaxe vérifiée dans la doc Netlify) efface les photos de job **et** d'extras 5 ans après, puis les marque « purgées » (la trace reste) ;
+  - elle seule utilise la clé `service_role`, limitée à deux fonctions et deux buckets (`lib/data/systeme.js`) ;
+  - **désactivée par défaut** (`PURGE_PHOTOS_ACTIF=false` : elle compte sans rien effacer). Simon l'active à la mise en ligne.
+- **Correction** : la politique de sécurité du site (CSP) bloquait les images servies par Supabase. `img-src` accepte maintenant `https://*.supabase.co` (photos d'extras et de job).
+- **À valider** :
+  - exigences LogisVert vérifiées dans des sources secondaires seulement : le guide officiel d'Hydro-Québec n'a pas pu être ouvert depuis la session. Avant la mise en ligne, Simon ou un professionnel confirme la liste des pièces (photo de la plaque avec ENERGY STAR, numéro AHRI ou ENERGY STAR sur la facture, dépôt dans les 9 mois) ;
+  - projets annulés : leurs photos n'ont pas de date de fin, donc pas encore de purge (règle à décider).

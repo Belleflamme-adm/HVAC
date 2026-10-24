@@ -99,3 +99,19 @@
   - colonne `nb_photos` (extras_v, hvac_mes_projets).
 - Mise en ligne : la migration crée le bucket. Vérifier dans le tableau de bord Supabase (Storage) qu'il est bien **privé**.
 - Chez Mike, les fichiers sont déjà dans Supabase Storage (Friday) : à la greffe, déplacer le bucket ou le renommer selon ses conventions (à confirmer).
+
+## Dossier de job LogisVert et conservation (ADR-084)
+- Migration `20261024001800_dossier_job.sql` :
+  - `projets.numero_ahri` ;
+  - bucket privé `jobs-photos` et table `projet_photos` ;
+  - politiques sur `storage.objects` ;
+  - `app.dossier_job` et les fonctions `hvac_job_*` ;
+  - le trigger des étapes, qui bloque « Terminé » ;
+  - `hvac_facture_finale` (dossier exigé) ;
+  - les fonctions de purge réservées à `service_role` ;
+  - `projets_macro_v` (`numero_ahri`, `dossier_manques`).
+- Variables Netlify : `SUPABASE_SERVICE_ROLE_KEY` (saisie par Simon, jamais dans le repo) et `PURGE_PHOTOS_ACTIF` (false au départ ; true une fois la règle validée).
+- Vérifier dans Supabase (Storage) que `jobs-photos` et `extras-photos` sont **privés**.
+- À la greffe :
+  - les appareils et l'AHRI alimentent la section équipements HVAC du Macro de Mike et sa demande de subvention LogisVert (numéros de série, à confirmer) ;
+  - `equipements_installes.photo_plaque_id` (table `documents`) n'est pas utilisé : les photos de plaque sont dans `projet_photos`. Arrimer avec la convention de fichiers de Mike.

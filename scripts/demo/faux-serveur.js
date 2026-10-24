@@ -47,7 +47,7 @@
     ],
     margeBp: 2500,
     demandes: [], dernierLien: null,
-    confies: [], versions: [], comms: [], projets: [], extras: [], photos: [],
+    confies: [], versions: [], comms: [], projets: [], extras: [], photos: [], equipements: [], photosJob: [],
     // Soumissions actives fictives (devis faits dans l'app de Mike) qui utilisent les prix de Clim Laurentides
     engagements: [],
     municipalites: [],
@@ -385,7 +385,17 @@
     return { ...x, code_projet: p.code_projet, projet_statut: p.statut, succursale_code: p.succursale_code, ville: p.ville, vendeur_id: p.vendeur_id,
       vendeur_nom: p.vendeur_nom, sous_traitant_nom: p.sous_traitant_nom, total_cents: totalExtra(x), nb_photos: nbPhotos(x) };
   };
-  const vueMacro = (p) => ({ ...p, extras_a_approuver: extrasDe(p, 'soumis').length, extras_approuves_cents: somme(extrasDe(p, 'approuve')) || null });
+  function dossierOuvert(p) {
+    const st = user().sousTraitantId;
+    if (!p || !(st ? p.sous_traitant_id === st : ['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role))) throw new Erreur(403, 'Job introuvable');
+    if (st) {
+      exiger(['a_planifier', 'planifie', 'en_cours', 'termine'].includes(p.statut), `Dossier fermé pour cette job (étape : ${p.statut})`);
+      exiger(!p.facture_st_soumise_le, 'Facture finale déjà soumise : dossier figé');
+    }
+    return p;
+  }
+  const vueMacro = (p) => ({ ...p, extras_a_approuver: extrasDe(p, 'soumis').length, extras_approuves_cents: somme(extrasDe(p, 'approuve')) || null,
+    dossier_manques: p.sous_traitant_id ? dossierManques(p).length : null });
   {
     const J = 24 * H;
     const parNom = (n) => etat.projets.find((p) => p.client_nom === n);
@@ -407,6 +417,51 @@
       cause: 'oubli_vendeur', statut: 'approuve' }, etat.maintenant - 30 * J);
     dube.facture_st_soumise_le = iso(etat.maintenant - 25 * J);
     dube.facture_st_total_cents = coutInstall(dube) + somme(extrasDe(dube, 'approuve'));
+  }
+  // Dossier de job LogisVert (ADR-084) : mêmes règles que la base
+  const ROLES_COMPTES = ['exterieur', 'interieur', 'fournaise'];
+  const equipementsDe = (p) => etat.equipements.filter((e) => e.projet_id === p.id && e.actif);
+  const photosJobDe = (p) => etat.photosJob.filter((ph) => ph.projet_id === p.id && ph.statut === 'televersee');
+  function dossierManques(p) {
+    const m = [];
+    if (!p.numero_ahri) m.push('numéro AHRI du système');
+    const eqs = equipementsDe(p);
+    if (!eqs.some((e) => e.role === 'exterieur')) m.push('au moins un appareil extérieur (marque, modèle, numéro de série)');
+    if (!eqs.some((e) => ['interieur', 'fournaise'].includes(e.role))) m.push('au moins un appareil intérieur (marque, modèle, numéro de série)');
+    for (const e of eqs.filter((x) => ROLES_COMPTES.includes(x.role))) {
+      const a = (cat) => etat.photosJob.some((ph) => ph.equipement_id === e.id && ph.categorie === cat && ['televersee', 'purgee'].includes(ph.statut));
+      if (!a('plaque')) m.push(`photo de la plaque : ${e.modele} ${e.numero_serie}`);
+      if (!a('installe')) m.push(`photo de l'appareil installé : ${e.modele} ${e.numero_serie}`);
+    }
+    return m;
+  }
+  function ajouterEquipementDemo(p, { role, marque, modele, numero_serie }) {
+    const serie = String(numero_serie).replace(/\s/g, '').toUpperCase();
+    exiger(!etat.equipements.some((e) => e.marque.toLowerCase() === marque.toLowerCase() && e.numero_serie.toLowerCase() === serie.toLowerCase()), `Ce numéro de série est déjà inscrit (${marque}, ${serie})`);
+    const e = { id: `eq-${etat.equipements.length + 1}`, projet_id: p.id, role, marque, modele, numero_serie: serie, actif: true };
+    etat.equipements.push(e);
+    return e;
+  }
+  const photoJobDemo = (p, e, categorie, url) => { const ph = { id: `pj-${etat.photosJob.length + 1}`, projet_id: p.id, equipement_id: e?.id || null, categorie, url, statut: 'televersee' }; etat.photosJob.push(ph); return ph; };
+  {
+    const parNom = (n) => etat.projets.find((p) => p.client_nom === n);
+    const complet = (p, ahri, appareils) => {
+      p.numero_ahri = ahri;
+      for (const a of appareils) {
+        const e = ajouterEquipementDemo(p, a);
+        photoJobDemo(p, e, 'plaque', photoFictive(`Plaque ${a.modele}`, '#3b4a5a'));
+        photoJobDemo(p, e, 'installe', photoFictive(`${a.role === 'exterieur' ? 'Condenseur' : 'Tête'} installé${a.role === 'exterieur' ? '' : 'e'}`, '#4a5d4a'));
+      }
+    };
+    complet(parNom('Chantal Lévesque (FICTIF)'), '210345678', [{ role: 'exterieur', marque: 'Fujitsu', modele: 'AOU18RLXFZH', numero_serie: 'F1E004512' },
+      { role: 'interieur', marque: 'Fujitsu', modele: 'ASU9RLF1', numero_serie: 'F1I118201' }, { role: 'interieur', marque: 'Fujitsu', modele: 'ASU9RLF1', numero_serie: 'F1I118202' }]);
+    complet(parNom('Marc-André Dubé (FICTIF)'), '209876543', [{ role: 'exterieur', marque: 'Mitsubishi', modele: 'MUZ-FS12NAH', numero_serie: '3ZU00981' },
+      { role: 'interieur', marque: 'Mitsubishi', modele: 'MSZ-FS12NA', numero_serie: '3ZI00981' }]);
+    const roy = parNom('Nathalie Roy (FICTIF)');
+    roy.numero_ahri = '211002233';
+    const ext = ajouterEquipementDemo(roy, { role: 'exterieur', marque: 'Daikin', modele: '3MXL24RMVJU', numero_serie: 'K00412' });
+    photoJobDemo(roy, ext, 'plaque', photoFictive('Plaque 3MXL24RMVJU', '#3b4a5a'));
+    for (const p of etat.projets) if (['termine', 'facture', 'ferme'].includes(p.statut)) p.installation_terminee_le = p.installation_prevue_le;
   }
   // Vue du sous-traitant : machines à 0 $, ses prix, coordonnées du client après le dépôt (Loi 25). Jamais le montant client.
   const vueJob = (p) => {
@@ -572,6 +627,12 @@
           exiger(n >= 0, 'Étape inconnue');
           exiger(n >= a - 1, 'Un projet recule d\'une étape à la fois');
         }
+        const iT = ETAPES_MACRO.indexOf('termine');
+        if (p.sous_traitant_id && ETAPES_MACRO.indexOf(b.statut) >= iT && ETAPES_MACRO.indexOf(p.statut) < iT) {
+          const m = dossierManques(p);
+          exiger(!m.length, `Dossier LogisVert incomplet : ${m.join(' ; ')}`);
+        }
+        if (b.statut === 'termine') p.installation_terminee_le ||= iso(etat.maintenant);
         p.statut = b.statut; p.updated_at = iso(etat.maintenant);
         return p;
       },
@@ -643,6 +704,8 @@
           const p = sien(etat.projets.find((y) => y.id === b.projet));
           exiger(['en_cours', 'termine'].includes(p.statut), 'La facture finale se soumet quand la job est en cours ou terminée');
           exiger(!extrasDe(p, 'brouillon', 'soumis').length, 'Des extras sont en brouillon ou en attente d\'approbation');
+          const manques = dossierManques(p);
+          exiger(!manques.length, `Dossier LogisVert incomplet : ${manques.join(' ; ')}`);
           p.facture_st_soumise_le = iso(etat.maintenant);
           p.facture_st_total_cents = coutInstall(p) + somme(extrasDe(p, 'approuve'));
           return { total_cents: p.facture_st_total_cents };
@@ -688,6 +751,52 @@
         exiger(x.statut === 'brouillon', 'Une photo envoyée pour approbation ne se retire plus');
         ph.statut = 'retiree';
         return { ok: true };
+      },
+    },
+    'job-dossier': {
+      GET: (q) => {
+        const p = etat.projets.find((y) => y.id === q.projet);
+        if (!p || (user().sousTraitantId ? p.sous_traitant_id !== user().sousTraitantId : false)) throw new Erreur(403, 'Job introuvable');
+        return { numero_ahri: p.numero_ahri || null, equipements: equipementsDe(p).map(({ projet_id, actif, ...e }) => e),
+          photos: photosJobDe(p).map((ph) => ({ id: ph.id, equipement_id: ph.equipement_id, categorie: ph.categorie, url: ph.url })),
+          manques: dossierManques(p), purgees: etat.photosJob.filter((ph) => ph.projet_id === p.id && ph.statut === 'purgee').length };
+      },
+      POST: (q, b) => {
+        const p = dossierOuvert(etat.projets.find((y) => y.id === q.projet));
+        if (b.action === 'equipement') {
+          exiger(['exterieur', 'interieur', 'fournaise', 'autre'].includes(b.role), 'Type d\'appareil : extérieur, intérieur, fournaise ou autre');
+          const [marque, modele, numero_serie] = [b.marque, b.modele, b.numero_serie].map((v) => String(v || '').trim());
+          exiger(marque && modele && numero_serie, 'Marque, modèle et numéro de série requis');
+          return { id: ajouterEquipementDemo(p, { role: b.role, marque, modele, numero_serie }).id };
+        }
+        exiger(b.action === 'photo', 'Action inconnue');
+        exiger(['plaque', 'installe', 'autre'].includes(b.categorie), 'Catégorie de photo inconnue');
+        const e = b.equipement_id ? equipementsDe(p).find((x) => x.id === b.equipement_id) : null;
+        exiger(b.categorie === 'autre' || e, 'Choisis l\'appareil de la photo');
+        exiger(['image/jpeg', 'image/png', 'image/webp'].includes(b.type), 'Photo : JPEG, PNG ou WebP');
+        exiger(b.donnees && b.donnees.length * 0.75 <= 4 * 1024 * 1024, 'Photo trop lourde (4 Mo au plus)');
+        exiger(photosJobDe(p).length < 40, '40 photos au plus par job');
+        return { id: photoJobDemo(p, e, b.categorie, `data:${b.type};base64,${b.donnees}`).id };
+      },
+      PATCH: (_q, b) => {
+        if (b.action === 'ahri') {
+          const p = dossierOuvert(etat.projets.find((y) => y.id === b.projet));
+          const n = String(b.numero_ahri || '').replace(/\s/g, '');
+          exiger(/^[0-9]{5,12}$/.test(n), 'Numéro AHRI : 5 à 12 chiffres');
+          p.numero_ahri = n; return { ok: true };
+        }
+        if (b.action === 'retirer_equipement') {
+          const e = etat.equipements.find((x) => x.id === b.id);
+          dossierOuvert(etat.projets.find((y) => y.id === e?.projet_id));
+          e.actif = false; etat.photosJob.filter((ph) => ph.equipement_id === e.id).forEach((ph) => { ph.statut = 'retiree'; });
+          return { ok: true };
+        }
+        if (b.action === 'retirer_photo') {
+          const ph = etat.photosJob.find((x) => x.id === b.id);
+          dossierOuvert(etat.projets.find((y) => y.id === ph?.projet_id));
+          ph.statut = 'retiree'; return { ok: true };
+        }
+        throw new Erreur(400, 'Action inconnue');
       },
     },
     jobs: { GET: (q) => {
