@@ -1,11 +1,12 @@
 // Performance et rémunération des vendeurs (ADR-074) : ce que chaque vendeur a rentré, sa commission (pourcentage
 // ajustable par vendeur, 10 % par défaut), son salaire par rapport au travail fourni et son taux de closing.
 // Chaque vendeur a son bouton : commission sur les ventes ou sur la marge brute (ADR-075, ADR-076 : recalcul visible).
+// Les vendeurs restent toujours dans leur ordre de création dans le système (ADR-077) : ni clic ni résultat ne les déplace.
 // Pour le directeur des ventes et la comptabilité. SIMULATION : la paie officielle reste dans le module Commissions de Mike.
 // Données FICTIVES tant que les devis, factures et le Pointage de Mike ne sont pas branchés.
 import { initPage } from './bf-page.js?v=0.4.0';
 import { h, remplir } from './bf-dom.js?v=0.4.0';
-import { VENDEURS, SUCCURSALES, ventesFictives, activiteVendeurs, moisJusqua } from './bf-ventes-fictives.js?v=0.4.0';
+import { VENDEURS, SUCCURSALES, ventesFictives, activiteVendeurs, moisJusqua, parOrdreCreation } from './bf-ventes-fictives.js?v=0.4.0';
 import { compact, entier, pctTxt, dollars, svg, survol, cacherBulle, carteGraph, vide, tuile, barres, barresEmpilees,
   colonnesEmpilees, panneauDash } from './bf-dash.js?v=0.4.0';
 
@@ -135,8 +136,9 @@ if (user) {
     function rendre() {
       cacherBulle();
       const P = PERIODES[filtres.periode];
-      const ids = Object.keys(VENDEURS).filter((id) => !filtres.vendeur || id === filtres.vendeur);
-      const S = ids.map((id) => stats(id, P.mois)).filter((x) => x.nb || x.heures).sort((a, b) => b.remuneration - a.remuneration);
+      const ids = Object.keys(VENDEURS).filter((id) => !filtres.vendeur || id === filtres.vendeur).sort(parOrdreCreation);
+      // Ordre de création, jamais par rémunération ou par résultat
+      const S = ids.map((id) => stats(id, P.mois)).filter((x) => x.nb || x.heures);
       const Sa = ids.map((id) => stats(id, P.avant));
       const tot = (l, k) => l.reduce((t, x) => t + x[k], 0);
       const T = { ventes: tot(S, 'ventes'), marge: tot(S, 'marge'), commission: tot(S, 'commission'), remuneration: tot(S, 'remuneration'), heures: tot(S, 'heures'), nb: tot(S, 'nb'), soumissions: tot(S, 'soumissions') };
@@ -169,7 +171,7 @@ if (user) {
             h('thead', {}, h('tr', {}, ['Vendeur', 'Ventes', 'Nb', 'Marge', 'Commission sur', '% comm.', 'Base / an', 'Commission', 'Rémunération', 'Heures', '$ / heure', 'Leads', 'Visites', 'Soumissions', 'Closing', 'Lead → vente', 'Coût de vente']
               .map((t, i) => h('th', { class: i ? 'num' : '' }, t)))),
             h('tbody', {}, [...S.map((x) => h('tr', {},
-              h('td', {}, h('strong', {}, x.nom), h('div', { class: 'bf-dash__muet' }, x.succursales.join(', '))),
+              h('td', {}, h('strong', {}, `${VENDEURS[x.id].numero}. ${x.nom}`), h('div', { class: 'bf-dash__muet' }, x.succursales.join(', '))),
               h('td', { class: 'num' }, compact(x.ventes)), h('td', { class: 'num' }, entier(x.nb)), h('td', { class: 'num' }, pctTxt(x.pctMarge)),
               h('td', { class: 'num' }, h('span', { class: 'bf-dash__bascule', role: 'group', 'aria-label': `Commission de ${x.nom} calculée sur` },
                 h('button', { type: 'button', class: x.surMarge ? '' : 'actif', 'aria-pressed': String(!x.surMarge), onclick: () => { if (x.surMarge) basculer(x); } }, 'Ventes'),
@@ -193,11 +195,11 @@ if (user) {
 
         h('div', { class: 'bf-dash__rangee' },
           carteGraph('Rémunération par vendeur', `${P.libelle} | commission et salaire de base`,
-            S.length ? barresEmpilees(S.map((x) => ({ libelle: x.nom, sous: `${compact(x.ventes)} rentrés | ${x.pct.toLocaleString('fr-CA')} % ${x.surMarge ? 'de la marge' : 'des ventes'}`,
+            S.length ? barresEmpilees(S.map((x) => ({ libelle: x.nom, rang: VENDEURS[x.id].numero, sous: `${compact(x.ventes)} rentrés | ${x.pct.toLocaleString('fr-CA')} % ${x.surMarge ? 'de la marge' : 'des ventes'}`,
               total: x.remuneration, parts: { commission: x.commission, base: x.base },
               bulle: [[x.heures ? dollars(x.parHeure) : 'n/d', 'par heure travaillée'], [pctTxt(x.coutVente, 1), 'des ventes']] })), SERIES_PAIE, { format: dollars }) : vide()),
           carteGraph('Taux de closing par vendeur', `${P.libelle} | ventes / soumissions | équipe : ${pctTxt(closingEquipe, 1)}`,
-            S.length ? barres([...S].sort((a, b) => b.closing - a.closing).map((x) => ({ libelle: x.nom,
+            S.length ? barres(S.map((x) => ({ libelle: x.nom, rang: VENDEURS[x.id].numero,
               sous: `${entier(x.nb)} ventes sur ${entier(x.soumissions)} soumissions | ${x.closing >= closingEquipe ? 'au-dessus' : 'sous'} la moyenne`,
               valeur: x.closing, texte: pctTxt(x.closing, 1), couleur: x.closing >= closingEquipe ? 'var(--d-s3)' : 'var(--d-s2)',
               bulle: [[pctTxt(x.leadVente, 1), 'des leads deviennent des ventes'], [entier(x.visites), 'visites']] }))) : vide(),

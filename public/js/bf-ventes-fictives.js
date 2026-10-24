@@ -31,16 +31,17 @@ export const INSTALLATION = {
   bienergie: { prix: 380000, cout: 285000 },
 };
 
-// Vendeurs fictifs : poids de vente par succursale (certains vendent dans deux territoires)
+// Vendeurs fictifs : poids de vente par succursale (certains vendent dans deux territoires).
+// numero = ordre de création dans le système : c'est l'ordre d'affichage partout, jamais le classement (ADR-077).
 export const VENDEURS = {
-  'e-marc': { nom: 'Marc Vendeur (FICTIF)', succ: { HO: 5, ST: 1.5 } },
-  'e-julie': { nom: 'Julie Gagnon (FICTIF)', succ: { HO: 3, RO: 1 } },
-  'e-sophie': { nom: 'Sophie Vente (FICTIF)', succ: { RO: 5, HO: 1 } },
-  'e-eric': { nom: 'Éric Lavoie (FICTIF)', succ: { RO: 3.5 } },
-  'e-annie': { nom: 'Annie Roy (FICTIF)', succ: { ST: 4 } },
-  'e-karim': { nom: 'Karim Ventes (FICTIF)', succ: { GA: 4.5 } },
-  'e-melanie': { nom: 'Mélanie Côté (FICTIF)', succ: { GA: 2.5 } },
-  'e-patrick': { nom: 'Patrick Fortin (FICTIF)', succ: { DR: 4, GA: 0.4 } },
+  'e-marc': { numero: 1, nom: 'Marc Vendeur (FICTIF)', succ: { HO: 5, ST: 1.5 } },
+  'e-julie': { numero: 2, nom: 'Julie Gagnon (FICTIF)', succ: { HO: 3, RO: 1 } },
+  'e-sophie': { numero: 3, nom: 'Sophie Vente (FICTIF)', succ: { RO: 5, HO: 1 } },
+  'e-eric': { numero: 4, nom: 'Éric Lavoie (FICTIF)', succ: { RO: 3.5 } },
+  'e-annie': { numero: 5, nom: 'Annie Roy (FICTIF)', succ: { ST: 4 } },
+  'e-karim': { numero: 6, nom: 'Karim Ventes (FICTIF)', succ: { GA: 4.5 } },
+  'e-melanie': { numero: 7, nom: 'Mélanie Côté (FICTIF)', succ: { GA: 2.5 } },
+  'e-patrick': { numero: 8, nom: 'Patrick Fortin (FICTIF)', succ: { DR: 4, GA: 0.4 } },
 };
 
 // Marques et modèles fictifs (marge : part du prix qui reste après le coût de la machine et de l'installation)
@@ -169,3 +170,6 @@ export function activiteVendeurs(ventes) {
   }
   return lignes;
 }
+
+// Tri des vendeurs par ordre de création (le premier entré dans le système en premier)
+export const parOrdreCreation = (a, b) => VENDEURS[a].numero - VENDEURS[b].numero;

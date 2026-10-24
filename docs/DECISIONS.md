@@ -715,3 +715,10 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Le pourcentage et le salaire de base se recalculent pendant la frappe (après une courte pause), le curseur reste dans le champ, en fin de texte ; la virgule est acceptée (« 33,6 »). Un changement déjà appliqué est ignoré.
   - Tuiles « Commissions » et « Rémunération totale » au dollar près.
   - Chaque changement affiche un avis : vendeur, nouveau réglage, commission avant -> après, écart.
+
+## ADR-077 | Les vendeurs s'affichent toujours dans leur ordre de création
+- **Date** : 2026-10-24 | **Statut** : Règle permanente
+- **Demande** (Simon, important) : les vendeurs ne changent jamais de place, ni parce qu'on clique dessus, ni parce que leurs chiffres sont meilleurs. Le numéro 1 est le premier vendeur entré dans le système, le 2 le deuxième, et ainsi de suite.
+- **Règle** : partout où des vendeurs sont listés (tableau des vendeurs, rémunération, closing, ventes par vendeur et vendeurs par territoire du tableau des machines), l'ordre est l'ordre de création. Le numéro affiché devant le nom est ce numéro de création, pas un rang. Les classements restent permis pour autre chose que des personnes (modèles, sources, territoires, fournisseurs).
+- Les constats « À surveiller » peuvent nommer le plus et le moins productif ; ils ne réordonnent pas les listes.
+- **Données** : `numero` dans `VENDEURS` (maquette), tri `parOrdreCreation`, test unitaire. À la greffe : l'ordre de création vient de la base (`crm_vendeurs.ordre`, déjà utilisé pour le tour de rôle « 1, 2, 3 », ou à défaut `employes.created_at`), par succursale si Simon le précise.

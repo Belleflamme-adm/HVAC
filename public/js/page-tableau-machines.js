@@ -5,7 +5,7 @@ import { initPage } from './bf-page.js?v=0.4.0';
 import { h, remplir } from './bf-dom.js?v=0.4.0';
 import { voitBoard } from './bf-crm.js?v=0.4.0';
 import { creerCarte, chargerMunicipalites, chargerReperes } from './bf-carte.js?v=0.4.0';
-import { TYPES, SUCCURSALES, FOURNISSEURS, MODELES, VENDEURS, LIEUX_STOCK, ventesFictives, stockFictif, moisJusqua, indexVilles } from './bf-ventes-fictives.js?v=0.4.0';
+import { TYPES, SUCCURSALES, FOURNISSEURS, MODELES, VENDEURS, LIEUX_STOCK, ventesFictives, stockFictif, moisJusqua, indexVilles, parOrdreCreation } from './bf-ventes-fictives.js?v=0.4.0';
 import { SEQ, nomMois, compact, entier, pctTxt, montrerBulle, cacherBulle, carteGraph, tuile, barres, barresEmpilees, colonnesEmpilees, lignes, anneau, panneauDash } from './bf-dash.js?v=0.4.0';
 
 const FIN = '2026-10';
@@ -99,8 +99,9 @@ if (user) {
       const ventes3m = base.filter((v) => moisJusqua(FIN, 3).includes(v.mois)).length;
       const semaines = ventes3m ? enStock / (ventes3m / 13) : null;
       // Vendeurs
-      const parVendeur = Object.entries(VENDEURS).map(([id, vd]) => ({ id, vd, v: ventes.filter((x) => x.vendeur === id) }))
-        .filter((x) => x.v.length).sort((a, b) => b.v.length - a.v.length);
+      // Vendeurs : toujours dans leur ordre de création dans le système (ADR-077), jamais classés par résultat
+      const parVendeur = Object.keys(VENDEURS).sort(parOrdreCreation).map((id) => ({ id, vd: VENDEURS[id], v: ventes.filter((x) => x.vendeur === id) }))
+        .filter((x) => x.v.length);
       const compte = (l, t) => l.filter((x) => x.type === t).length;
       const parLieu = Object.entries(LIEUX_STOCK).map(([k, nom]) => ({ k, nom, l: stockVu.filter((x) => x.lieu === k) })).filter((x) => x.l.length);
       const typesVisibles = filtres.type ? [filtres.type] : Object.keys(TYPES);
@@ -175,7 +176,7 @@ if (user) {
         h('div', { class: 'bf-dash__rangee bf-dash__rangee--2-1' },
           carteGraph('Ventes par vendeur', `${P.libelle} | unités par type de système`,
             h('div', { class: 'bf-dash__legende' }, typesVisibles.map((t) => h('span', {}, h('span', { class: 'bf-dash__cle', style: `background:${COULEUR_TYPE[t]}` }), TYPES[t]))),
-            parVendeur.length ? barresEmpilees(parVendeur.map(({ vd, v }) => ({
+            parVendeur.length ? barresEmpilees(parVendeur.map(({ vd, v }) => ({ rang: vd.numero,
               libelle: vd.nom, sous: `${compact(somme(v) / 100)} | marge ${pctTxt(marge(v))} | avant inst. ${pctTxt(margeMachine(v))}`, total: v.length,
               parts: Object.fromEntries(typesVisibles.map((t) => [t, compte(v, t)])), bulle: [[compact(somme(v) / 100), 'avant taxes'], [pctTxt(marge(v)), 'marge avec installation'], [pctTxt(margeMachine(v)), 'marge avant installation']] })), serieTypes(typesVisibles))
               : h('p', { class: 'bf-dash__muet' }, 'Aucune vente.')),
@@ -195,7 +196,7 @@ if (user) {
               const ligne = (libelle, l, classe) => h('tr', { class: classe }, h('td', {}, libelle),
                 ...typesVisibles.map((t) => h('td', { class: 'num' }, compte(l, t) ? entier(compte(l, t)) : '')),
                 h('td', { class: 'num' }, h('strong', {}, entier(l.length))), h('td', { class: 'num' }, compact(somme(l) / 100)), h('td', { class: 'num' }, pctTxt(marge(l))), h('td', { class: 'num' }, pctTxt(margeMachine(l))));
-              return [ligne(vd.nom, v, 'bf-dash__vendeur'), ...(territoires.length > 1 || filtres.succursale === '' ? territoires.map(({ sc, l }) => ligne(`↳ ${sc.nom}`, l, 'bf-dash__territoire')) : [])];
+              return [ligne(`${vd.numero}. ${vd.nom}`, v, 'bf-dash__vendeur'), ...(territoires.length > 1 || filtres.succursale === '' ? territoires.map(({ sc, l }) => ligne(`↳ ${sc.nom}`, l, 'bf-dash__territoire')) : [])];
             })))) : h('p', { class: 'bf-dash__muet' }, 'Aucune vente.')),
         carteGraph('Modèles par territoire', `${P.libelle} | les 6 modèles les plus vendus, en unités`,
           topMatrice.length ? h('div', { class: 'bf-dash__defile' }, h('table', { class: 'bf-dash__table bf-dash__matrice' },

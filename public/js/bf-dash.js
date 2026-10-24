@@ -79,12 +79,12 @@ export const tableDonnees = (entetes, rangees) => h('details', { class: 'bf-dash
     h('thead', {}, h('tr', {}, entetes.map((t, i) => h('th', { class: i ? 'num' : '' }, t)))),
     h('tbody', {}, rangees.map((r) => h('tr', {}, r.map((v, i) => h('td', { class: i ? 'num' : '' }, v))))))));
 
-// Barres horizontales : [{ libelle, sous, valeur, texte, couleur, bulle }]
+// Barres horizontales : [{ libelle, sous, valeur, texte, couleur, bulle, rang? }] (rang affiché ; par défaut, la position)
 export function barres(lignes, { couleur = 'var(--d-s1)' } = {}) {
   const max = Math.max(1e-9, ...lignes.map((l) => l.valeur));
   return h('ol', { class: 'bf-dash__barres' }, lignes.map((l, i) => {
     const barre = h('span', { class: 'bf-dash__barre', style: `width:${Math.max(1.5, (Math.max(0, l.valeur) / max) * 100)}%;background:${l.couleur || couleur}` });
-    const li = h('li', {}, h('span', { class: 'bf-dash__rang' }, String(i + 1)),
+    const li = h('li', {}, h('span', { class: 'bf-dash__rang' }, String(l.rang ?? i + 1)),
       h('span', { class: 'bf-dash__barre-libelle' }, h('span', {}, l.libelle), l.sous ? h('span', { class: 'bf-dash__muet' }, l.sous) : null),
       h('span', { class: 'bf-dash__barre-piste' }, barre), h('strong', { class: 'num' }, l.texte));
     survol(li, () => [[l.texte, l.libelle], ...(l.bulle || [])]);
@@ -98,7 +98,7 @@ export function barresEmpilees(lignes, series, { format = entier } = {}) {
   return h('ol', { class: 'bf-dash__barres' }, lignes.map((l, i) => {
     const piste = h('span', { class: 'bf-dash__barre-piste bf-dash__barre-piste--empilee' },
       ...series.filter((s) => l.parts[s.cle]).map((s) => h('span', { class: 'bf-dash__seg-h', style: `width:${(l.parts[s.cle] / max) * 100}%;background:${s.couleur}` })));
-    const li = h('li', {}, h('span', { class: 'bf-dash__rang' }, String(i + 1)),
+    const li = h('li', {}, h('span', { class: 'bf-dash__rang' }, String(l.rang ?? i + 1)),
       h('span', { class: 'bf-dash__barre-libelle' }, h('span', {}, l.libelle), l.sous ? h('span', { class: 'bf-dash__muet' }, l.sous) : null),
       piste, h('strong', { class: 'num' }, format(l.total)));
     survol(li, () => [[format(l.total), l.libelle], ...series.map((s) => [format(l.parts[s.cle] || 0), s.libelle, s.couleur]), ...(l.bulle || [])]);
