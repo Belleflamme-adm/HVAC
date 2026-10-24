@@ -135,6 +135,74 @@ function colonnesMensuelles(ventes, moisPeriode, typesVisibles) {
   return [legende, s, table];
 }
 
+// Lignes : marge par mois, avec et avant installation (un seul axe, en %)
+const COULEUR_MARGE = { totale: 'var(--d-m1)', machine: 'var(--d-m2)' };
+const LIBELLE_MARGE = { totale: 'Avec installation', machine: 'Avant installation' };
+function lignesMarge(base, moisPeriode, marge, margeMachine) {
+  const mois = moisJusqua(FIN, 12);
+  const pts = mois.map((m) => { const v = base.filter((x) => x.mois === m); return { m, n: v.length, totale: v.length ? marge(v) : null, machine: v.length ? margeMachine(v) : null }; });
+  const vals = pts.flatMap((p) => [p.totale, p.machine]).filter((x) => x !== null);
+  if (!vals.length) return [h('p', { class: 'bf-dash__muet' }, 'Aucune vente.')];
+  const bas = Math.floor((Math.min(...vals) * 100 - 2) / 5) * 5; const haut = Math.ceil((Math.max(...vals) * 100 + 2) / 5) * 5;
+  const etroit = window.innerWidth < 640;
+  const W = etroit ? 360 : 900; const H = etroit ? 220 : 240; const g = 40; const d = etroit ? 44 : 70; const b = 22;
+  const larg = W - g - d; const hau = H - b - 12;
+  const X = (i) => g + (i / (mois.length - 1)) * larg;
+  const Y = (v) => 12 + hau - ((v * 100 - bas) / (haut - bas)) * hau;
+  const s = svg('svg', { viewBox: `0 0 ${W} ${H}`, class: 'bf-dash__svg', role: 'img', 'aria-label': 'Marge brute par mois, avec et avant installation' });
+  // Période choisie : bande légère derrière les mois concernés
+  const iP = mois.map((m, i) => (moisPeriode.includes(m) ? i : -1)).filter((i) => i >= 0);
+  if (iP.length && iP.length < mois.length) {
+    const x0 = Math.max(g, X(iP[0]) - larg / 22); const x1 = Math.min(g + larg, X(iP[iP.length - 1]) + larg / 22);
+    s.append(svg('rect', { x: x0, y: 12, width: x1 - x0, height: hau, class: 'bf-dash__bande' }));
+  }
+  for (let v = bas; v <= haut; v += 5) {
+    s.append(svg('line', { x1: g, x2: g + larg, y1: Y(v / 100), y2: Y(v / 100), class: v === bas ? 'bf-dash__axe' : 'bf-dash__grille' }));
+    const t = svg('text', { x: g - 6, y: Y(v / 100) + 4, class: 'bf-dash__tick', 'text-anchor': 'end' }); t.textContent = `${v} %`; s.append(t);
+  }
+  mois.forEach((m, i) => { const t = svg('text', { x: X(i), y: H - 6, class: 'bf-dash__tick', 'text-anchor': 'middle' }); t.textContent = etroit ? nomMois(m)[0].toUpperCase() : nomMois(m).split(' ')[0]; s.append(t); });
+  for (const cle of ['machine', 'totale']) {
+    const chemin = pts.map((p, i) => (p[cle] === null ? null : `${X(i)},${Y(p[cle])}`)).filter(Boolean);
+    s.append(svg('polyline', { points: chemin.join(' '), fill: 'none', stroke: COULEUR_MARGE[cle], 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+    const dernier = pts.length - 1;
+    if (pts[dernier][cle] !== null) {
+      s.append(svg('circle', { cx: X(dernier), cy: Y(pts[dernier][cle]), r: 4.5, fill: COULEUR_MARGE[cle], stroke: '#182036', 'stroke-width': 2 }));
+      const t = svg('text', { x: X(dernier) + 9, y: Y(pts[dernier][cle]) + 4, class: 'bf-dash__etiquette-fin' }); t.textContent = pctTxt(pts[dernier][cle]); s.append(t);
+    }
+  }
+  // Réticule : une ligne verticale suit le pointeur et s'accroche au mois le plus proche
+  const reticule = svg('line', { y1: 12, y2: 12 + hau, class: 'bf-dash__reticule', visibility: 'hidden' });
+  const points = ['totale', 'machine'].map((cle) => svg('circle', { r: 4.5, fill: COULEUR_MARGE[cle], stroke: '#182036', 'stroke-width': 2, visibility: 'hidden' }));
+  const cible = svg('rect', { x: g, y: 12, width: larg, height: hau, fill: 'transparent', class: 'bf-dash__cible bf-dash__cible--ligne', tabindex: '0', 'aria-label': 'Survoler pour voir la marge de chaque mois' });
+  let iFocus = mois.length - 1;
+  const montrer = (i, ev) => {
+    const p = pts[i]; iFocus = i;
+    reticule.setAttribute('x1', X(i)); reticule.setAttribute('x2', X(i)); reticule.setAttribute('visibility', 'visible');
+    ['totale', 'machine'].forEach((cle, k) => { if (p[cle] === null) return; points[k].setAttribute('cx', X(i)); points[k].setAttribute('cy', Y(p[cle])); points[k].setAttribute('visibility', 'visible'); });
+    montrerBulle(ev, p.n ? [[nomMois(p.m), `${p.n} machines`], [pctTxt(p.totale), LIBELLE_MARGE.totale, COULEUR_MARGE.totale], [pctTxt(p.machine), LIBELLE_MARGE.machine, COULEUR_MARGE.machine],
+      [`${((p.machine - p.totale) * 100).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} pt`, 'd\'écart dû à l\'installation']] : [[nomMois(p.m), 'aucune vente']]);
+  };
+  const cacher = () => { reticule.setAttribute('visibility', 'hidden'); points.forEach((c) => c.setAttribute('visibility', 'hidden')); cacherBulle(); };
+  cible.addEventListener('pointermove', (e) => {
+    const r = s.getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width) * W;
+    montrer(Math.max(0, Math.min(mois.length - 1, Math.round(((x - g) / larg) * (mois.length - 1)))), e);
+  });
+  cible.addEventListener('pointerleave', cacher);
+  cible.addEventListener('blur', cacher);
+  cible.addEventListener('focus', (e) => montrer(iFocus, e));
+  cible.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); montrer(Math.max(0, Math.min(mois.length - 1, iFocus + (e.key === 'ArrowRight' ? 1 : -1))), e); }
+  });
+  s.append(reticule, ...points, cible);
+  const legende = h('div', { class: 'bf-dash__legende' }, ['totale', 'machine'].map((cle) => h('span', {},
+    h('span', { class: 'bf-dash__cle bf-dash__cle--ligne', style: `background:${COULEUR_MARGE[cle]}` }), `${LIBELLE_MARGE[cle]}${cle === 'totale' ? ' (référence)' : ''}`)));
+  const table = h('details', { class: 'bf-dash__donnees' }, h('summary', {}, 'Voir les données'), h('div', { class: 'bf-dash__defile' }, h('table', {},
+    h('thead', {}, h('tr', {}, h('th', {}, 'Mois'), h('th', { class: 'num' }, 'Machines'), h('th', { class: 'num' }, LIBELLE_MARGE.totale), h('th', { class: 'num' }, LIBELLE_MARGE.machine))),
+    h('tbody', {}, pts.map((p) => h('tr', {}, h('td', {}, nomMois(p.m)), h('td', { class: 'num' }, p.n),
+      h('td', { class: 'num' }, p.n ? pctTxt(p.totale) : ''), h('td', { class: 'num' }, p.n ? pctTxt(p.machine) : '')))))));
+  return [legende, s, table];
+}
+
 // Anneau : part de chaque type
 function anneau(ventes, typesVisibles) {
   const total = ventes.length || 1;
@@ -299,6 +367,8 @@ if (user) {
         h('div', { class: 'bf-dash__rangee bf-dash__rangee--2-1' },
           carteGraph('Machines vendues par mois', filtres.periode === '12m' ? '12 derniers mois' : `12 derniers mois | ${P.libelle} en plein`, ...colonnesMensuelles(base, P.mois, typesVisibles)),
           carteGraph('Répartition par type de système', P.libelle, anneau(ventes, typesVisibles))),
+        carteGraph('Marge brute par mois', filtres.periode === '12m' ? '12 derniers mois | avec et avant installation'
+          : `12 derniers mois | ${P.libelle} en surbrillance`, ...lignesMarge(base, P.mois, marge, margeMachine)),
         h('div', { class: 'bf-dash__rangee' },
           carteGraph('Modèles les plus vendus', `${P.libelle} | unités`, parModele.length ? barres(parModele.map(({ m, n, $ }) => ({
             libelle: m.nom, sous: `${TYPES[m.type]} | ${FOURNISSEURS[m.fournisseur]}`, valeur: n, texte: entier(n), couleur: COULEUR_TYPE[m.type],

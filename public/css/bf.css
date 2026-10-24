@@ -446,3 +446,11 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dash__vendeurs th .bf-dash__cle { margin-right: 5px; }
 .bf-dash__tuile-icone { width: 34px; height: 34px; }
 @media (min-width: 900px) { .bf-dash__tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Marge par mois (ADR-071) : deux lignes, couleurs validées sur #182036, distinctes des types de système */
+.bf-dash { --d-m1: #9085e9; --d-m2: #d55181; }
+.bf-dash__cle--ligne { width: 16px; height: 3px; border-radius: 2px; }
+.bf-dash__bande { fill: rgba(255, 255, 255, .05); }
+.bf-dash__reticule { stroke: var(--d-texte2); stroke-width: 1; }
+.bf-dash__etiquette-fin { fill: var(--d-texte); font-size: 13px; font-weight: 700; font-family: var(--f); }
+.bf-dash__cible--ligne:hover, .bf-dash__cible--ligne:focus { fill: transparent; }
+.bf-dash__cible--ligne:focus-visible { outline: none; stroke: var(--d-s1); stroke-width: 2; }

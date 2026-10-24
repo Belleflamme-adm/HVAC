@@ -655,3 +655,10 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Chaque vente porte donc son prix et son coût d'installation à part (`prix_installation_cents`, `cout_installation_cents`).
 - **Où** : deux tuiles côte à côte, le tableau des vendeurs (colonnes « Marge totale » et « Marge avant inst. ») et les infobulles des vendeurs. Les tuiles passent en 2 rangées de 4.
 - **À la greffe** : la part installation vient de la ligne d'installation du devis de Mike (coût du sous-traitant, prix client) ; à confirmer dans ses données.
+
+## ADR-071 | Graphique de la marge brute par mois
+- **Date** : 2026-10-24 | **Statut** : Maquette (données fictives)
+- **Demande** (Simon) : un graphique de la marge par mois.
+- **Forme** : deux lignes sur un seul axe en pourcentage, 12 derniers mois : marge avec installation (référence, violet) et marge avant installation (magenta). Couleurs distinctes de celles des types de système, validées sur le fond sombre. Valeur du dernier mois au bout de chaque ligne.
+- **Lecture** : une ligne verticale suit le pointeur (ou les flèches du clavier) et l'infobulle donne, pour le mois, le nombre de machines, les deux marges et l'écart dû à l'installation. La période choisie est en surbrillance. Données en tableau sous le graphique.
+- Suit tous les filtres (succursale, type, marque, vendeur).
