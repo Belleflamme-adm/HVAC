@@ -390,6 +390,26 @@
       const t = String(q.q || '').toLowerCase();
       return etat.clients.filter((c) => !t || [c.nom, c.prenom, c.courriel, c.telephone].some((v) => String(v || '').toLowerCase().includes(t)));
     } },
+    // Code d'accès d'une tuile protégée (ADR-078) : empreinte injectée au build, jamais le code ; 5 essais puis 30 s d'attente
+    'code-acces': { POST: async (_q, b) => {
+      exiger(['Admin tout', 'Direction', 'Comptabilité'].includes(user().role), 'Accès réservé');
+      const empreinte = (window.__demoEmpreintes || {})[b.zone];
+      if (!empreinte) throw new Erreur(503, 'Code d\'accès non configuré pour le HTML de test');
+      etat.essaisCode = etat.essaisCode || { n: 0, jusqua: 0 };
+      if (Date.now() < etat.essaisCode.jusqua) throw new Erreur(429, `Trop d'essais : réessaie dans ${Math.ceil((etat.essaisCode.jusqua - Date.now()) / 1000)} s`);
+      const p = String(empreinte).split('$');
+      const enc = new TextEncoder();
+      const sel = Uint8Array.from(atob(p[2]), (c) => c.charCodeAt(0));
+      const cle = await crypto.subtle.importKey('raw', enc.encode(String(b.code || '')), 'PBKDF2', false, ['deriveBits']);
+      const calc = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sel, iterations: Number(p[1]) }, cle, 256))));
+      if (calc !== p[3]) {
+        etat.essaisCode.n += 1;
+        if (etat.essaisCode.n >= 5) { etat.essaisCode = { n: 0, jusqua: Date.now() + 30000 }; throw new Erreur(429, 'Trop d\'essais : réessaie dans 30 s'); }
+        throw new Erreur(403, 'Code incorrect');
+      }
+      etat.essaisCode = { n: 0, jusqua: 0 };
+      return { ok: true };
+    } },
     communications: { GET: (q) => {
       exiger(!user().sousTraitantId, 'Accès refusé');
       exiger(q.client_id || q.lead_id, 'client_id ou lead_id requis');
@@ -642,7 +662,10 @@
         const h = typeof r === 'function' ? r : r[methode];
         if (!h) return { status: 405, body: { error: { code: 'methode', message: `Méthode ${methode} non permise` } } };
         const body = h(query, corps || {}, entetes);
-        return { status: methode === 'POST' && ['leads', 'lead-activite', 'clients-create', 'sous-traitants', 'prix-demandes'].includes(fn) ? 201 : 200, body: JSON.parse(JSON.stringify(body ?? {})) };
+        const fin = (b) => ({ status: methode === 'POST' && ['leads', 'lead-activite', 'clients-create', 'sous-traitants', 'prix-demandes'].includes(fn) ? 201 : 200, body: JSON.parse(JSON.stringify(b ?? {})) });
+        // Une route peut être asynchrone (ex. vérification d'un code avec WebCrypto)
+        if (body && typeof body.then === 'function') return body.then(fin, (e) => ({ status: e.status || 500, body: { error: { code: 'erreur', message: e.message } } }));
+        return fin(body);
       } catch (e) {
         return { status: e.status || 500, body: { error: { code: 'erreur', message: e.message } } };
       }

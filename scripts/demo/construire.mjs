@@ -5,12 +5,24 @@
 //
 // Usage : npm run demo  ->  demo-build/hvac-test.html (ignoré par git, publié comme artifact)
 import { build } from 'esbuild';
+import { empreinteCode } from '../../public/js/bf-code.js';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { TYPES_TRAVAUX, CATEGORIES } from '../reference/types-travaux.mjs';
 
 const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'sous-traitant', 'tableau-machines', 'tableau-marketing', 'tableau-vendeurs', 'installation-grille', 'demande-prix', 'prix', 'mes-prix'];
 const lire = (f) => readFileSync(f, 'utf8');
+// Variables locales (.env, ignoré par git) : seulement ce qui sert au HTML de test
+function envLocal(cle) {
+  if (process.env[cle]) return process.env[cle];
+  if (!existsSync('.env')) return '';
+  const ligne = lire('.env').split(/\r?\n/).find((l) => l.startsWith(`${cle}=`));
+  return ligne ? ligne.slice(cle.length + 1).trim() : '';
+}
+// Code de la tuile Vendeurs (ADR-078) : seule l'empreinte va dans le HTML, jamais le code
+const codeDemo = envLocal('DEMO_CODE_VENDEURS');
+const empreinteVendeurs = codeDemo ? await empreinteCode(codeDemo) : '';
+if (!codeDemo) console.warn('DEMO_CODE_VENDEURS absent de .env : la tuile Vendeurs affichera « code non configuré ».');
 const icone = `data:image/svg+xml;base64,${Buffer.from(lire('public/icons/icon.svg')).toString('base64')}`;
 
 // Les imports de l'app portent ?v= (cache) : on les retire pour l'emballage
@@ -43,7 +55,7 @@ window.__nav = (u) => parent.__naviguer(String(u));
     const u = new URL(String(url), 'https://demo.local' + __demo.path);
     if (u.pathname.startsWith('/.netlify/functions/')) {
       const fn = u.pathname.split('/').pop();
-      const r = S.appeler(fn, init.method || 'GET', Object.fromEntries(u.searchParams), init.body ? JSON.parse(init.body) : undefined, init.headers || {});
+      const r = await S.appeler(fn, init.method || 'GET', Object.fromEntries(u.searchParams), init.body ? JSON.parse(init.body) : undefined, init.headers || {});
       return new Response(JSON.stringify(r.body), { status: r.status, headers: { 'Content-Type': 'application/json' } });
     }
     if (u.pathname.startsWith('/data/')) {
@@ -84,7 +96,7 @@ try { commit = execFileSync('git', ['log', '-1', '--format=%h']).toString().trim
 const quand = new Date().toLocaleString('fr-CA', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Toronto' });
 
 const coquille = lire('scripts/demo/coquille.html')
-  .replace('/*__SERVEUR__*/', () => `window.__demoTypesTravaux = ${versJs(TYPES_TRAVAUX)};\nwindow.__demoCategories = ${versJs(CATEGORIES)};\n${lire('scripts/demo/faux-serveur.js')}`)
+  .replace('/*__SERVEUR__*/', () => `window.__demoTypesTravaux = ${versJs(TYPES_TRAVAUX)};\nwindow.__demoCategories = ${versJs(CATEGORIES)};\nwindow.__demoEmpreintes = ${versJs({ vendeurs: empreinteVendeurs })};\n${lire('scripts/demo/faux-serveur.js')}`)
   .replace('/*__PAGES__*/', () => `window.__demoPages = ${versJs(pages)};`)
   .replace('/*__DONNEES__*/', () => `window.__demoDonnees = ${versJs(donnees)};`)
   .replace('__VERSION__', () => `${quand} | ${commit.replace(/[<>&]/g, '')}`);

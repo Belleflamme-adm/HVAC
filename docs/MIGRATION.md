@@ -58,3 +58,8 @@
 ## Tableau des vendeurs (ADR-074)
 - Les taux de commission et salaires de base saisis dans la maquette ne sont pas la source de vérité : à la greffe, lire ceux du module Commissions de Mike (taux par vendeur, règles, exceptions), sans en garder une copie.
 - Heures travaillées : Pointage de Mike. Soumissions : ses devis envoyés. Ventes et marges : ses devis acceptés et factures (même définition de marge que la comptabilité, avec installation).
+
+## Codes d'accès des tuiles (ADR-078)
+- Variable `CODE_ACCES_VENDEURS` (empreinte, jamais le code) à créer dans Netlify par Simon : `node scripts/code-acces.mjs`.
+- Avant les vraies données : la fonction de rémunération doit exiger un jeton remis par `code-acces` (courte durée), et les échecs doivent être comptés en base pour bloquer après plusieurs essais.
+- Chez Mike : vérifier s'il a déjà un mécanisme de code ou de PIN (ex. impersonation, « Admin tout ») et s'y aligner.

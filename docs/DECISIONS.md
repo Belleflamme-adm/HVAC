@@ -722,3 +722,16 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Règle** : partout où des vendeurs sont listés (tableau des vendeurs, rémunération, closing, ventes par vendeur et vendeurs par territoire du tableau des machines), l'ordre est l'ordre de création. Le numéro affiché devant le nom est ce numéro de création, pas un rang. Les classements restent permis pour autre chose que des personnes (modèles, sources, territoires, fournisseurs).
 - Les constats « À surveiller » peuvent nommer le plus et le moins productif ; ils ne réordonnent pas les listes.
 - **Données** : `numero` dans `VENDEURS` (maquette), tri `parOrdreCreation`, test unitaire. À la greffe : l'ordre de création vient de la base (`crm_vendeurs.ordre`, déjà utilisé pour le tour de rôle « 1, 2, 3 », ou à défaut `employes.created_at`), par succursale si Simon le précise.
+
+## ADR-078 | Code d'accès sur la tuile « Vendeurs : performance et rémunération »
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon) : même si la tuile est réservée à l'administration, elle doit demander un code.
+- **Le code n'est jamais dans le repo** (CLAUDE.md §2, règle 6) : on ne garde que son empreinte PBKDF2-SHA256 salée (210 000 itérations).
+  - App en ligne : variable Netlify `CODE_ACCES_VENDEURS` = empreinte, produite par `node scripts/code-acces.mjs` (Simon tape le code, le script affiche l'empreinte). Fonction `code-acces` : vérifie d'abord le rôle (Admin tout, Direction, Comptabilité), puis le code, à temps constant, avec une pause de 0,8 s après un échec ; 503 si l'empreinte n'est pas configurée.
+  - HTML de test : `DEMO_CODE_VENDEURS` dans `.env` (ignoré par git) ; le build n'injecte que l'empreinte. 5 essais ratés = 30 s d'attente.
+  - Test : aucun code en clair dans les fichiers suivis par git ; les tests utilisent un code bidon.
+- **Fonctionnement** : écran de code avant tout affichage de la page ; rien n'est gardé dans le navigateur, le code est redemandé à chaque ouverture. La tuile porte la mention « 🔒 Code requis ».
+- **Limites connues, à régler à la greffe** :
+  - Le code protège l'écran, pas encore les données : dans la maquette, les chiffres sont fictifs et générés dans la page. Avec les vraies données, la fonction qui sert la rémunération devra exiger un jeton de courte durée remis après le bon code.
+  - Les fonctions Netlify ne gardent pas d'état : le blocage après plusieurs essais devra être compté en base (par employé) en production.
+  - Une empreinte d'un code à 4 chiffres se devine par essais si quelqu'un la copie : elle ne doit jamais sortir des variables Netlify. Un code plus long (6 chiffres ou plus) est plus sûr.

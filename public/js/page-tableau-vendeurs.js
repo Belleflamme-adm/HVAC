@@ -1,6 +1,7 @@
 // Performance et rémunération des vendeurs (ADR-074) : ce que chaque vendeur a rentré, sa commission (pourcentage
 // ajustable par vendeur, 10 % par défaut), son salaire par rapport au travail fourni et son taux de closing.
 // Chaque vendeur a son bouton : commission sur les ventes ou sur la marge brute (ADR-075, ADR-076 : recalcul visible).
+// Tuile protégée par un code d'accès (ADR-078).
 // Les vendeurs restent toujours dans leur ordre de création dans le système (ADR-077) : ni clic ni résultat ne les déplace.
 // Pour le directeur des ventes et la comptabilité. SIMULATION : la paie officielle reste dans le module Commissions de Mike.
 // Données FICTIVES tant que les devis, factures et le Pointage de Mike ne sont pas branchés.
@@ -8,7 +9,7 @@ import { initPage } from './bf-page.js?v=0.4.0';
 import { h, remplir } from './bf-dom.js?v=0.4.0';
 import { VENDEURS, SUCCURSALES, ventesFictives, activiteVendeurs, moisJusqua, parOrdreCreation } from './bf-ventes-fictives.js?v=0.4.0';
 import { compact, entier, pctTxt, dollars, svg, survol, cacherBulle, carteGraph, vide, tuile, barres, barresEmpilees,
-  colonnesEmpilees, panneauDash } from './bf-dash.js?v=0.4.0';
+  colonnesEmpilees, panneauDash, exigerCode } from './bf-dash.js?v=0.4.0';
 
 const FIN = '2026-10';
 const PERIODES = {
@@ -28,6 +29,8 @@ if (user) {
   if (!ROLES.includes(user.role)) {
     remplir(zone, h('h1', {}, 'Vendeurs : performance et rémunération'), h('p', { class: 'bf-message' }, 'Réservé au directeur des ventes, à la direction et à la comptabilité.'));
   } else {
+    // Code d'accès en plus du rôle (ADR-078) : vérifié par le serveur, redemandé à chaque ouverture
+    await exigerCode(zone, 'vendeurs', 'Vendeurs | Performance et rémunération');
     const ventesTout = ventesFictives(FIN);
     const activite = activiteVendeurs(ventesTout);
     // Réglages par vendeur : % de commission, calcul sur les ventes ou la marge, salaire de base annuel.

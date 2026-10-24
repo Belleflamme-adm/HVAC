@@ -1,7 +1,8 @@
 // Composants des tableaux exécutifs (ADR-068, ADR-072) : tuiles, infobulle, barres, colonnes empilées, anneau, lignes.
 // SVG maison, aucune librairie. Les couleurs sont passées par les pages (palettes validées sur le fond sombre #182036).
 // Les libellés sont des données : toujours insérés en textContent (via h()), jamais en HTML.
-import { h } from './bf-dom.js?v=0.4.0';
+import { h, remplir } from './bf-dom.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
 
 const NS = 'http://www.w3.org/2000/svg';
 export const SEQ = ['#256abf', '#3987e5', '#6da7ec', '#9ec5f4', '#cde2fb'];   // une teinte bleue, du plus bas au plus haut
@@ -53,6 +54,7 @@ const ICONES = {
   vente: 'M4 12.5l5 5L20 6.5',
   porte_voix: 'M3 10v4h3l7 4V6L6 10zM16 9a4 4 0 010 6M19 6a8 8 0 010 12',
   rendement: 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  cadenas: 'M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 017 0v3M12 15v2',
 };
 export const icone = (nom) => { const s = svg('svg', { viewBox: '0 0 24 24', 'aria-hidden': 'true' }); s.append(svg('path', { d: ICONES[nom] || ICONES.moyenne })); return s; };
 
@@ -257,4 +259,33 @@ export function panneauDash(titre, sousTitre, filtres, corps) {
         h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => (document.fullscreenElement ? document.exitFullscreen() : p.requestFullscreen?.()) }, 'Plein écran'))),
     filtres, corps, bulle);
   return p;
+}
+
+// Écran de code d'accès (ADR-078) : la page ne s'affiche qu'après la vérification du code par le serveur.
+// Rien n'est gardé dans le navigateur : on redemande le code à chaque ouverture de la page.
+export function exigerCode(conteneur, zone, titre) {
+  return new Promise((resolve) => {
+    const msg = h('p', { class: 'bf-dash__erreur-code', role: 'alert' });
+    const champ = h('input', { type: 'password', inputmode: 'numeric', autocomplete: 'off', maxlength: 12, pattern: '[0-9]*',
+      class: 'bf-dash__code', 'aria-label': 'Code d\'accès', placeholder: '• • • •' });
+    const bouton = h('button', { class: 'bf-dash__bouton bf-dash__bouton--plein', type: 'submit' }, 'Déverrouiller');
+    const form = h('form', { class: 'bf-dash__verrou' },
+      h('div', { class: 'bf-dash__cadenas', 'aria-hidden': 'true' }, icone('cadenas')),
+      h('h1', {}, titre), h('p', {}, 'Cette tuile est protégée par un code d\'accès.'), champ, bouton, msg);
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const code = champ.value.trim();
+      if (!/^\d{4,12}$/.test(code)) { msg.textContent = 'Le code compte de 4 à 12 chiffres.'; return; }
+      bouton.disabled = true; msg.textContent = '';
+      try {
+        await api.post('code-acces', { zone, code });
+        resolve();
+      } catch (e) {
+        msg.textContent = e.message || 'Code incorrect';
+        champ.value = ''; champ.focus();
+      } finally { bouton.disabled = false; }
+    });
+    remplir(conteneur, h('div', { class: 'bf-dash bf-dash--verrou' }, form));
+    champ.focus();
+  });
 }

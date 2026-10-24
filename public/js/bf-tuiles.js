@@ -38,7 +38,7 @@ const TUILES_PLANIFICATION = [
 
 const MACHINES = { cle: 'machines', titre: 'Tableau des machines', href: '/tableau-machines', etat: 'actif', icone: '📊', desc: 'Vue exécutive · provenance · ventes par territoire · modèles (données fictives)' };
 const MARKETING = { cle: 'marketing', titre: 'Tableau marketing', href: '/tableau-marketing', etat: 'actif', icone: '📣', desc: 'Sources des leads · coût par lead · rendement · secteurs · auditoire (données fictives)' };
-const PAIE = { cle: 'vendeurs', titre: 'Vendeurs : performance et rémunération', href: '/tableau-vendeurs', etat: 'actif', icone: '💼', desc: 'Ventes rentrées · commission ajustable · salaire vs travail · closing (simulation)' };
+const PAIE = { cle: 'vendeurs', titre: 'Vendeurs : performance et rémunération', href: '/tableau-vendeurs', etat: 'actif', icone: '💼', desc: '🔒 Code requis · ventes rentrées · commission ajustable · salaire vs travail · closing (simulation)' };
 const RAPIDITE = { cle: 'rapidite', titre: 'Rapidité des vendeurs', href: '/crm-rapidite', etat: 'actif', icone: '⏱️', desc: 'Tableau de quantification · bon, moyen, à améliorer · tour de rôle' };
 
 const estPlanif = (user) => ['Admin tout', 'Direction', 'Coordonnateur'].includes(user?.role);
