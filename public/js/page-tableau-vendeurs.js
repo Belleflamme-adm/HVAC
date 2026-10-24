@@ -1,6 +1,6 @@
 // Performance et rémunération des vendeurs (ADR-074) : ce que chaque vendeur a rentré, sa commission (pourcentage
 // ajustable par vendeur, 10 % par défaut), son salaire par rapport au travail fourni et son taux de closing.
-// Chaque vendeur a son bouton : commission sur les ventes ou sur la marge brute (ADR-075).
+// Chaque vendeur a son bouton : commission sur les ventes ou sur la marge brute (ADR-075, ADR-076 : recalcul visible).
 // Pour le directeur des ventes et la comptabilité. SIMULATION : la paie officielle reste dans le module Commissions de Mike.
 // Données FICTIVES tant que les devis, factures et le Pointage de Mike ne sont pas branchés.
 import { initPage } from './bf-page.js?v=0.4.0';
@@ -40,20 +40,58 @@ if (user) {
     } catch { /* stockage indisponible */ }
     const sauver = () => { try { localStorage.setItem(CLE, JSON.stringify(reglages)); } catch { /* stockage indisponible */ } };
     let edition = false;
-    let avis = null;   // message après un changement de mode de calcul
+    let avis = null;   // { texte, action?: { libelle, faire } } : ce qui vient de changer, avec les montants avant et après
 
-    // Bouton par vendeur. En passant d'un mode à l'autre, le % est converti pour que la paie reste la même sur la période
-    // affichée (ex. 10 % des ventes = environ 32 % de la marge) ; Simon l'ajuste ensuite à son goût.
+    // Bouton par vendeur : le pourcentage reste le même, donc la commission change tout de suite (ex. 10 % de la marge
+    // au lieu de 10 % des ventes). L'avis donne le pourcentage qui garderait la même paie, applicable d'un clic.
     function basculer(x) {
       const r = reglages.vendeurs[x.id];
       const vers = r.sur === 'marge' ? 'ventes' : 'marge';
-      const assiette = vers === 'marge' ? x.marge : x.ventes;
-      const ancien = r.pct;
-      if (assiette > 0) r.pct = Math.round((x.commission / assiette) * 1000) / 10;
-      r.sur = vers;
-      sauver();
-      avis = `${x.nom} : commission maintenant sur ${vers === 'marge' ? 'la marge brute' : 'les ventes'}. ${ancien.toLocaleString('fr-CA')} % ${vers === 'marge' ? 'des ventes' : 'de la marge'} devient ${r.pct.toLocaleString('fr-CA')} % ${vers === 'marge' ? 'de la marge' : 'des ventes'} pour garder la même paie sur la période ; ajuste le pourcentage au besoin.`;
+      r.sur = vers; sauver();
+      const apres = stats(x.id, PERIODES[filtres.periode].mois);
+      const assiette = vers === 'marge' ? apres.marge : apres.ventes;
+      const equivalent = assiette > 0 ? Math.round((x.commission / assiette) * 1000) / 10 : null;
+      avis = { texte: `${x.nom} : commission maintenant sur ${vers === 'marge' ? 'la marge brute' : 'les ventes'} à ${r.pct.toLocaleString('fr-CA')} %. `
+        + `Commission : ${dollars(x.commission)} → ${dollars(apres.commission)} (${ecart(apres.commission - x.commission)}).`
+        + (equivalent !== null ? ` Pour garder la même paie, il faudrait ${equivalent.toLocaleString('fr-CA')} %.` : ''),
+        action: equivalent !== null ? { libelle: `Appliquer ${equivalent.toLocaleString('fr-CA')} %`, faire: () => changerPct(x.id, equivalent) } : null };
       rendre();
+    }
+    // « 33,6 », « 33.6 », « 30 000 » -> nombre
+    const nombre = (v) => Number(String(v).replace(/\s/g, '').replace(',', '.'));
+    const ecart = (d) => `${d >= 0 ? '+' : '−'}${dollars(Math.abs(d))}`;
+    // Changement du pourcentage ou du salaire de base : recalcul immédiat, avis avec avant et après
+    function changerPct(id, pct) {
+      const nouveau = Math.min(100, Math.max(0, Math.round(nombre(pct) * 10) / 10 || 0));
+      if (nouveau === reglages.vendeurs[id].pct) return false;   // déjà appliqué (ex. « change » du champ remplacé)
+      const avant = stats(id, PERIODES[filtres.periode].mois);
+      reglages.vendeurs[id].pct = nouveau; sauver();
+      const apres = stats(id, PERIODES[filtres.periode].mois);
+      avis = { texte: `${apres.nom} : ${apres.pct.toLocaleString('fr-CA')} % ${apres.surMarge ? 'de la marge' : 'des ventes'}. Commission : ${dollars(avant.commission)} → ${dollars(apres.commission)} (${ecart(apres.commission - avant.commission)}).` };
+      rendre();
+      return true;
+    }
+    function changerSalaire(id, salaire) {
+      const nouveau = Math.max(0, Math.round(nombre(salaire) || 0));
+      if (nouveau === reglages.vendeurs[id].salaire) return false;
+      const avant = stats(id, PERIODES[filtres.periode].mois);
+      reglages.vendeurs[id].salaire = nouveau; sauver();
+      const apres = stats(id, PERIODES[filtres.periode].mois);
+      avis = { texte: `${apres.nom} : salaire de base de ${dollars(apres.salaire)} par an. Rémunération : ${dollars(avant.remuneration)} → ${dollars(apres.remuneration)} (${ecart(apres.remuneration - avant.remuneration)}).` };
+      rendre();
+      return true;
+    }
+    // Saisie : le calcul suit la frappe (après une courte pause) ; le champ garde le focus après le nouvel affichage
+    let minuterie = null;
+    function saisie(ev, appliquer) {
+      const champ = ev.target; const etiquette = champ.getAttribute('aria-label');
+      clearTimeout(minuterie);
+      minuterie = setTimeout(() => {
+        if (champ.value === '' || !champ.isConnected || !Number.isFinite(nombre(champ.value))) return;
+        if (appliquer(champ.value) === false) return;
+        const nouveau = [...document.querySelectorAll('input.bf-dash__champ')].find((c) => c.getAttribute('aria-label') === etiquette);
+        if (nouveau && ev.type === 'input') { nouveau.focus(); const n = nouveau.value.length; nouveau.setSelectionRange(n, n); }
+      }, ev.type === 'input' ? 600 : 0);
     }
 
     const filtres = { periode: '12m', vendeur: '' };
@@ -111,9 +149,9 @@ if (user) {
       remplir(corps,
         h('div', { class: 'bf-dash__tuiles' },
           tuile('argent', 'Ventes rentrées', compact(T.ventes), delta(T.ventes, Ta.ventes), P.compare, { note: `${entier(T.nb)} ventes, avant taxes` }),
-          tuile('vente', 'Commissions', compact(T.commission), null, '',
+          tuile('vente', 'Commissions', dollars(T.commission), null, '',
             { note: `${pctTxt(T.ventes ? T.commission / T.ventes : 0, 1)} des ventes | ${pctTxt(T.marge ? T.commission / T.marge : 0, 1)} de la marge | ${nbMarge} vendeur(s) payé(s) sur la marge` }),
-          tuile('machines', 'Rémunération totale', compact(T.remuneration), delta(T.remuneration, Ta.remuneration), P.compare, { hausseBonne: false, note: 'commissions + salaires de base' }),
+          tuile('machines', 'Rémunération totale', dollars(T.remuneration), delta(T.remuneration, Ta.remuneration), P.compare, { hausseBonne: false, note: 'commissions + salaires de base' }),
           tuile('marge', 'Coût de la force de vente', pctTxt(T.ventes ? T.remuneration / T.ventes : 0, 1), null, '', { note: 'rémunération / ventes' }),
           tuile('moyenne', 'Rémunération moyenne par heure', T.heures ? dollars(T.remuneration / T.heures) : 'n/d', null, '', { note: `${entier(T.heures)} heures travaillées (Pointage)` }),
           tuile('rendement', 'Ventes par heure travaillée', T.heures ? dollars(T.ventes / T.heures) : 'n/d', delta(T.heures ? T.ventes / T.heures : 0, Ta.heures ? Ta.ventes / Ta.heures : 0), P.compare),
@@ -122,10 +160,11 @@ if (user) {
             { note: `${pctTxt(T.ventes ? (T.marge - T.remuneration) / T.ventes : 0, 1)} des ventes` })),
 
         carteGraph('Ce que chaque vendeur a rentré et ce qu\'il gagne', `${P.libelle} | clique sur « Ventes » ou « Marge » pour changer le calcul de la commission d'un vendeur | salaire de base au prorata`,
-          avis ? h('p', { class: 'bf-dash__avis', role: 'status' }, avis) : null,
+          avis ? h('div', { class: 'bf-dash__avis', role: 'status' }, h('span', {}, avis.texte),
+            avis.action ? h('button', { class: 'bf-dash__bouton', type: 'button', onclick: avis.action.faire }, avis.action.libelle) : null) : null,
           h('div', { class: 'bf-dash__actions' },
             h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { edition = !edition; rendre(); } }, edition ? 'Terminer' : 'Modifier les pourcentages et salaires de base'),
-            edition ? h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { reglages = defaut(); avis = null; sauver(); rendre(); } }, `Remettre ${PCT_DEFAUT} % des ventes et 0 $ pour tous`) : null),
+            edition ? h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { reglages = defaut(); avis = { texte: `Tous les vendeurs remis à ${PCT_DEFAUT} % des ventes et 0 $ de base.` }; sauver(); rendre(); } }, `Remettre ${PCT_DEFAUT} % des ventes et 0 $ pour tous`) : null),
           S.length ? h('div', { class: 'bf-dash__defile' }, h('table', { class: 'bf-dash__table bf-dash__vendeurs bf-dash__paie' },
             h('thead', {}, h('tr', {}, ['Vendeur', 'Ventes', 'Nb', 'Marge', 'Commission sur', '% comm.', 'Base / an', 'Commission', 'Rémunération', 'Heures', '$ / heure', 'Leads', 'Visites', 'Soumissions', 'Closing', 'Lead → vente', 'Coût de vente']
               .map((t, i) => h('th', { class: i ? 'num' : '' }, t)))),
@@ -135,10 +174,10 @@ if (user) {
               h('td', { class: 'num' }, h('span', { class: 'bf-dash__bascule', role: 'group', 'aria-label': `Commission de ${x.nom} calculée sur` },
                 h('button', { type: 'button', class: x.surMarge ? '' : 'actif', 'aria-pressed': String(!x.surMarge), onclick: () => { if (x.surMarge) basculer(x); } }, 'Ventes'),
                 h('button', { type: 'button', class: x.surMarge ? 'actif' : '', 'aria-pressed': String(x.surMarge), onclick: () => { if (!x.surMarge) basculer(x); } }, 'Marge'))),
-              h('td', { class: 'num' }, edition ? h('input', { type: 'number', min: 0, max: 100, step: 0.5, value: x.pct, class: 'bf-dash__champ', 'aria-label': `Pourcentage de commission de ${x.nom}`,
-                onchange: (ev) => { reglages.vendeurs[x.id].pct = Math.min(100, Math.max(0, Number(ev.target.value) || 0)); sauver(); setTimeout(rendre, 0); } }) : `${x.pct.toLocaleString('fr-CA')} %`),
-              h('td', { class: 'num' }, edition ? h('input', { type: 'number', min: 0, step: 1000, value: x.salaire, class: 'bf-dash__champ', 'aria-label': `Salaire de base annuel de ${x.nom}`,
-                onchange: (ev) => { reglages.vendeurs[x.id].salaire = Math.max(0, Math.round(Number(ev.target.value) || 0)); sauver(); setTimeout(rendre, 0); } }) : compact(x.salaire)),
+              h('td', { class: 'num' }, edition ? h('input', { type: 'text', inputmode: 'decimal', value: x.pct.toLocaleString('fr-CA'), class: 'bf-dash__champ', 'aria-label': `Pourcentage de commission de ${x.nom}`,
+                oninput: (ev) => saisie(ev, (v) => changerPct(x.id, v)), onchange: (ev) => saisie(ev, (v) => changerPct(x.id, v)) }) : `${x.pct.toLocaleString('fr-CA')} %`),
+              h('td', { class: 'num' }, edition ? h('input', { type: 'text', inputmode: 'numeric', value: x.salaire, class: 'bf-dash__champ', 'aria-label': `Salaire de base annuel de ${x.nom}`,
+                oninput: (ev) => saisie(ev, (v) => changerSalaire(x.id, v)), onchange: (ev) => saisie(ev, (v) => changerSalaire(x.id, v)) }) : compact(x.salaire)),
               h('td', { class: 'num' }, dollars(x.commission)), h('td', { class: 'num' }, h('strong', {}, dollars(x.remuneration))),
               h('td', { class: 'num' }, entier(x.heures)), h('td', { class: 'num' }, x.heures ? dollars(x.parHeure) : 'n/d'),
               h('td', { class: 'num' }, entier(x.leads)), h('td', { class: 'num' }, entier(x.visites)), h('td', { class: 'num' }, entier(x.soumissions)),

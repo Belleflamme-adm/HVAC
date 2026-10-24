@@ -702,3 +702,16 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Conversion au changement** : en passant d'un mode à l'autre, le pourcentage est converti pour que la paie reste la même sur la période affichée (ex. 10 % des ventes = 33,6 % de la marge pour Mélanie). Un message l'indique ; Simon ajuste ensuite le pourcentage. Sans cette conversion, passer à 10 % de la marge diviserait la paie par trois sans prévenir.
 - La tuile « Commissions » indique combien de vendeurs sont payés sur la marge ; « À surveiller » suggère de passer sur la marge un vendeur payé sur les ventes dont la marge est plus basse que l'équipe.
 - **Qualité** : nouveau test qui vérifie la syntaxe de tous les scripts du front (une erreur de syntaxe dans une page n'était vue qu'au chargement).
+
+## ADR-076 | Tableau des vendeurs : chaque changement de commission se voit tout de suite
+- **Date** : 2026-10-24 | **Statut** : Correction (maquette)
+- **Problème signalé** (Simon) : passer un vendeur sur la marge, puis changer son pourcentage, ne changeait pas le montant affiché.
+- **Causes** :
+  1. Le bouton « Marge » convertissait le pourcentage pour garder la même paie (ADR-075) : le montant restait identique, par conception, ce qui ressemblait à un bogue.
+  2. Les tuiles arrondissaient (« 1,34 M$ ») : quelques milliers de dollars n'y paraissaient pas.
+  3. Le recalcul attendait la sortie du champ, puis le champ remplacé relançait un deuxième calcul (« +0 $ ») et perdait le curseur ; dans un champ numérique, le curseur revenait au début et la frappe s'ajoutait devant le nombre.
+- **Correction** :
+  - Le bouton garde le pourcentage : la commission change tout de suite (10 % des ventes -> 10 % de la marge). Un avis montre le montant avant et après, et propose d'un clic le pourcentage qui garderait la même paie (« Appliquer 33,6 % »).
+  - Le pourcentage et le salaire de base se recalculent pendant la frappe (après une courte pause), le curseur reste dans le champ, en fin de texte ; la virgule est acceptée (« 33,6 »). Un changement déjà appliqué est ignoré.
+  - Tuiles « Commissions » et « Rémunération totale » au dollar près.
+  - Chaque changement affiche un avis : vendeur, nouveau réglage, commission avant -> après, écart.

@@ -495,3 +495,5 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dash__bascule button.actif { background: var(--d-s1); color: #ffffff; }
 .bf-dash__bascule button:focus-visible { outline: 2px solid var(--d-texte); outline-offset: -2px; }
 .bf-dash__avis { background: #1f2d4d; border: 1px solid #2f4778; border-radius: 10px; padding: 8px 12px; color: var(--d-texte); }
+.bf-dash__avis { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.bf-dash__tuile-valeur { font-variant-numeric: normal; }
