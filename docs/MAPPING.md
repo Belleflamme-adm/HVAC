@@ -63,6 +63,10 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 - `projets.sous_traitant_id` : champ du devis de Mike qui désigne l'installateur (sous-traitant) : à confirmer.
 - `projet_lignes` : lignes du devis de Mike (machines, installation). Noms des colonnes et façon de distinguer une machine d'une ligne d'installation : à confirmer. Le prix client des lignes n'est **pas** repris.
 
+## Feuille d'extra (ADR-081)
+- `projet_extras` : aucun board connu chez Mike pour les extras des sous-traitants : à confirmer (« Factures payables Bot » pour la facture finale ?).
+- `projets.facture_st_total_cents` : montant de la facture payable du sous-traitant chez Mike : champ à confirmer.
+
 ## Comment compléter ce document
 
 Une fois que Claude aura un accès en lecture seule à Monday (exception dans `CLAUDE.md` §2) :

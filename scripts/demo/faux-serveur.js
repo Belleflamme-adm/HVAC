@@ -47,7 +47,7 @@
     ],
     margeBp: 2500,
     demandes: [], dernierLien: null,
-    confies: [], versions: [], comms: [], projets: [],
+    confies: [], versions: [], comms: [], projets: [], extras: [],
     // Soumissions actives fictives (devis faits dans l'app de Mike) qui utilisent les prix de Clim Laurentides
     engagements: [],
     municipalites: [],
@@ -352,6 +352,7 @@
       'Daniel Poirier (FICTIF)': [m('Thermopompe murale 12 000 BTU'), i('INST-MURAL-1T-12')],
       'Nathalie Roy (FICTIF)': [m('Thermopompe multizone 3 têtes, 24 000 BTU'), m('Tête murale 9 000 BTU', 3), i('INST-MULTI-2T'), i('INST-TETE-MULTI')],
       'Marc-André Dubé (FICTIF)': [m('Thermopompe murale 12 000 BTU'), i('INST-MURAL-1T-12'), i('EXTRA-LIGNE-PI', 8)],
+      'Chantal Lévesque (FICTIF)': [m('Thermopompe multizone 2 têtes, 18 000 BTU'), m('Tête murale 9 000 BTU', 2), i('INST-MULTI-2T')],
     };
     for (const p of etat.projets) {
       if (!pour[p.client_nom]) continue;
@@ -360,13 +361,62 @@
     }
   }
   // Vue du sous-traitant : machines à 0 $, ses prix, coordonnées du client après le dépôt (Loi 25). Jamais le montant client.
+  // Feuille d'extra (ADR-081) : mêmes règles que la base
+  const CAUSES_EXTRA = ['oubli_vendeur', 'imprevu_chantier', 'demande_client', 'autre'];
+  const totalExtra = (x) => Math.round(x.quantite * x.cout_cents);
+  const extrasDe = (p, ...statuts) => etat.extras.filter((x) => x.projet_id === p.id && statuts.includes(x.statut));
+  const somme = (l) => l.reduce((t, x) => t + totalExtra(x), 0);
+  const extrasOuverts = (p) => ['a_planifier', 'planifie', 'en_cours', 'termine'].includes(p.statut) && !p.facture_st_soumise_le;
+  const coutInstall = (p) => (p.lignes || []).filter((l) => l.type_ligne === 'installation').reduce((t, l) => t + Math.round(l.quantite * l.cout_cents), 0);
+  function ajouterExtraDemo(p, x, quand = etat.maintenant) {
+    const e = { id: `x-${etat.extras.length + 1}`, projet_id: p.id, fournisseur_id: p.sous_traitant_id, type_travail_id: x.type_travail_id || null,
+      description: x.description, quantite: x.quantite || 1, cout_cents: x.cout_cents, hors_liste: !x.type_travail_id, justification: x.justification || null,
+      cause: x.cause, note: x.note || null, statut: x.statut || 'brouillon', soumis_le: x.statut && x.statut !== 'brouillon' ? iso(quand) : null,
+      decide_par_nom: null, decide_le: null, raison_refus: null, created_at: iso(quand) };
+    if (['approuve', 'refuse'].includes(e.statut)) Object.assign(e, { decide_par_nom: 'Simon Cardinal', decide_le: iso(quand + H), raison_refus: x.raison_refus || null });
+    etat.extras.push(e);
+    return e;
+  }
+  const vueExtra = (x) => {
+    const p = etat.projets.find((y) => y.id === x.projet_id);
+    return { ...x, code_projet: p.code_projet, projet_statut: p.statut, succursale_code: p.succursale_code, ville: p.ville, vendeur_id: p.vendeur_id,
+      vendeur_nom: p.vendeur_nom, sous_traitant_nom: p.sous_traitant_nom, total_cents: totalExtra(x) };
+  };
+  const vueMacro = (p) => ({ ...p, extras_a_approuver: extrasDe(p, 'soumis').length, extras_approuves_cents: somme(extrasDe(p, 'approuve')) || null });
+  {
+    const J = 24 * H;
+    const parNom = (n) => etat.projets.find((p) => p.client_nom === n);
+    const prix = (f, code) => prixEnVigueur(f, tid(code), jourIso(etat.maintenant));
+    const roy = parNom('Nathalie Roy (FICTIF)');
+    ajouterExtraDemo(roy, { type_travail_id: tid('EXTRA-LIGNE-PI'), description: 'Ligne frigorifique supplémentaire (au-delà de 25 pi)', quantite: 10, cout_cents: prix('f-clim', 'EXTRA-LIGNE-PI'),
+      cause: 'oubli_vendeur', note: 'Condenseur à l\'arrière de la maison, la soumission prévoyait le côté', statut: 'soumis' }, etat.maintenant - 5 * H);
+    ajouterExtraDemo(roy, { description: 'Support mural renforcé', quantite: 1, cout_cents: 18000, cause: 'imprevu_chantier',
+      justification: 'Mur de brique trop friable pour le support standard, il faut des ancrages chimiques', statut: 'soumis' }, etat.maintenant - 5 * H);
+    const lev = parNom('Chantal Lévesque (FICTIF)');
+    ajouterExtraDemo(lev, { type_travail_id: tid('EXTRA-LIGNE-PI'), description: 'Ligne frigorifique supplémentaire (au-delà de 25 pi)', quantite: 6, cout_cents: prix('f-clim', 'EXTRA-LIGNE-PI'),
+      cause: 'demande_client', note: 'La cliente a déplacé la tête du salon', statut: 'approuve' }, etat.maintenant - 3 * J);
+    ajouterExtraDemo(lev, { description: 'Déplacement supplémentaire', quantite: 1, cout_cents: 9500, cause: 'autre',
+      justification: 'Deuxième visite pour finir le drain, pièce manquante', statut: 'refuse', raison_refus: 'La pièce manquante relevait du sous-traitant : non facturable' }, etat.maintenant - 3 * J);
+    const dube = parNom('Marc-André Dubé (FICTIF)');
+    ajouterExtraDemo(dube, { type_travail_id: tid('EXTRA-LIGNE-PI'), description: 'Ligne frigorifique supplémentaire (au-delà de 25 pi)', quantite: 4, cout_cents: prix('f-clim', 'EXTRA-LIGNE-PI'),
+      cause: 'oubli_vendeur', statut: 'approuve' }, etat.maintenant - 30 * J);
+    dube.facture_st_soumise_le = iso(etat.maintenant - 25 * J);
+    dube.facture_st_total_cents = coutInstall(dube) + somme(extrasDe(dube, 'approuve'));
+  }
+  // Vue du sous-traitant : machines à 0 $, ses prix, coordonnées du client après le dépôt (Loi 25). Jamais le montant client.
   const vueJob = (p) => {
     const depot = p.statut !== 'attente_paiement';
     const lignes = p.lignes.map((l) => ({ type_ligne: l.type_ligne, description: l.description, quantite: l.quantite,
       prix_cents: l.type_ligne === 'installation' ? l.cout_cents : 0, total_cents: l.type_ligne === 'installation' ? Math.round(l.quantite * l.cout_cents) : 0 }));
+    const total = lignes.reduce((t, l) => t + l.total_cents, 0);
+    const ok = somme(extrasDe(p, 'approuve'));
     return { id: p.id, code_projet: p.code_projet, statut: p.statut, ville: p.ville, type_systeme: p.type_systeme, signe_le: p.signe_le,
       installation_prevue_le: p.installation_prevue_le, client_nom: depot ? p.client_nom : null, client_telephone: depot ? p.client_telephone : null,
-      adresse: depot ? p.adresse : null, lignes, total_cents: lignes.reduce((s, l) => s + l.total_cents, 0) };
+      adresse: depot ? p.adresse : null, lignes, total_cents: total,
+      extras: extrasDe(p, 'brouillon', 'soumis', 'approuve', 'refuse').map((x) => ({ id: x.id, description: x.description, quantite: x.quantite, prix_cents: x.cout_cents,
+        total_cents: totalExtra(x), hors_liste: x.hors_liste, cause: x.cause, justification: x.justification, note: x.note, statut: x.statut, raison_refus: x.raison_refus })),
+      extras_approuves_cents: ok, extras_en_attente_cents: somme(extrasDe(p, 'brouillon', 'soumis')),
+      total_final_cents: p.facture_st_total_cents ?? total + ok, facture_soumise_le: p.facture_st_soumise_le || null, extras_ouverts: extrasOuverts(p) };
   };
 
   // Territoires fictifs qui se chevauchent (carte comparative, ADR-063), semés une fois que les municipalités sont chargées
@@ -503,7 +553,7 @@
         if (q.lead) l = l.filter((p) => p.lead_id === q.lead);
         else if (q.fermes !== '1') l = l.filter((p) => !['ferme', 'annule'].includes(p.statut));
         if (q.succursale) l = l.filter((p) => p.succursale_code === q.succursale);
-        return l.slice().sort((a, b) => b.signe_le.localeCompare(a.signe_le));
+        return l.slice().sort((a, b) => b.signe_le.localeCompare(a.signe_le)).map(vueMacro);
       },
       // Mêmes règles que la base : avancer d'une ou plusieurs étapes, reculer d'une seule, annuler avant la facturation
       PATCH: (q, b) => {
@@ -537,6 +587,71 @@
       if (l.statut !== 'converti') activite(l, { type: 'vendu', note: `Soumission #${numero} signée par le client` }, etat.maintenant);
       return { projet_id: p.id };
     } },
+    extras: {
+      GET: (q) => {
+        exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à Belleflamme');
+        const l = q.projet ? etat.extras.filter((x) => x.projet_id === q.projet && x.statut !== 'retire')
+          : etat.extras.filter((x) => (q.statut === 'tous' ? ['soumis', 'approuve', 'refuse'] : ['soumis']).includes(x.statut));
+        return l.slice().sort((a, b) => a.created_at.localeCompare(b.created_at)).map(vueExtra);
+      },
+      POST: (q, b) => {
+        const f = user().sousTraitantId;
+        const p = etat.projets.find((x) => x.id === q.projet);
+        if (!f || !p || p.sous_traitant_id !== f) throw new Erreur(403, 'Job introuvable');
+        exiger(extrasOuverts(p), p.facture_st_soumise_le ? 'Facture finale déjà soumise : plus d\'extras' : `Extras fermés pour cette job (étape : ${p.statut})`);
+        exiger(CAUSES_EXTRA.includes(b.cause), 'Cause requise : oubli du vendeur, imprévu de chantier, demande du client ou autre');
+        const quantite = Number(b.quantite) || 1;
+        exiger(quantite > 0 && quantite <= 999, 'Quantité invalide');
+        let x;
+        if (b.type_travail_id) {
+          exiger(etat.confies.some((c) => c.fournisseur_id === f && c.type_travail_id === b.type_travail_id), 'Ce travail n\'est pas dans ta liste de prix : ajoute-le hors liste avec une justification');
+          const cout = prixEnVigueur(f, b.type_travail_id, jourIso(etat.maintenant));
+          exiger(cout, 'Aucun prix pour ce travail dans ta liste');
+          x = { type_travail_id: b.type_travail_id, description: etat.types.find((t) => t.id === b.type_travail_id)?.nom, cout_cents: cout };
+        } else {
+          exiger(String(b.description || '').trim(), 'Description requise');
+          exiger(Number.isInteger(b.cout_cents) && b.cout_cents > 0, 'Prix requis pour un extra hors liste');
+          exiger(String(b.justification || '').trim().length >= 10, 'Justification requise pour un extra hors liste (10 caractères et plus)');
+          x = { description: b.description.trim(), cout_cents: b.cout_cents, justification: b.justification.trim() };
+        }
+        return { id: ajouterExtraDemo(p, { ...x, quantite, cause: b.cause, note: b.note ? String(b.note).trim() : null }).id };
+      },
+      PATCH: (_q, b) => {
+        const f = user().sousTraitantId;
+        const sien = (p) => { if (!f || !p || p.sous_traitant_id !== f) throw new Erreur(403, 'Job introuvable'); exiger(extrasOuverts(p), 'Extras fermés pour cette job'); return p; };
+        if (b.action === 'retirer') {
+          const x = etat.extras.find((y) => y.id === b.id);
+          sien(etat.projets.find((p) => p.id === x?.projet_id));
+          exiger(x.statut === 'brouillon', 'Seul un brouillon se retire');
+          x.statut = 'retire'; return { ok: true };
+        }
+        if (b.action === 'envoyer') {
+          const p = sien(etat.projets.find((y) => y.id === b.projet));
+          const l = extrasDe(p, 'brouillon');
+          exiger(l.length, 'Aucun extra à envoyer');
+          l.forEach((x) => { x.statut = 'soumis'; x.soumis_le = iso(etat.maintenant); });
+          return { envoyes: l.length };
+        }
+        if (b.action === 'facture') {
+          const p = sien(etat.projets.find((y) => y.id === b.projet));
+          exiger(['en_cours', 'termine'].includes(p.statut), 'La facture finale se soumet quand la job est en cours ou terminée');
+          exiger(!extrasDe(p, 'brouillon', 'soumis').length, 'Des extras sont en brouillon ou en attente d\'approbation');
+          p.facture_st_soumise_le = iso(etat.maintenant);
+          p.facture_st_total_cents = coutInstall(p) + somme(extrasDe(p, 'approuve'));
+          return { total_cents: p.facture_st_total_cents };
+        }
+        if (b.action === 'decider') {
+          exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Approbation réservée à Simon, Mike et la planification');
+          const x = etat.extras.find((y) => y.id === b.id);
+          exiger(x && x.statut === 'soumis', 'Cet extra n\'est pas en attente d\'approbation');
+          exiger(b.approuve === true || String(b.raison || '').trim(), 'Raison du refus requise');
+          Object.assign(x, { statut: b.approuve === true ? 'approuve' : 'refuse', raison_refus: b.approuve === true ? null : String(b.raison).trim(),
+            decide_par_nom: user().name, decide_le: iso(etat.maintenant) });
+          return { ok: true };
+        }
+        throw new Erreur(400, 'Action inconnue');
+      },
+    },
     jobs: { GET: (q) => {
       const f = user().sousTraitantId || (['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role) ? q.fournisseur : null);
       if (!f) throw new Erreur(403, 'Sous-traitant requis');

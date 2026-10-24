@@ -78,3 +78,14 @@
 - À la greffe :
   - le webhook « devis accepté » de Mike doit fournir le sous-traitant attitré et les lignes du devis (machines : description et quantité ; installation : type de travail et quantité). Ne jamais transmettre le prix client au portail du sous-traitant.
   - si le devis de Mike porte déjà le coût du sous-traitant, comparer avec sa liste et décider laquelle fait foi (à confirmer avec Mike).
+
+## Feuille d'extra et facture finale du sous-traitant (ADR-081)
+- Migration `20261024001500_extras_sous_traitant.sql` :
+  - table `projet_extras` ;
+  - `projets.facture_st_soumise_le` et `projets.facture_st_total_cents` ;
+  - fonctions `hvac_extra_ajouter`, `hvac_extra_retirer`, `hvac_extras_envoyer`, `hvac_extra_decider`, `hvac_facture_finale` ;
+  - vue `extras_v` ;
+  - `projets_macro_v` et `hvac_mes_projets` enrichies.
+- À la greffe :
+  - la facture finale approuvée doit créer une facture payable dans l'app de Mike (board « Factures payables Bot » ou son équivalent Supabase). Format à confirmer avec Mike ;
+  - les extras approuvés pour « oubli du vendeur » peuvent alimenter les commissions de Mike, si Simon le décide.

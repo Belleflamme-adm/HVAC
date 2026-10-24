@@ -3,11 +3,14 @@
 // Jamais le prix chargé au client, le total de la facture ni notre marge (la base ne les lui envoie pas).
 // Loi 25 : le nom, le téléphone et l'adresse du client arrivent après le dépôt.
 // Simon, Mike et la planification ouvrent la même page avec ?fournisseur= pour voir ce que voit le sous-traitant.
+// Feuille d'extra (ADR-081) : après le dépôt, le sous-traitant ajoute ses extras (de sa liste, ou hors liste avec
+// justification), les envoie pour approbation, puis soumet sa facture finale (installation + extras approuvés).
 import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
 import { formatCents } from './bf-money.js?v=0.4.0';
 import { pastilleType } from './bf-crm.js?v=0.4.0';
+import { CAUSES, pastilleExtra, marqueHorsListe } from './bf-extras.js?v=0.4.0';
 
 const ETAPES = [
   ['attente_paiement', 'Nouveau | en attente du dépôt du client'], ['a_planifier', 'Dépôt reçu | à céduler'], ['planifie', 'Planifié'],
@@ -23,6 +26,88 @@ if (user) {
   const msg = h('p', { class: 'bf-message', role: 'alert' });
   const estSt = Boolean(user.sousTraitantId);
   const liste = h('div', { class: 'bf-jobs' });
+  let fournisseurVu = null;
+  let maListe = null;   // travaux de sa liste de prix (pour les extras), chargés au premier besoin
+  const enCents = (t) => { const n = Number(String(t).replace(',', '.').replace(/[\s$]/g, '')); return Number.isFinite(n) && n > 0 ? Math.round(n * 100) : null; };
+  const recharger = () => charger(fournisseurVu);
+  const faire = async (corps, ok) => {
+    try { const r = await api.patch('extras', corps); await recharger(); message(msg, typeof ok === 'function' ? ok(r) : ok, 'ok'); }
+    catch (e) { message(msg, e.message); }
+  };
+
+  // Formulaire d'un extra : de ma liste (prix de la liste, non modifiable) ou hors liste (prix + justification)
+  async function formExtra(j, zoneForm) {
+    if (!maListe) {
+      try { maListe = (await api.get('mes-prix')).travaux.filter((t) => t.cout_cents); } catch (e) { message(msg, e.message); return; }
+    }
+    const tri = [...maListe].sort((a, b) => (b.code.startsWith('EXTRA') - a.code.startsWith('EXTRA')) || a.nom.localeCompare(b.nom, 'fr'));
+    const mode = h('select', { name: 'mode', 'aria-label': 'Provenance' }, h('option', { value: 'liste' }, 'De ma liste de prix'), h('option', { value: 'hors' }, 'Hors liste (avec justification)'));
+    const deListe = h('label', {}, 'Travail', h('select', { name: 'travail' }, tri.map((t) => h('option', { value: t.id }, `${t.nom} | ${formatCents(t.cout_cents)}`))));
+    const horsListe = h('div', { class: 'bf-grille2', hidden: true },
+      h('label', {}, 'Description *', h('input', { name: 'description', maxlength: 200, placeholder: 'Support mural renforcé' })),
+      h('label', {}, 'Ton prix unitaire ($) *', h('input', { name: 'prix', inputmode: 'decimal', placeholder: '180' })),
+      h('label', { class: 'bf-pleine' }, 'Justification * (pourquoi ce n\'est pas dans ta liste, ce qui s\'est passé)', h('textarea', { name: 'justification', rows: 2, minlength: 10 })));
+    mode.addEventListener('change', () => { deListe.hidden = mode.value !== 'liste'; horsListe.hidden = mode.value === 'liste'; });
+    const form = h('form', { class: 'bf-form bf-form--compact bf-jobs__form' },
+      h('h3', {}, 'Nouvel extra'),
+      h('div', { class: 'bf-grille2' }, h('label', {}, 'Provenance', mode), deListe,
+        h('label', {}, 'Quantité', h('input', { name: 'qte', inputmode: 'decimal', value: '1' })),
+        h('label', {}, 'Cause *', h('select', { name: 'cause', required: true }, h('option', { value: '' }, 'Choisir…'),
+          Object.entries(CAUSES).map(([k, t]) => h('option', { value: k }, t))))),
+      horsListe,
+      h('label', {}, 'Note (facultatif)', h('input', { name: 'note', maxlength: 500 })),
+      h('div', { class: 'bf-actions' }, h('button', { class: 'bf-bouton', type: 'submit' }, 'Ajouter au brouillon'),
+        h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => zoneForm.replaceChildren() }, 'Annuler')));
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const f = new FormData(form);
+      const corps = { cause: f.get('cause'), quantite: Number(String(f.get('qte')).replace(',', '.')) || 1, note: f.get('note') || undefined };
+      if (mode.value === 'liste') corps.type_travail_id = f.get('travail');
+      else Object.assign(corps, { description: f.get('description'), cout_cents: enCents(f.get('prix')), justification: f.get('justification') });
+      try { await api.post('extras', corps, { projet: j.id }); await recharger(); message(msg, 'Extra ajouté au brouillon. Envoie la feuille pour approbation quand elle est complète.', 'ok'); }
+      catch (e) { message(msg, e.message); }
+    });
+    zoneForm.replaceChildren(form);
+  }
+
+  function feuilleExtras(j) {
+    const ext = j.extras || [];
+    const brouillons = ext.filter((x) => x.statut === 'brouillon').length;
+    const enAttente = ext.some((x) => ['brouillon', 'soumis'].includes(x.statut));
+    const zoneForm = h('div');
+    const peutFacturer = estSt && j.extras_ouverts && ['en_cours', 'termine'].includes(j.statut) && !enAttente;
+    return h('section', { class: 'bf-jobs__extras' },
+      h('h3', {}, 'Feuille d\'extra'),
+      ext.length ? h('div', { class: 'bf-table-zone' }, h('table', { class: 'bf-table bf-jobs__table' },
+        h('thead', {}, h('tr', {}, ['Extra', 'Qté', 'Ton prix', 'Total', 'Statut', ''].map((t, i) => h('th', { class: i && i < 4 ? 'num' : null }, t)))),
+        h('tbody', {}, ext.map((x) => h('tr', { class: x.statut === 'refuse' ? 'bf-jobs__refuse' : null },
+          h('td', {}, x.description, ' ', x.hors_liste ? marqueHorsListe() : null,
+            h('div', { class: 'bf-muet' }, [CAUSES[x.cause], x.justification, x.note].filter(Boolean).join(' | ')),
+            x.raison_refus ? h('div', { class: 'bf-jobs__raison' }, `Refusé : ${x.raison_refus}`) : null),
+          h('td', { class: 'num' }, qte(x.quantite)), h('td', { class: 'num' }, formatCents(x.prix_cents)),
+          h('td', { class: 'num' }, h('strong', {}, formatCents(x.total_cents))), h('td', {}, pastilleExtra(x.statut)),
+          h('td', {}, estSt && x.statut === 'brouillon' ? h('button', { type: 'button', class: 'bf-lien', onclick: () => faire({ action: 'retirer', id: x.id }, 'Extra retiré du brouillon.') }, 'Retirer') : null)))))) 
+        : h('p', { class: 'bf-muet' }, j.extras_ouverts ? 'Aucun extra. Un oubli ou un imprévu ? Ajoute-le ici, à partir de ta liste de prix.' : 'Aucun extra.'),
+      h('dl', { class: 'bf-jobs__totaux' },
+        h('dt', {}, 'Installation'), h('dd', {}, formatCents(j.total_cents)),
+        h('dt', {}, 'Extras approuvés'), h('dd', {}, formatCents(j.extras_approuves_cents || 0)),
+        j.extras_en_attente_cents ? [h('dt', { class: 'bf-muet' }, 'Extras pas encore approuvés (non comptés)'), h('dd', { class: 'bf-muet' }, formatCents(j.extras_en_attente_cents))] : null,
+        h('dt', { class: 'bf-jobs__final' }, j.facture_soumise_le ? 'Facture finale soumise (avant taxes)' : 'Ta facture finale (avant taxes)'),
+        h('dd', { class: 'bf-jobs__final' }, formatCents(j.total_final_cents))),
+      j.facture_soumise_le ? h('p', { class: 'bf-jobs__facturee' }, `✓ Facture finale soumise le ${jour(j.facture_soumise_le)}. Les extras sont fermés pour cette job.`) : null,
+      estSt && j.extras_ouverts ? h('div', { class: 'bf-actions' },
+        h('button', { type: 'button', class: 'bf-bouton bf-bouton--discret', onclick: () => formExtra(j, zoneForm) }, '+ Extra'),
+        brouillons ? h('button', { type: 'button', class: 'bf-bouton', onclick: () => faire({ action: 'envoyer', projet: j.id },
+          (r) => `${r.envoyes} extra(s) envoyé(s) pour approbation à Belleflamme.`) }, `Envoyer pour approbation (${brouillons})`) : null,
+        peutFacturer ? h('button', { type: 'button', class: 'bf-bouton', onclick: () => {
+          if (confirm(`Soumettre ta facture finale de ${formatCents(j.total_final_cents)} avant taxes ? Ensuite, plus d'extras pour cette job.`)) {
+            faire({ action: 'facture', projet: j.id }, (r) => `Facture finale soumise : ${formatCents(r.total_cents)} avant taxes. Envoie ta facture à Belleflamme pour ce montant.`);
+          }
+        } }, 'Soumettre ma facture finale') : null) : null,
+      estSt && j.extras_ouverts && enAttente && ['en_cours', 'termine'].includes(j.statut)
+        ? h('p', { class: 'bf-muet' }, 'La facture finale se soumet quand tous tes extras sont approuvés ou refusés.') : null,
+      zoneForm);
+  }
 
   function carte(j) {
     const machines = j.lignes.filter((l) => l.type_ligne === 'machine');
@@ -49,19 +134,23 @@ if (user) {
           machines.length ? h('tr', { class: 'bf-jobs__groupe' }, h('td', { colspan: 4 }, 'Machines')) : null, machines.map(ligne),
           install.length ? h('tr', { class: 'bf-jobs__groupe' }, h('td', { colspan: 4 }, 'Ton installation')) : null, install.map(ligne),
           !j.lignes.length ? h('tr', {}, h('td', { colspan: 4, class: 'bf-muet' }, 'Lignes à venir : Belleflamme les inscrit avec le projet.')) : null),
-        h('tfoot', {}, h('tr', {}, h('th', { colspan: 3 }, 'Ce que tu factures à Belleflamme (avant taxes)'), h('th', { class: 'num' }, formatCents(j.total_cents)))))));
+        h('tfoot', {}, h('tr', {}, h('th', { colspan: 3 }, 'Ton installation (avant taxes)'), h('th', { class: 'num' }, formatCents(j.total_cents)))))),
+      j.statut === 'attente_paiement' ? h('p', { class: 'bf-muet' }, 'La feuille d\'extra s\'ouvre quand le dépôt du client est reçu.') : feuilleExtras(j));
   }
 
   async function charger(fournisseur) {
+    fournisseurVu = fournisseur || null;
     try {
       const q = (param('q') || '').toLowerCase();
       const jobs = (await api.get('jobs', { fournisseur: fournisseur || undefined }))
         .filter((j) => !q || [j.code_projet, j.ville, j.client_nom].some((v) => String(v || '').toLowerCase().includes(q)));
-      const total = jobs.reduce((s, j) => s + (j.total_cents || 0), 0);
+      const total = jobs.reduce((s, j) => s + (j.total_final_cents ?? j.total_cents ?? 0), 0);
+      const extrasAttente = jobs.reduce((s, j) => s + (j.extras || []).filter((x) => x.statut === 'soumis').length, 0);
       remplir(liste,
         h('div', { class: 'bf-jobs__resume' },
           h('span', {}, h('strong', {}, String(jobs.length)), ` job${jobs.length > 1 ? 's' : ''}`),
           h('span', {}, h('strong', {}, String(jobs.filter((j) => j.statut === 'attente_paiement').length)), ' en attente du dépôt'),
+          h('span', {}, h('strong', {}, String(extrasAttente)), ' extra(s) en attente d\'approbation'),
           h('span', {}, h('strong', {}, formatCents(total)), ' à facturer à Belleflamme')),
         ...ETAPES.flatMap(([k, lib]) => {
           const l = jobs.filter((j) => j.statut === k);

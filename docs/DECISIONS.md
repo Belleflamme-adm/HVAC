@@ -766,3 +766,26 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Limites** :
   - on ne change pas encore le sous-traitant ni les lignes d'un projet après la signature (à ajouter si Simon le veut, avec trace) ;
   - les extras ajoutés sur le chantier ne sont pas encore prévus.
+
+## ADR-081 | Feuille d'extra du sous-traitant, approbation, puis facture finale
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon) : pour les oublis d'un vendeur ou les imprévus, le sous-traitant remplit une feuille d'extra à partir de sa liste de prix. Il l'envoie pour approbation avant sa facture finale.
+- **Choix de Simon** :
+  - approbation par la planification, Simon ou Mike (Admin tout, Direction, Coordonnateur) ;
+  - hors liste permis, avec justification ;
+  - cause obligatoire ;
+  - facture finale = total affiché et figé, le paiement reste dans l'app de Mike.
+- **Fonctionnement** :
+  - **Ouverture** : la feuille d'extra s'ouvre au dépôt reçu (« À céduler ») et ferme quand le projet est facturé ou que la facture finale est soumise.
+  - **Ajout** : le sous-traitant ajoute ses extras en brouillon.
+    - De sa liste : le prix est celui de sa liste, pris en base. Le prix envoyé par le navigateur est ignoré.
+    - Hors liste : description, prix proposé et justification de 10 caractères ou plus. La ligne est marquée « Hors liste » pour l'approbateur.
+    - Cause obligatoire : oubli du vendeur, imprévu de chantier, demande du client, autre. Note facultative.
+  - **Envoi** : « Envoyer pour approbation » soumet tous les brouillons et avise la planification. Un brouillon se retire (statut « retiré », la trace reste).
+  - **Décision** : approbation ou refus ligne par ligne (page « Extras à approuver », tuile du groupe Sous-traitants, pastille sur la carte du Macro). Le refus exige une raison, que le sous-traitant voit. Une décision ne se change pas. Le sous-traitant est avisé de chaque décision. Un **oubli du vendeur approuvé avise le vendeur**.
+  - **Facture finale** : possible quand la job est en cours ou terminée et qu'aucun extra n'est en brouillon ni en attente. Total figé = installation + extras approuvés. Ensuite, plus d'extras. La planification est avisée : « à payer dans l'app de Mike ».
+- **Sécurité** : le sous-traitant ne lit jamais la table `projet_extras` directement. Il passe par `hvac_mes_projets` et n'agit que sur ses propres jobs, par des fonctions protégées.
+- **Pour plus tard** :
+  - photo par extra (Supabase Storage) ;
+  - compte des oublis par vendeur dans le tableau des vendeurs (la cause est déjà tracée) ;
+  - dépôt du PDF de facture.

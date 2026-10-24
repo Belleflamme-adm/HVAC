@@ -560,3 +560,29 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-signe__lignes { display: grid; gap: 6px; }
 .bf-signe__ligne { display: grid; grid-template-columns: 1fr 80px auto; gap: 6px; align-items: end; }
 @media (max-width: 640px) { .bf-signe__ligne { grid-template-columns: 1fr 64px auto; } }
+
+/* Feuille d'extra (ADR-081) */
+.bf-extra--brouillon { background: #eceff3; color: #4a5672; }
+.bf-extra--soumis { background: #fdf0dc; color: #92400e; }
+.bf-extra--approuve { background: #e3f5ec; color: #11734a; }
+.bf-extra--refuse { background: #fdecec; color: #b4232c; }
+.bf-extra--hors { background: #efe7fd; color: #5b21b6; }
+.bf-jobs__extras { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.bf-jobs__extras h3 { margin: 0; }
+.bf-jobs__refuse td { text-decoration: line-through; text-decoration-color: var(--muted); }
+.bf-jobs__refuse td:nth-child(5), .bf-jobs__refuse td:first-child div { text-decoration: none; }
+.bf-jobs__raison { color: var(--bad); font-size: 14px; text-decoration: none; }
+.bf-jobs__totaux { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 0; max-width: 520px; margin-left: auto; width: 100%; }
+.bf-jobs__totaux dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.bf-jobs__final { font-weight: 700; font-size: 17px; border-top: 1px solid var(--line); padding-top: 4px; }
+.bf-jobs__facturee { color: var(--vert-texte); font-weight: 600; }
+.bf-jobs__form { background: var(--bg); border-radius: 12px; padding: 12px; }
+.bf-pleine { grid-column: 1 / -1; }
+.bf-jobs__refus { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; width: 100%; }
+.bf-jobs__refus input { flex: 1 1 220px; }
+.bf-extra-ligne { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; padding: 10px 0; border-top: 1px solid var(--line); align-items: start; }
+.bf-extra-ligne--hors { box-shadow: inset 3px 0 0 #7c3aed; padding-left: 10px; }
+.bf-extra-ligne__montant { display: grid; text-align: right; gap: 2px; font-variant-numeric: tabular-nums; }
+.bf-extra-ligne__actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bf-macro__extras { font-size: 13px; font-weight: 700; color: #92400e; background: #fdf0dc; border-radius: 8px; padding: 2px 8px; justify-self: start; text-decoration: none; }
+.bf-bouton--danger { background: var(--bad); border-color: var(--bad); color: #fff; }

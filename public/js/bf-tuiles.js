@@ -26,7 +26,7 @@ const TUILES_SOUS_TRAITANT = [
   { cle: 'territoire', titre: 'Mon territoire', href: '/territoire', etat: 'actif', icone: '🗺️', desc: 'Villes où je vais, où je ne vais pas, suppléments' },
   { cle: 'prix', titre: 'Ma liste de prix', href: '/mes-prix', etat: 'actif', icone: '🧾', desc: 'Mes prix par travail · mes soumissions actives à honorer' },
   { cle: 'disponibilites', titre: 'Mes disponibilités', href: '/disponibilites', etat: 'actif', icone: '📅', desc: 'Les journées où je suis disponible' },
-  { cle: 'jobs', titre: 'Mes jobs', href: '/jobs', etat: 'actif', icone: '🧰', desc: 'Projets signés qui me sont attitrés · mon prix d\'installation' },
+  { cle: 'jobs', titre: 'Mes jobs', href: '/jobs', etat: 'actif', icone: '🧰', desc: 'Projets signés qui me sont attitrés · mon prix d\'installation · feuille d\'extra · facture finale' },
 ];
 
 // Directeur des opérations : sous-traitants, accès, territoires, listes de prix
@@ -35,6 +35,7 @@ const TUILES_PLANIFICATION = [
   { cle: 'territoires', titre: 'Territoires', href: '/territoire', etat: 'actif', icone: '🗺️', desc: 'Carte de chaque sous-traitant · sous-traitants principaux' },
   { cle: 'installation', titre: 'Listes de prix des sous-traitants', href: '/installation-grille', etat: 'actif', icone: '🧾', desc: 'Prix par type de travail · marge · suppléments' },
   { cle: 'disponibilites', titre: 'Disponibilités', href: '/disponibilites', etat: 'actif', icone: '📅', desc: 'Calendrier des sous-traitants' },
+  { cle: 'extras', titre: 'Extras à approuver', href: '/extras', etat: 'actif', icone: '➕', desc: 'Feuilles d\'extra des sous-traitants · approuver ou refuser' },
 ];
 
 const MACHINES = { cle: 'machines', titre: 'Tableau des machines', href: '/tableau-machines', etat: 'actif', icone: '📊', desc: 'Vue exécutive · provenance · ventes par territoire · modèles (données fictives)' };
