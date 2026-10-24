@@ -620,3 +620,15 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - L'avis d'enregistrement au client (message au début de l'appel) et la façon d'informer le client des fins de la collecte (Loi 25).
   - La transcription par un fournisseur d'IA hors Québec (AssemblyAI, Whisper chez Mike) : évaluation des facteurs relatifs à la vie privée exigée pour une communication hors Québec.
   - La durée de conservation.
+
+## ADR-068 | Tableau exécutif des machines HVAC (maquette, données fictives)
+- **Date** : 2026-10-24 | **Statut** : Maquette à modeler avec Simon
+- **Demande** (Simon) : un tableau comme la « vue exécutive » Monday qu'il a montrée, pour voir d'où viennent les machines, où elles sont vendues, quels modèles se vendent le plus et dans quel territoire. Chiffres fictifs pour commencer.
+- **Page** `/tableau-machines` (direction, gérants, coordination), tuile « Tableau des machines » à l'accueil.
+  - Panneau sombre lisible sur un téléviseur, bouton « Plein écran ».
+  - Filtres : période (12 mois, 3 mois, le mois, l'année), succursale, type de système, marque. Tout se recalcule.
+  - Tuiles : machines vendues, ventes avant taxes, prix moyen, municipalités desservies, part livrée de l'entrepôt, avec l'écart par rapport à la période précédente.
+  - Graphiques : ventes par mois (colonnes par type), répartition par type (anneau), modèles les plus vendus, ventes par territoire, carte des ventes par municipalité (vraies limites municipales), provenance par fournisseur (entrepôt ou livraison directe, délai), matrice modèles par territoire.
+  - Infobulle au survol et au clavier, données en tableau pour le graphique mensuel.
+- **Couleurs** : 4 couleurs de catégorie pour les types et une échelle bleue pour les quantités, vérifiées avec l'outil de validation (daltonisme, contraste) sur le fond sombre.
+- **Données** : générateur déterministe `public/js/bf-ventes-fictives.js` (marques, modèles et fournisseurs inventés). À la greffe : ventes réelles de l'app de Mike (devis acceptés, équipements HVAC du Macro, bons de commande et réceptions pour la provenance).

@@ -36,6 +36,7 @@ const TUILES_PLANIFICATION = [
   { cle: 'disponibilites', titre: 'Disponibilités', href: '/disponibilites', etat: 'actif', icone: '📅', desc: 'Calendrier des sous-traitants' },
 ];
 
+const MACHINES = { cle: 'machines', titre: 'Tableau des machines', href: '/tableau-machines', etat: 'actif', icone: '📊', desc: 'Vue exécutive · provenance · ventes par territoire · modèles (données fictives)' };
 const RAPIDITE = { cle: 'rapidite', titre: 'Rapidité des vendeurs', href: '/crm-rapidite', etat: 'actif', icone: '⏱️', desc: 'Tableau de quantification · bon, moyen, à améliorer · tour de rôle' };
 
 const estPlanif = (user) => ['Admin tout', 'Direction', 'Coordonnateur'].includes(user?.role);
@@ -52,7 +53,7 @@ export function tuilesPour(user) {
 export function accueilPour(user) {
   if (user?.sousTraitantId) return TUILES_SOUS_TRAITANT.filter((t) => t.etat !== 'veille');
   const veille = TUILES_HVAC.filter((t) => t.etat === 'veille');
-  const ventes = [TUILES_HVAC[0], TUILES_HVAC[1], ...(voitBoard(user) ? [RAPIDITE] : [])];
+  const ventes = [TUILES_HVAC[0], TUILES_HVAC[1], ...(voitBoard(user) ? [RAPIDITE, MACHINES] : [])];
   const liste = [
     { cle: 'ventes', titre: 'Ventes HVAC', icone: '📈', desc: voitBoard(user) ? 'Leads · clients · rapidité des vendeurs' : 'Mes leads · clients', groupe: ventes },
   ];
