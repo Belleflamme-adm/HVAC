@@ -47,7 +47,7 @@
     ],
     margeBp: 2500,
     demandes: [], dernierLien: null,
-    confies: [], versions: [], comms: [],
+    confies: [], versions: [], comms: [], projets: [],
     // Soumissions actives fictives (devis faits dans l'app de Mike) qui utilisent les prix de Clim Laurentides
     engagements: [],
     municipalites: [],
@@ -84,7 +84,8 @@
     etat.activites.push({ id: `act-${etat.activites.length}`, lead_id: l.id, employe_id: par, fait_le: t, ...a });
     if (['prise_en_charge', 'appel', 'courriel', 'texto', 'visite_planifiee'].includes(a.type) && !l.pris_en_charge_le) l.pris_en_charge_le = t;
     if (['appel', 'courriel', 'texto'].includes(a.type) && !l.premier_contact_le) { l.premier_contact_le = t; l.premier_contact_canal = a.type; }
-    if (a.type === 'perdu') { l.statut = 'perdu'; l.raison_perte = a.note; }
+    if (a.type === 'vendu') l.statut = 'converti';
+    else if (a.type === 'perdu') { l.statut = 'perdu'; l.raison_perte = a.note; }
     else if (a.type === 'reouvert') l.statut = l.premier_contact_le ? 'contacte' : 'pris_en_charge';
     else if (['converti', 'perdu'].includes(l.statut)) { /* fermé */ }
     else if (a.type === 'visite_planifiee') { l.statut = 'inspection_planifiee'; l.visite_prevue_le = a.visite_le; }
@@ -216,6 +217,37 @@
     ajouterComm({ ...c, canal: 'texto', direction: 'sortant', employe_id: 'e-marc', debut: iso(etat.maintenant - 2 * J - 4 * H), statut: 'envoye',
       contenu: 'Excellent! Je vous appelle demain matin pour fixer la date.' });
     appelSimule(c, { quand: etat.maintenant - 1 * J - 22 * H, employe: 'e-marc', n: 0 });
+  }
+
+  // Macro (ADR-079) : projets signés, code projet au format de Mike [SUCC][V]-[3 lettres prénom]-[3 lettres nom]-[NNN]
+  const ETAPES_MACRO = ['attente_paiement', 'a_planifier', 'planifie', 'en_cours', 'termine', 'facture', 'ferme'];
+  const trois = (t) => String(t || 'XXX').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z]/g, '').toUpperCase().padEnd(3, 'X').slice(0, 3);
+  function codeProjet(succ, nom) {
+    const [prenom, ...reste] = String(nom).replace(' (FICTIF)', '').split(' ');
+    const base = `${succ}V-${trois(prenom)}-${trois(reste.join(' '))}`;
+    const n = etat.projets.filter((p) => p.code_projet.startsWith(base)).length + 1;
+    return `${base}-${String(n).padStart(3, '0')}`;
+  }
+  function creerProjet({ client_nom, succursale_code, vendeur_id, ville, type_systeme, montant, devis_numero_mike, lead_id = null, client_id = null, signe_le = etat.maintenant, statut = 'attente_paiement', installation = null }) {
+    const p = { id: `prj-${etat.projets.length + 1}`, code_projet: codeProjet(succursale_code, client_nom), statut, succursale_code, client_id, client_nom, ville,
+      vendeur_id, vendeur_nom: nomEmploye(vendeur_id), lead_id, devis_numero_mike, montant_avant_taxes_cents: montant, type_systeme,
+      signe_le: iso(signe_le), installation_prevue_le: installation ? iso(installation) : null, created_at: iso(signe_le), updated_at: iso(signe_le) };
+    etat.projets.push(p);
+    return p;
+  }
+  {
+    const J = 24 * H;
+    [['Hélène Gagnon (FICTIF)', 'RO', 'e-sophie', 'Blainville', 'mural_multi', 1125000, 'attente_paiement', 0.6],
+     ['Robert Ouellet (FICTIF)', 'HO', 'e-marc', 'Saint-Jérôme', 'bienergie', 1489000, 'attente_paiement', 3],
+     ['Lise Bergeron (FICTIF)', 'GA', 'e-karim', 'Gatineau', 'central', 1530000, 'a_planifier', 6],
+     ['Daniel Poirier (FICTIF)', 'RO', 'e-sophie', 'Terrebonne', 'mural_simple', 498000, 'a_planifier', 8],
+     ['Nathalie Roy (FICTIF)', 'HO', 'e-marc', 'Mirabel', 'mural_multi', 985000, 'planifie', 12],
+     ['Sylvain Morin (FICTIF)', 'GA', 'e-karim', 'Cantley', 'mural_simple', 512000, 'en_cours', 18],
+     ['Chantal Lévesque (FICTIF)', 'RO', 'e-sophie', 'Sainte-Thérèse', 'bienergie', 1395000, 'termine', 26],
+     ['Marc-André Dubé (FICTIF)', 'HO', 'e-marc', 'Prévost', 'central', 1610000, 'facture', 40]]
+      .forEach(([client_nom, succursale_code, vendeur_id, ville, type_systeme, montant, statut, jours], i) => creerProjet({
+        client_nom, succursale_code, vendeur_id, ville, type_systeme, montant, statut, devis_numero_mike: String(122500 + i * 7),
+        signe_le: etat.maintenant - jours * J, installation: ['planifie', 'en_cours', 'termine', 'facture'].includes(statut) ? etat.maintenant + (12 - jours) * J : null }));
   }
 
   // Travaux confiés et soumissions actives (fictifs)
@@ -409,6 +441,45 @@
       }
       etat.essaisCode = { n: 0, jusqua: 0 };
       return { ok: true };
+    } },
+    macro: {
+      GET: (q) => {
+        exiger(!user().sousTraitantId, 'Accès refusé');
+        let l = etat.projets;
+        if (q.lead) l = l.filter((p) => p.lead_id === q.lead);
+        else if (q.fermes !== '1') l = l.filter((p) => !['ferme', 'annule'].includes(p.statut));
+        if (q.succursale) l = l.filter((p) => p.succursale_code === q.succursale);
+        return l.slice().sort((a, b) => b.signe_le.localeCompare(a.signe_le));
+      },
+      // Mêmes règles que la base : avancer d'une ou plusieurs étapes, reculer d'une seule, annuler avant la facturation
+      PATCH: (q, b) => {
+        exiger(['Admin tout', 'Direction', 'Coordonnateur', 'Gérant de succursale'].includes(user().role), 'Modification refusée');
+        const p = etat.projets.find((x) => x.id === q.id);
+        if (!p) throw new Erreur(404, 'Projet introuvable');
+        if (b.statut === 'annule') { exiger(!['facture', 'ferme'].includes(p.statut), 'Un projet facturé ne s\'annule pas'); }
+        else {
+          exiger(p.statut !== 'annule', 'Un projet annulé ne revient pas');
+          const a = ETAPES_MACRO.indexOf(p.statut); const n = ETAPES_MACRO.indexOf(b.statut);
+          exiger(n >= 0, 'Étape inconnue');
+          exiger(n >= a - 1, 'Un projet recule d\'une étape à la fois');
+        }
+        p.statut = b.statut; p.updated_at = iso(etat.maintenant);
+        return p;
+      },
+    },
+    'projet-signe': { POST: (_q, b) => {
+      exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à Belleflamme');
+      const numero = String(b.devis_numero_mike || '').replace(/^#/, '').trim();
+      exiger(/^\d{4,8}$/.test(numero), 'Numéro de soumission : 4 à 8 chiffres (ex. 120815)');
+      const deja = etat.projets.find((p) => p.devis_numero_mike === numero);
+      if (deja) return { projet_id: deja.id };
+      const l = etat.leads.find((x) => x.id === b.lead_id);
+      exiger(l, 'Lead ou client requis');
+      if (b.montant_avant_taxes_cents !== undefined) exiger(Number.isInteger(b.montant_avant_taxes_cents) && b.montant_avant_taxes_cents > 0, 'Montant invalide');
+      const p = creerProjet({ client_nom: l.contact_nom, succursale_code: l.succursale_code, vendeur_id: l.assigne_a, ville: l.ville,
+        type_systeme: b.type_systeme || l.type_demande, montant: b.montant_avant_taxes_cents ?? null, devis_numero_mike: numero, lead_id: l.id });
+      if (l.statut !== 'converti') activite(l, { type: 'vendu', note: `Soumission #${numero} signée par le client` }, etat.maintenant);
+      return { projet_id: p.id };
     } },
     communications: { GET: (q) => {
       exiger(!user().sousTraitantId, 'Accès refusé');

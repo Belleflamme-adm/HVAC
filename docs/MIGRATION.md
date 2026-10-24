@@ -63,3 +63,7 @@
 - Variable `CODE_ACCES_VENDEURS` (empreinte, jamais le code) à créer dans Netlify par Simon : `node scripts/code-acces.mjs`.
 - Avant les vraies données : la fonction de rémunération doit exiger un jeton remis par `code-acces` (courte durée), et les échecs doivent être comptés en base pour bloquer après plusieurs essais.
 - Chez Mike : vérifier s'il a déjà un mécanisme de code ou de PIN (ex. impersonation, « Admin tout ») et s'y aligner.
+
+## Macro (ADR-079)
+- Webhook de Mike « soumission acceptée » -> `hvac_projet_signe` (numéro de soumission, client ou lead, montant avant taxes, type de système, vendeur). Une seule fois par numéro.
+- Correspondance des étapes avec le Macro de Mike : à confirmer (noms et ordre de ses statuts). Nos projets HVAC déjà créés devront être repris dans son Macro sous le même code projet.

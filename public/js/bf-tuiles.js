@@ -10,7 +10,8 @@ export const TUILES_HVAC = [
   { cle: 'clients',     titre: 'Clients',              href: '/clients',     etat: 'actif', icone: '👤', desc: 'Fiches clients · lieux d\'installation' },
   { cle: 'devis',       titre: 'Devis',                href: '/devis',       etat: 'veille', icone: '📄', desc: 'Dans l\'app de Mike : Devis / Facture / Extra' },
   { cle: 'inspections', titre: 'Pré-installation',     href: '/inspections', etat: 'veille', icone: '📋', desc: 'Dans l\'app de Mike : formulaire Pré-install Ventilation' },
-  { cle: 'projets',     titre: 'Projets (Macro)',      href: '/projets',     etat: 'veille', icone: '🏗️', desc: 'Dans l\'app de Mike : Macro / Projets' },
+  // Réactivé à la demande de Simon (ADR-079) : chaque soumission signée tombe dans le Macro
+  { cle: 'projets',     titre: 'Macro',                href: '/macro',       etat: 'actif', icone: '🏗️', desc: 'Projets vendus · chaque soumission signée tombe ici · étapes jusqu\'à la facturation' },
   { cle: 'bt',          titre: 'Bons de travail et BC', href: '/bt',         etat: 'veille', icone: '📦', desc: 'Dans l\'app de Mike : gestion d\'inventaire' },
   { cle: 'catalogue',   titre: 'Catalogue et kits',    href: '/catalogue',   etat: 'veille', icone: '🗂️', desc: 'Dans l\'app de Mike : catalogue produits' },
   { cle: 'asv',         titre: 'Appels de service',    href: '/asv',         etat: 'veille', icone: '📞', desc: 'Dans l\'app de Mike : appels de service' },
@@ -59,8 +60,9 @@ export function accueilPour(user) {
   const liste = [
     { cle: 'ventes', titre: 'Ventes HVAC', icone: '📈', desc: voitBoard(user) ? 'Leads · clients · rapidité des vendeurs' : 'Mes leads · clients', groupe: ventes },
   ];
+  liste.push(TUILES_HVAC.find((t) => t.cle === 'projets'));   // tuile directe : tout le monde voit les projets de ses succursales
   if (estPlanif(user)) liste.push({ cle: 'operations', titre: 'Sous-traitants', icone: '🛠️', desc: 'Sous-traitants · accès · territoires · listes de prix · disponibilités', groupe: TUILES_PLANIFICATION });
-  liste.push({ cle: 'veille', titre: 'Dans l\'app de Mike', icone: '💤', desc: 'Devis, pré-installation, facturation, projets... : en veille ici, on utilise ceux de Mike', groupe: veille, veille: true });
+  liste.push({ cle: 'veille', titre: 'Dans l\'app de Mike', icone: '💤', desc: 'Devis, pré-installation, facturation... : en veille ici, on utilise ceux de Mike', groupe: veille, veille: true });
   return liste;
 }
 

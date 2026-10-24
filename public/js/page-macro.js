@@ -1,0 +1,98 @@
+// Macro HVAC (ADR-079) : chaque projet signé par le client tombe ici, à l'étape « Signé, attente du dépôt ».
+// Colonnes par étape ; on fait avancer un projet (ou reculer d'une étape) avec les flèches de sa carte.
+// À la greffe : ces projets vivent dans le Macro de l'app de Mike (même code projet, mêmes étapes).
+import { initPage } from './bf-page.js?v=0.4.0';
+import { api } from './bf-api.js?v=0.4.0';
+import { remplir, h, message } from './bf-dom.js?v=0.4.0';
+import { formatCents } from './bf-money.js?v=0.4.0';
+import { pastilleType } from './bf-crm.js?v=0.4.0';
+
+const ETAPES = [
+  ['attente_paiement', 'Signé, attente du dépôt'], ['a_planifier', 'À céduler'], ['planifie', 'Planifié'],
+  ['en_cours', 'En cours'], ['termine', 'Terminé'], ['facture', 'Facturé'],
+];
+const LIBELLE = Object.fromEntries([...ETAPES, ['ferme', 'Fermé'], ['annule', 'Annulé']]);
+const SUCCURSALES = { HO: 'Saint-Jérôme', RO: 'Rosemère', ST: 'Saint-Sauveur', GA: 'Gatineau', DR: 'Drummondville' };
+const PLANIF = ['Admin tout', 'Direction', 'Coordonnateur', 'Gérant de succursale'];
+const jour = (d) => (d ? new Date(d).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+const recent = (d) => d && Date.now() - new Date(d).getTime() < 48 * 3600e3;
+
+const user = await initPage();
+if (user) {
+  const zone = document.getElementById('contenu');
+  const msg = h('p', { class: 'bf-message', role: 'alert' });
+  const peutBouger = PLANIF.includes(user.role);
+  const filtres = { succursale: '', recherche: '', fermes: false };
+  let projets = [];
+
+  const choixSucc = h('select', { 'aria-label': 'Succursale' }, h('option', { value: '' }, 'Toutes les succursales'),
+    Object.entries(SUCCURSALES).map(([k, n]) => h('option', { value: k }, n)));
+  choixSucc.addEventListener('change', () => { filtres.succursale = choixSucc.value; charger(); });
+  const recherche = h('input', { type: 'search', placeholder: 'Chercher un projet (code, client, ville, vendeur, n° de soumission)…', 'aria-label': 'Chercher un projet' });
+  recherche.addEventListener('input', () => { filtres.recherche = recherche.value.trim().toLowerCase(); afficher(); });
+  const caseFermes = h('input', { type: 'checkbox' });
+  caseFermes.addEventListener('change', () => { filtres.fermes = caseFermes.checked; charger(); });
+  const tableau = h('div', { class: 'bf-macro', role: 'region', 'aria-label': 'Projets par étape' });
+  const fermes = h('div');
+
+  async function deplacer(p, statut) {
+    try {
+      await api.patch('macro', { statut }, { id: p.id });
+      message(msg, `${p.code_projet} : ${LIBELLE[statut]}.`, 'ok');
+      await charger();
+    } catch (e) { message(msg, e.message); }
+  }
+
+  function carte(p) {
+    const idx = ETAPES.findIndex(([k]) => k === p.statut);
+    const prec = ETAPES[idx - 1]; const suiv = ETAPES[idx + 1];
+    return h('article', { class: `bf-macro__carte${recent(p.signe_le) && p.statut === 'attente_paiement' ? ' bf-macro__carte--nouveau' : ''}` },
+      h('div', { class: 'bf-macro__tete' }, h('strong', {}, p.code_projet || 'Code à venir'),
+        recent(p.signe_le) && p.statut === 'attente_paiement' ? h('span', { class: 'bf-etampe bf-etampe--converti' }, h('span', {}, 'Nouveau')) : null),
+      h('p', { class: 'bf-macro__client' }, p.client_nom),
+      h('p', { class: 'bf-muet' }, [p.ville, SUCCURSALES[p.succursale_code]].filter(Boolean).join(' | ')),
+      h('div', { class: 'bf-macro__ligne' }, p.type_systeme ? pastilleType(p.type_systeme) : null,
+        p.montant_avant_taxes_cents ? h('strong', {}, formatCents(p.montant_avant_taxes_cents)) : null),
+      h('p', { class: 'bf-muet' }, [p.vendeur_nom, p.devis_numero_mike ? `soumission #${p.devis_numero_mike}` : null, p.signe_le ? `signé le ${jour(p.signe_le)}` : null].filter(Boolean).join(' | ')),
+      p.installation_prevue_le ? h('p', {}, `Installation : ${jour(p.installation_prevue_le)}`) : null,
+      p.lead_id ? h('a', { href: `/lead?id=${p.lead_id}`, class: 'bf-macro__lien' }, 'Voir le lead d\'origine') : null,
+      peutBouger ? h('div', { class: 'bf-macro__actions' },
+        h('button', { type: 'button', class: 'bf-macro__fleche', disabled: !prec, 'aria-label': prec ? `Reculer ${p.code_projet} à « ${prec[1]} »` : 'Première étape',
+          title: prec ? `Reculer à « ${prec[1]} »` : '', onclick: () => deplacer(p, prec[0]) }, '◀'),
+        h('button', { type: 'button', class: 'bf-macro__fleche', disabled: !suiv, 'aria-label': suiv ? `Avancer ${p.code_projet} à « ${suiv[1]} »` : 'Dernière étape',
+          title: suiv ? `Avancer à « ${suiv[1]} »` : '', onclick: () => deplacer(p, suiv[0]) }, '▶'),
+        p.statut !== 'facture' ? h('button', { type: 'button', class: 'bf-lien bf-macro__annuler', onclick: () => {
+          if (confirm(`Annuler le projet ${p.code_projet} (${p.client_nom}) ? Un projet annulé ne revient pas.`)) deplacer(p, 'annule');
+        } }, 'Annuler') : null) : null);
+  }
+
+  function afficher() {
+    const t = filtres.recherche;
+    const vus = projets.filter((p) => !t || [p.code_projet, p.client_nom, p.ville, p.vendeur_nom, p.devis_numero_mike].some((v) => String(v || '').toLowerCase().includes(t)));
+    remplir(tableau, ...ETAPES.map(([k, lib]) => {
+      const l = vus.filter((p) => p.statut === k);
+      const total = l.reduce((s, p) => s + (p.montant_avant_taxes_cents || 0), 0);
+      return h('section', { class: `bf-macro__colonne bf-macro__colonne--${k}`, 'aria-label': `${lib} : ${l.length} projet(s)` },
+        h('header', { class: 'bf-macro__entete' }, h('h2', {}, lib), h('span', { class: 'bf-macro__compte' }, String(l.length)),
+          total ? h('span', { class: 'bf-muet' }, formatCents(total)) : null),
+        ...(l.length ? l.map(carte) : [h('p', { class: 'bf-muet bf-macro__vide' }, 'Aucun projet')]));
+    }));
+    const autres = vus.filter((p) => ['ferme', 'annule'].includes(p.statut));
+    remplir(fermes, filtres.fermes && autres.length ? h('section', { class: 'bf-carte-section' }, h('h2', {}, `Fermés et annulés (${autres.length})`),
+      h('ul', { class: 'bf-simple' }, autres.map((p) => h('li', {}, `${p.code_projet} | ${p.client_nom} | ${LIBELLE[p.statut]}`)))) : null);
+  }
+
+  async function charger() {
+    try { projets = await api.get('macro', { succursale: filtres.succursale || undefined, fermes: filtres.fermes ? '1' : undefined }); }
+    catch (e) { message(msg, e.message); projets = []; }
+    afficher();
+  }
+
+  remplir(zone,
+    h('div', { class: 'bf-titre' }, h('h1', {}, 'Macro | Projets HVAC'),
+      h('span', { class: 'bf-muet' }, 'Chaque soumission signée par le client tombe ici, à l\'étape « Signé, attente du dépôt ».')),
+    h('div', { class: 'bf-filtres' }, choixSucc, recherche, h('label', { class: 'bf-case' }, caseFermes, 'Afficher les fermés et annulés')),
+    msg, tableau, fermes,
+    h('p', { class: 'bf-muet' }, 'Le client signe sa soumission dans l\'app de Mike. D\'ici la greffe, Simon, Mike ou la planification inscrivent la soumission signée depuis la fiche du lead ; ensuite, le projet arrivera tout seul.'));
+  charger();
+}

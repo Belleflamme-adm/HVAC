@@ -735,3 +735,13 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Le code protège l'écran, pas encore les données : dans la maquette, les chiffres sont fictifs et générés dans la page. Avec les vraies données, la fonction qui sert la rémunération devra exiger un jeton de courte durée remis après le bon code.
   - Les fonctions Netlify ne gardent pas d'état : le blocage après plusieurs essais devra être compté en base (par employé) en production.
   - Une empreinte d'un code à 4 chiffres se devine par essais si quelqu'un la copie : elle ne doit jamais sortir des variables Netlify. Un code plus long (6 chiffres ou plus) est plus sûr.
+
+## ADR-079 | Tuile Macro : chaque soumission signée tombe dans le Macro HVAC
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon) : quand un projet est vendu, il doit tomber en Macro ; une tuile Macro où arrive chaque projet signé par le client.
+- **Choix de Simon** : tuile Macro dans notre app (le module Projets, en veille depuis l'ADR-055, est réactivé pour la division HVAC) ; le client signe dans l'app de Mike ; affichage en colonnes par étape.
+- **Étapes** : Signé, attente du dépôt | À céduler | Planifié | En cours | Terminé | Facturé (fermés et annulés à part). Un projet avance d'une ou plusieurs étapes, recule d'une seule ; il ne s'annule plus une fois facturé (règle en base). Flèches sur chaque carte pour Simon, Mike, la planification et les gérants ; les vendeurs consultent.
+- **Réception d'un projet signé** : `hvac_projet_signe` (une seule fois par numéro de soumission de Mike) crée le projet à l'étape « Signé, attente du dépôt » avec son code projet, crée le client à partir du lead au besoin, et inscrit l'activité « vendu » : le lead passe à Vendu. D'ici la greffe, bouton « ✓ Soumission signée » sur la fiche du lead (numéro de soumission, montant, type) ; ensuite, le webhook de Mike l'appellera.
+- **Fiche du lead vendu** : encadré « Projet dans le Macro » avec le code projet et un lien.
+- **Carte de projet** : code projet (format de Mike), client, ville, succursale, type de système, montant avant taxes, vendeur, n° de soumission, date de signature, installation prévue, lien vers le lead d'origine, mention « Nouveau » 48 h.
+- **À la greffe** : ces projets vivent dans le Macro de Mike (même code projet). Notre tuile deviendra une vue de son Macro, ou sera remise en veille, selon ce que Mike préfère.

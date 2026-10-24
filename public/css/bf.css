@@ -508,3 +508,33 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
   border: 1px solid var(--d-ligne); background: var(--d-bg); color: var(--d-texte); height: auto; }
 .bf-dash__bouton--plein { background: var(--vert); border-color: var(--vert); color: #ffffff; min-width: 180px; }
 .bf-dash__erreur-code { color: #f0a35e; min-height: 1.4em; font-weight: 600; }
+
+/* Macro HVAC (ADR-079) : colonnes par étape, défilement horizontal sur téléphone */
+.bf-macro { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.bf-macro__colonne { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; display: grid; gap: 10px; align-content: start; min-height: 200px; border-top: 4px solid var(--vert); }
+.bf-macro__colonne--attente_paiement { border-top-color: #7c3aed; }
+.bf-macro__colonne--a_planifier { border-top-color: #b45309; }
+.bf-macro__colonne--planifie { border-top-color: #0369a1; }
+.bf-macro__colonne--en_cours { border-top-color: #0f766e; }
+.bf-macro__colonne--termine { border-top-color: #15803d; }
+.bf-macro__colonne--facture { border-top-color: #4b5563; }
+.bf-macro__entete { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.bf-macro__entete h2 { font-size: 20px; margin: 0; }
+.bf-macro__compte { background: var(--menthe); color: var(--vert-texte); font-weight: 700; border-radius: 999px; padding: 0 9px; }
+.bf-macro__carte { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 4px; }
+.bf-macro__carte p { margin: 0; }
+.bf-macro__carte--nouveau { border-color: #15803d; box-shadow: inset 4px 0 0 #15803d; }
+.bf-macro__tete { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.bf-macro__client { font-weight: 600; }
+.bf-macro__ligne { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.bf-macro__lien { font-size: 13px; }
+.bf-macro__actions { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.bf-macro__fleche { font: inherit; width: 40px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.bf-macro__fleche:not(:disabled):hover { background: var(--menthe); }
+.bf-macro__fleche:disabled { opacity: .35; cursor: not-allowed; }
+.bf-macro__annuler { margin-left: auto; font-size: 13px; }
+.bf-macro__vide { text-align: center; padding: 16px 0; }
+.bf-bouton--signe { background: #15803d; border-color: #15803d; color: #ffffff; }
+.bf-projet-lie { border-left: 4px solid #15803d; }
+.bf-macro { margin-inline: calc(50% - min(50vw, 800px) + 16px); grid-auto-columns: minmax(230px, 1fr); }
+@media (max-width: 640px) { .bf-macro { margin-inline: 0; grid-auto-columns: 82%; scroll-snap-type: x mandatory; } .bf-macro__colonne { scroll-snap-align: start; } }
