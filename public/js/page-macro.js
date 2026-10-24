@@ -55,6 +55,7 @@ if (user) {
         p.montant_avant_taxes_cents ? h('strong', {}, formatCents(p.montant_avant_taxes_cents)) : null),
       h('p', { class: 'bf-muet' }, [p.vendeur_nom, p.devis_numero_mike ? `soumission #${p.devis_numero_mike}` : null, p.signe_le ? `signé le ${jour(p.signe_le)}` : null].filter(Boolean).join(' | ')),
       p.installation_prevue_le ? h('p', {}, `Installation : ${jour(p.installation_prevue_le)}`) : null,
+      p.sous_traitant_nom ? h('p', { class: 'bf-macro__st' }, `🧰 ${p.sous_traitant_nom}`, p.cout_installation_cents ? ` | install. ${formatCents(p.cout_installation_cents)}` : '') : null,
       p.lead_id ? h('a', { href: `/lead?id=${p.lead_id}`, class: 'bf-macro__lien' }, 'Voir le lead d\'origine') : null,
       peutBouger ? h('div', { class: 'bf-macro__actions' },
         h('button', { type: 'button', class: 'bf-macro__fleche', disabled: !prec, 'aria-label': prec ? `Reculer ${p.code_projet} à « ${prec[1]} »` : 'Première étape',

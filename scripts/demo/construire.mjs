@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { TYPES_TRAVAUX, CATEGORIES } from '../reference/types-travaux.mjs';
 
-const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'sous-traitant', 'tableau-machines', 'tableau-marketing', 'tableau-vendeurs', 'macro', 'installation-grille', 'demande-prix', 'prix', 'mes-prix'];
+const PAGES = ['index', 'leads', 'lead', 'crm-rapidite', 'clients', 'client', 'territoire', 'disponibilites', 'sous-traitants', 'sous-traitant', 'tableau-machines', 'tableau-marketing', 'tableau-vendeurs', 'macro', 'jobs', 'installation-grille', 'demande-prix', 'prix', 'mes-prix'];
 const lire = (f) => readFileSync(f, 'utf8');
 // Variables locales (.env, ignoré par git) : seulement ce qui sert au HTML de test
 function envLocal(cle) {

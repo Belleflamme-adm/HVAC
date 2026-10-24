@@ -745,3 +745,24 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Fiche du lead vendu** : encadré « Projet dans le Macro » avec le code projet et un lien.
 - **Carte de projet** : code projet (format de Mike), client, ville, succursale, type de système, montant avant taxes, vendeur, n° de soumission, date de signature, installation prévue, lien vers le lead d'origine, mention « Nouveau » 48 h.
 - **À la greffe** : ces projets vivent dans le Macro de Mike (même code projet). Notre tuile deviendra une vue de son Macro, ou sera remise en veille, selon ce que Mike préfère.
+
+## ADR-080 | Mes jobs : le projet signé tombe chez le sous-traitant attitré, avec son prix seulement
+- **Date** : 2026-10-24 | **Statut** : Livrée (en local et HTML de test)
+- **Demande** (Simon) : quand le devis est accepté et tombe dans le Macro en attente du dépôt, il tombe aussi chez le sous-traitant attitré. Celui-ci ne voit ni le prix chargé au client ni le total de la facture. Les machines sont à 0 $. Il voit seulement ce qu'il va nous charger pour l'installation.
+- **Attitrer** : le formulaire « ✓ Soumission signée » (fiche du lead) prend maintenant :
+  - le sous-traitant ;
+  - les machines (description et quantité, **aucun prix**) ;
+  - les travaux d'installation, choisis dans **sa** liste de prix (travaux confiés seulement).
+
+  Le coût est pris en base dans sa liste en vigueur à la date de signature (`hvac_cout_installation`), jamais dans le navigateur, puis figé dans `projet_lignes`. À la greffe, le webhook de Mike enverra les mêmes champs.
+- **Ce que voit le sous-traitant** : tuile et menu « Mes jobs », par la fonction protégée `hvac_mes_projets`. Il n'a aucun accès direct aux tables `projets` ni `projet_lignes` (RLS).
+  - Il voit : code projet, étape, ville, type de système, date d'installation, machines (prix 0 $), ses lignes d'installation (quantité × son prix) et le total « Ce que tu factures à Belleflamme (avant taxes) ».
+  - Il ne voit jamais : montant client, total de facture, marge. Ces valeurs ne sont même pas dans la réponse.
+- **Loi 25 (choix par défaut, à confirmer par Simon)** : à l'étape « Signé, attente du dépôt », le sous-traitant ne voit que la ville. Le nom, le téléphone et l'adresse du client arrivent dès le dépôt reçu (« À céduler » et après). Un projet annulé ou fermé disparaît de ses jobs.
+- **Belleflamme** :
+  - la carte du Macro montre le sous-traitant et son coût d'installation ;
+  - Simon, Mike et la planification ouvrent `/jobs?fournisseur=` pour voir exactement ce que voit le sous-traitant.
+- **Barre du bas** : chez le sous-traitant, la recherche porte sur ses jobs, pas sur les leads, qu'il n'a pas le droit de voir.
+- **Limites** :
+  - on ne change pas encore le sous-traitant ni les lignes d'un projet après la signature (à ajouter si Simon le veut, avec trace) ;
+  - les extras ajoutés sur le chantier ne sont pas encore prévus.

@@ -26,7 +26,7 @@ const TUILES_SOUS_TRAITANT = [
   { cle: 'territoire', titre: 'Mon territoire', href: '/territoire', etat: 'actif', icone: '🗺️', desc: 'Villes où je vais, où je ne vais pas, suppléments' },
   { cle: 'prix', titre: 'Ma liste de prix', href: '/mes-prix', etat: 'actif', icone: '🧾', desc: 'Mes prix par travail · mes soumissions actives à honorer' },
   { cle: 'disponibilites', titre: 'Mes disponibilités', href: '/disponibilites', etat: 'actif', icone: '📅', desc: 'Les journées où je suis disponible' },
-  { cle: 'jobs', titre: 'Mes jobs', href: '/jobs', etat: 'veille', icone: '🧰', desc: 'Jobs planifiées (bons de travail)' },
+  { cle: 'jobs', titre: 'Mes jobs', href: '/jobs', etat: 'actif', icone: '🧰', desc: 'Projets signés qui me sont attitrés · mon prix d\'installation' },
 ];
 
 // Directeur des opérations : sous-traitants, accès, territoires, listes de prix

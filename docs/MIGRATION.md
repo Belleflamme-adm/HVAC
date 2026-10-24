@@ -67,3 +67,14 @@
 ## Macro (ADR-079)
 - Webhook de Mike « soumission acceptée » -> `hvac_projet_signe` (numéro de soumission, client ou lead, montant avant taxes, type de système, vendeur). Une seule fois par numéro.
 - Correspondance des étapes avec le Macro de Mike : à confirmer (noms et ordre de ses statuts). Nos projets HVAC déjà créés devront être repris dans son Macro sous le même code projet.
+
+## Mes jobs du sous-traitant (ADR-080)
+- Migration `20261024001400_jobs_sous_traitant.sql` :
+  - `projets.sous_traitant_id` ;
+  - table `projet_lignes` (machines sans prix, installation au coût figé de la liste du sous-traitant) ;
+  - `hvac_projet_signe` accepte `sous_traitant_id` et `lignes` ;
+  - vue `projets_macro_v` (sous-traitant, coût d'installation) ;
+  - fonction `hvac_mes_projets`.
+- À la greffe :
+  - le webhook « devis accepté » de Mike doit fournir le sous-traitant attitré et les lignes du devis (machines : description et quantité ; installation : type de travail et quantité). Ne jamais transmettre le prix client au portail du sous-traitant.
+  - si le devis de Mike porte déjà le coût du sous-traitant, comparer avec sa liste et décider laquelle fait foi (à confirmer avec Mike).

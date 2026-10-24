@@ -59,6 +59,10 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 | Mélissa (ventilation) | 115 | Pipeline personnel d'une employée ? À confirmer avant de mapper. |
 | Ventilation / À finaliser | 16 | Projets ou devis en suspens ? À confirmer. |
 
+## Mes jobs (ADR-080)
+- `projets.sous_traitant_id` : champ du devis de Mike qui désigne l'installateur (sous-traitant) : à confirmer.
+- `projet_lignes` : lignes du devis de Mike (machines, installation). Noms des colonnes et façon de distinguer une machine d'une ligne d'installation : à confirmer. Le prix client des lignes n'est **pas** repris.
+
 ## Comment compléter ce document
 
 Une fois que Claude aura un accès en lecture seule à Monday (exception dans `CLAUDE.md` §2) :

@@ -26,7 +26,43 @@ if (user) {
   const PLANIF = ['Admin tout', 'Direction', 'Coordonnateur'];
 
   // Soumission signée par le client (dans l'app de Mike) : Simon, Mike ou la planification l'inscrivent d'ici la greffe
-  function ouvrirSigne(l) {
+  // Sous-traitant attitré + lignes (ADR-080) : machines sans prix, installation tirée de SA liste de prix.
+  // Le projet tombe aussi dans « Mes jobs » du sous-traitant, qui ne voit que son prix.
+  async function ouvrirSigne(l) {
+    let opts = { types: [], sousTraitants: [], confies: [], grille: [] };
+    try { opts = await api.get('installation-options'); } catch { /* sans options : projet sans sous-traitant */ }
+    const sts = opts.sousTraitants.filter((f) => f.actif !== false);
+    const prixDe = (st, t) => opts.grille.find((g) => g.fournisseur_id === st && g.type_travail_id === t)?.cout_cents;
+    const choixSt = h('select', { name: 'sous_traitant' }, h('option', { value: '' }, 'Aucun pour l\'instant'), sts.map((f) => h('option', { value: f.id }, f.nom)));
+    const machines = h('div', { class: 'bf-signe__lignes' });
+    const installs = h('div', { class: 'bf-signe__lignes' });
+    const total = h('p', { class: 'bf-muet' });
+    const retirer = (el) => h('button', { type: 'button', class: 'bf-lien', 'aria-label': 'Retirer la ligne', onclick: () => { el.remove(); recalc(); } }, 'Retirer');
+    const champQte = () => h('label', {}, 'Qté', h('input', { name: 'qte', inputmode: 'decimal', value: '1', oninput: () => recalc() }));
+    function ajouterMachine() {
+      const el = h('div', { class: 'bf-signe__ligne', 'data-type': 'machine' });
+      el.append(h('label', {}, 'Machine', h('input', { name: 'desc', placeholder: 'Thermopompe murale 12 000 BTU' })), champQte(), retirer(el));
+      machines.append(el);
+    }
+    function ajouterInstall() {
+      const st = choixSt.value;
+      const confies = new Set(opts.confies.filter((c) => c.fournisseur_id === st).map((c) => c.type_travail_id));
+      const types = opts.types.filter((t) => confies.has(t.id) && prixDe(st, t.id));
+      if (!types.length) { message(msg, 'Ce sous-traitant n\'a aucun travail avec un prix dans sa liste.'); return; }
+      const el = h('div', { class: 'bf-signe__ligne', 'data-type': 'installation' });
+      el.append(h('label', {}, 'Travail (liste du sous-traitant)', h('select', { name: 'travail', onchange: () => recalc() },
+        types.map((t) => h('option', { value: t.id }, `${t.nom} | ${formatCents(prixDe(st, t.id))}`)))), champQte(), retirer(el));
+      installs.append(el);
+      recalc();
+    }
+    const qteDe = (el) => Number(String(el.querySelector('[name=qte]').value).replace(',', '.')) || 0;
+    function recalc() {
+      const st = choixSt.value;
+      const c = [...installs.children].reduce((s, el) => s + Math.round(qteDe(el) * (prixDe(st, el.querySelector('[name=travail]').value) || 0)), 0);
+      total.textContent = c ? `Coût d'installation du sous-traitant : ${formatCents(c)} (c'est ce qu'il verra, rien d'autre)` : '';
+    }
+    const boutonInstall = h('button', { type: 'button', class: 'bf-bouton bf-bouton--discret', disabled: true, onclick: ajouterInstall }, '+ Installation');
+    choixSt.addEventListener('change', () => { installs.replaceChildren(); boutonInstall.disabled = !choixSt.value; recalc(); });
     const form = h('form', { class: 'bf-form bf-form--compact' },
       h('h2', {}, 'Soumission signée par le client'),
       h('p', { class: 'bf-muet' }, 'Le client a signé sa soumission dans l\'app de Mike. Le projet tombera dans le Macro, à l\'étape « Signé, attente du dépôt », et le lead passera à Vendu.'),
@@ -34,7 +70,12 @@ if (user) {
         h('label', {}, 'Numéro de la soumission (app de Mike) *', h('input', { name: 'numero', required: true, inputmode: 'numeric', placeholder: '120815' })),
         h('label', {}, 'Montant avant taxes ($)', h('input', { name: 'montant', inputmode: 'decimal', placeholder: '9 850' })),
         h('label', {}, 'Type de système', h('select', { name: 'type' }, h('option', { value: '' }, 'Celui du lead'),
-          Object.entries(TYPES_DEMANDE).map(([v, t]) => h('option', { value: v, selected: v === l.type_demande }, t))))),
+          Object.entries(TYPES_DEMANDE).map(([v, t]) => h('option', { value: v, selected: v === l.type_demande }, t)))),
+        h('label', {}, 'Sous-traitant attitré', choixSt)),
+      h('h3', {}, 'Machines'), h('p', { class: 'bf-muet' }, 'Le sous-traitant les voit à 0 $ : aucun prix n\'est inscrit ici.'), machines,
+      h('div', { class: 'bf-actions' }, h('button', { type: 'button', class: 'bf-bouton bf-bouton--discret', onclick: ajouterMachine }, '+ Machine')),
+      h('h3', {}, 'Installation du sous-traitant'), installs, total,
+      h('div', { class: 'bf-actions' }, boutonInstall),
       h('div', { class: 'bf-actions' },
         h('button', { class: 'bf-bouton', type: 'submit' }, 'Envoyer dans le Macro'),
         h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => panneau.replaceChildren() }, 'Annuler')));
@@ -42,14 +83,21 @@ if (user) {
       ev.preventDefault();
       const f = new FormData(form);
       const brut = String(f.get('montant') || '').replace(/\s/g, '').replace(',', '.');
+      const lignes = [
+        ...[...machines.children].map((el) => ({ type_ligne: 'machine', description: el.querySelector('[name=desc]').value.trim(), quantite: qteDe(el) }))
+          .filter((x) => x.description),
+        ...[...installs.children].map((el) => ({ type_ligne: 'installation', type_travail_id: el.querySelector('[name=travail]').value, quantite: qteDe(el) })),
+      ];
       try {
         await api.post('projet-signe', { lead_id: id, devis_numero_mike: String(f.get('numero')).trim(),
-          montant_avant_taxes_cents: brut ? Math.round(Number(brut) * 100) : undefined, type_systeme: f.get('type') || undefined });
+          montant_avant_taxes_cents: brut ? Math.round(Number(brut) * 100) : undefined, type_systeme: f.get('type') || undefined,
+          sous_traitant_id: choixSt.value || undefined, lignes });
         panneau.replaceChildren();
         await charger();
-        message(msg, 'Projet envoyé dans le Macro, à l\'étape « Signé, attente du dépôt ». Le lead est maintenant Vendu.', 'ok');
+        message(msg, `Projet envoyé dans le Macro, à l'étape « Signé, attente du dépôt ». Le lead est maintenant Vendu.${choixSt.value ? ' Le sous-traitant le voit dans « Mes jobs ».' : ''}`, 'ok');
       } catch (e) { message(msg, e.message); }
     });
+    ajouterMachine();
     panneau.replaceChildren(form);
   }
   function ouvrir(type) {

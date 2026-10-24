@@ -1,18 +1,20 @@
 // Barre du bas (comme chez Mike) : recherche + cloche. Présente sur toutes les pages.
-// Recherche : cherche dans les leads (nom, ville, téléphone). Cloche : leads en retard visibles par l'utilisateur.
+// Recherche : cherche dans les leads (nom, ville, téléphone) ; chez le sous-traitant, dans ses jobs (ADR-080). Cloche : leads en retard visibles par l'utilisateur.
 // (La recherche globale de Mike, fonction global-search, couvrira tout à la greffe.)
 import { api } from './bf-api.js?v=0.4.0';
 import { h } from './bf-dom.js?v=0.4.0';
 
 export function rendreBarre(user) {
   if (document.querySelector('.bf-barre')) return;
-  const champ = h('input', { type: 'search', id: 'bf-recherche', placeholder: 'Rechercher un lead (nom, ville, téléphone)…', 'aria-label': 'Rechercher' });
+  const st = Boolean(user?.sousTraitantId);
+  const champ = h('input', { type: 'search', id: 'bf-recherche', 'aria-label': 'Rechercher',
+    placeholder: st ? 'Rechercher une job (code projet, ville)…' : 'Rechercher un lead (nom, ville, téléphone)…' });
   const form = h('form', { class: 'bf-barre__recherche', role: 'search' }, champ,
     h('button', { type: 'submit', class: 'bf-barre__loupe', 'aria-label': 'Chercher' }, '🔍'));
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const q = champ.value.trim();
-    location.href = `/leads${q ? `?q=${encodeURIComponent(q)}` : ''}`;
+    location.href = `${st ? '/jobs' : '/leads'}${q ? `?q=${encodeURIComponent(q)}` : ''}`;
   });
   const compte = h('span', { class: 'bf-barre__compte' }, '0');
   const cloche = h('a', { class: 'bf-barre__cloche', href: '/leads', title: 'Leads en retard', 'aria-label': 'Leads en retard' }, '🔔', compte);

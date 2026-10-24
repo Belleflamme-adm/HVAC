@@ -228,10 +228,12 @@
     const n = etat.projets.filter((p) => p.code_projet.startsWith(base)).length + 1;
     return `${base}-${String(n).padStart(3, '0')}`;
   }
-  function creerProjet({ client_nom, succursale_code, vendeur_id, ville, type_systeme, montant, devis_numero_mike, lead_id = null, client_id = null, signe_le = etat.maintenant, statut = 'attente_paiement', installation = null }) {
+  function creerProjet({ client_nom, succursale_code, vendeur_id, ville, type_systeme, montant, devis_numero_mike, lead_id = null, client_id = null, signe_le = etat.maintenant, statut = 'attente_paiement', installation = null, sous_traitant_id = null, lignes = [] }) {
     const p = { id: `prj-${etat.projets.length + 1}`, code_projet: codeProjet(succursale_code, client_nom), statut, succursale_code, client_id, client_nom, ville,
       vendeur_id, vendeur_nom: nomEmploye(vendeur_id), lead_id, devis_numero_mike, montant_avant_taxes_cents: montant, type_systeme,
-      signe_le: iso(signe_le), installation_prevue_le: installation ? iso(installation) : null, created_at: iso(signe_le), updated_at: iso(signe_le) };
+      signe_le: iso(signe_le), installation_prevue_le: installation ? iso(installation) : null, created_at: iso(signe_le), updated_at: iso(signe_le),
+      sous_traitant_id, sous_traitant_nom: null, cout_installation_cents: null, adresse: null, client_telephone: null, lignes };
+    if (sous_traitant_id || lignes.length) attitrer(p, sous_traitant_id, lignes);
     etat.projets.push(p);
     return p;
   }
@@ -315,6 +317,58 @@
   // ---------- Routeur des fonctions ----------
   class Erreur extends Error { constructor(status, message) { super(message); this.status = status; } }
   const exiger = (cond, msg) => { if (!cond) throw new Erreur(400, msg); };
+  // Mes jobs (ADR-080) : sous-traitant attitré, machines sans prix, installation au prix de SA liste à la signature
+  const jourIso = (t) => new Date(t).toISOString().slice(0, 10);
+  const prixEnVigueur = (f, t, jourJ) => etat.tarifs.filter((x) => x.fournisseur_id === f && x.type_travail_id === t && x.en_vigueur_du <= jourJ)
+    .sort((a, b) => b.en_vigueur_du.localeCompare(a.en_vigueur_du))[0]?.cout_cents ?? null;
+  function lignesProjet(f, lignes, signe) {
+    exiger(f || !lignes.some((l) => l.type_ligne === 'installation'), 'Installation sans sous-traitant');
+    return lignes.map((l, i) => {
+      const quantite = Number(l.quantite) || 1;
+      if (l.type_ligne === 'machine') { exiger(String(l.description || '').trim(), 'Description de la machine requise'); return { position: i + 1, type_ligne: 'machine', description: l.description.trim(), quantite }; }
+      exiger(l.type_ligne === 'installation', 'Type de ligne inconnu');
+      exiger(etat.confies.some((c) => c.fournisseur_id === f && c.type_travail_id === l.type_travail_id), 'Ce travail n\'est pas confié à ce sous-traitant');
+      const cout = prixEnVigueur(f, l.type_travail_id, jourIso(signe));
+      exiger(cout, 'Aucun prix pour ce travail dans la liste du sous-traitant');
+      return { position: i + 1, type_ligne: 'installation', description: etat.types.find((t) => t.id === l.type_travail_id)?.nom || l.type_travail_id, quantite, type_travail_id: l.type_travail_id, cout_cents: cout };
+    });
+  }
+  function attitrer(p, f, lignes) {
+    p.sous_traitant_id = f || null;
+    p.sous_traitant_nom = f ? etat.fournisseurs.find((x) => x.id === f)?.nom || null : null;
+    p.lignes = lignesProjet(f, lignes, Date.parse(p.signe_le) || etat.maintenant);
+    const c = p.lignes.filter((l) => l.type_ligne === 'installation').reduce((s, l) => s + Math.round(l.quantite * l.cout_cents), 0);
+    p.cout_installation_cents = c || null;
+  }
+  {
+    const fiche = { 'Hélène Gagnon (FICTIF)': ['450-555-0141', '112, rue des Érables'], 'Robert Ouellet (FICTIF)': ['450-555-0142', '8, montée Saint-Nicolas'],
+      'Daniel Poirier (FICTIF)': ['450-555-0144', '2210, chemin Gascon'], 'Nathalie Roy (FICTIF)': ['450-555-0145', '45, rue Victor'],
+      'Marc-André Dubé (FICTIF)': ['450-555-0148', '301, rue Principale'], 'Chantal Lévesque (FICTIF)': ['450-555-0147', '17, rue Blainville Est'] };
+    const m = (description, quantite = 1) => ({ type_ligne: 'machine', description, quantite });
+    const i = (code, quantite = 1) => ({ type_ligne: 'installation', type_travail_id: tid(code), quantite });
+    const pour = {
+      'Hélène Gagnon (FICTIF)': [m('Thermopompe multizone 2 têtes, 18 000 BTU'), m('Tête murale 9 000 BTU', 2), i('INST-MULTI-2T'), i('EXTRA-LIGNE-PI', 10)],
+      'Robert Ouellet (FICTIF)': [m('Thermopompe centrale 3 tonnes'), m('Fournaise électrique 20 kW'), i('INST-MURAL-1T-12'), i('EXTRA-LIGNE-PI', 15)],
+      'Daniel Poirier (FICTIF)': [m('Thermopompe murale 12 000 BTU'), i('INST-MURAL-1T-12')],
+      'Nathalie Roy (FICTIF)': [m('Thermopompe multizone 3 têtes, 24 000 BTU'), m('Tête murale 9 000 BTU', 3), i('INST-MULTI-2T'), i('INST-TETE-MULTI')],
+      'Marc-André Dubé (FICTIF)': [m('Thermopompe murale 12 000 BTU'), i('INST-MURAL-1T-12'), i('EXTRA-LIGNE-PI', 8)],
+    };
+    for (const p of etat.projets) {
+      if (!pour[p.client_nom]) continue;
+      attitrer(p, 'f-clim', pour[p.client_nom]);
+      [p.client_telephone, p.adresse] = fiche[p.client_nom] || [];
+    }
+  }
+  // Vue du sous-traitant : machines à 0 $, ses prix, coordonnées du client après le dépôt (Loi 25). Jamais le montant client.
+  const vueJob = (p) => {
+    const depot = p.statut !== 'attente_paiement';
+    const lignes = p.lignes.map((l) => ({ type_ligne: l.type_ligne, description: l.description, quantite: l.quantite,
+      prix_cents: l.type_ligne === 'installation' ? l.cout_cents : 0, total_cents: l.type_ligne === 'installation' ? Math.round(l.quantite * l.cout_cents) : 0 }));
+    return { id: p.id, code_projet: p.code_projet, statut: p.statut, ville: p.ville, type_systeme: p.type_systeme, signe_le: p.signe_le,
+      installation_prevue_le: p.installation_prevue_le, client_nom: depot ? p.client_nom : null, client_telephone: depot ? p.client_telephone : null,
+      adresse: depot ? p.adresse : null, lignes, total_cents: lignes.reduce((s, l) => s + l.total_cents, 0) };
+  };
+
   // Territoires fictifs qui se chevauchent (carte comparative, ADR-063), semés une fois que les municipalités sont chargées
   let semes = false;
   function semerTerritoires() {
@@ -477,9 +531,17 @@
       exiger(l, 'Lead ou client requis');
       if (b.montant_avant_taxes_cents !== undefined) exiger(Number.isInteger(b.montant_avant_taxes_cents) && b.montant_avant_taxes_cents > 0, 'Montant invalide');
       const p = creerProjet({ client_nom: l.contact_nom, succursale_code: l.succursale_code, vendeur_id: l.assigne_a, ville: l.ville,
-        type_systeme: b.type_systeme || l.type_demande, montant: b.montant_avant_taxes_cents ?? null, devis_numero_mike: numero, lead_id: l.id });
+        type_systeme: b.type_systeme || l.type_demande, montant: b.montant_avant_taxes_cents ?? null, devis_numero_mike: numero, lead_id: l.id,
+        sous_traitant_id: b.sous_traitant_id || null, lignes: Array.isArray(b.lignes) ? b.lignes : [] });
+      p.client_telephone = l.contact_tel || null;
       if (l.statut !== 'converti') activite(l, { type: 'vendu', note: `Soumission #${numero} signée par le client` }, etat.maintenant);
       return { projet_id: p.id };
+    } },
+    jobs: { GET: (q) => {
+      const f = user().sousTraitantId || (['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role) ? q.fournisseur : null);
+      if (!f) throw new Erreur(403, 'Sous-traitant requis');
+      return etat.projets.filter((p) => p.sous_traitant_id === f && !['annule', 'ferme'].includes(p.statut))
+        .sort((a, b) => b.signe_le.localeCompare(a.signe_le)).map(vueJob);
     } },
     communications: { GET: (q) => {
       exiger(!user().sousTraitantId, 'Accès refusé');

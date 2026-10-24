@@ -4,9 +4,9 @@ import { rendreBandeau } from './bf-bandeau.js?v=0.4.0';
 import { h } from './bf-dom.js?v=0.4.0';
 import { rendreBarre } from './bf-barre.js?v=0.4.0';
 
-// Menu selon le rôle : un sous-traitant ne voit que son territoire et ses disponibilités.
+// Menu selon le rôle : un sous-traitant ne voit que ses jobs, son territoire, ses prix et ses disponibilités.
 export function liensPour(user) {
-  if (user?.sousTraitantId) return [['/', 'Accueil'], ['/territoire', 'Mon territoire'], ['/mes-prix', 'Ma liste de prix'], ['/disponibilites', 'Mes disponibilités']];
+  if (user?.sousTraitantId) return [['/', 'Accueil'], ['/jobs', 'Mes jobs'], ['/territoire', 'Mon territoire'], ['/mes-prix', 'Ma liste de prix'], ['/disponibilites', 'Mes disponibilités']];
   // Devis : en veille (app de Mike, ADR-055), retiré du menu ; la tuile grisée reste à l'accueil
   const liens = [['/', 'Accueil'], ['/leads', 'Leads'], ['/clients', 'Clients']];
   if (['Admin tout', 'Direction', 'Coordonnateur'].includes(user?.role)) liens.push(['/sous-traitants', 'Sous-traitants']);
