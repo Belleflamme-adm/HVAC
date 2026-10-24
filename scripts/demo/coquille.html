@@ -57,17 +57,31 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
       if (g) S.etat.municipalites.push(...g.features.map((x) => x.properties));
     }
   } catch (e) { /* sans carte */ }
-  const cadre = document.getElementById('app');
   window.__demoCourant = { path: '/', search: '', hash: '' };
   // Historique (flèche Retour d'Android, bouton Précédent) : chaque changement de page s'inscrit dans l'historique
-  // du navigateur, sans changer l'adresse ; Retour réaffiche la page d'avant. mode : 'ajouter' | 'remplacer' | 'aucun'
+  // du navigateur, sans changer l'adresse ; Retour réaffiche la page d'avant, un pas à la fois.
+  // mode : 'ajouter' | 'remplacer' | 'aucun'. Chaque étape garde sa page ET l'utilisateur simulé : si l'afficheur
+  // (app Claude, WebView) recharge le test sur un Retour, on réaffiche la page de cette étape, pas l'accueil.
+  const qui = document.getElementById('qui');
   const inscrire = (url, mode) => {
+    const etat = { demoUrl: url, demoQui: qui.value };
     try {
-      if (mode === 'ajouter') history.pushState({ demoUrl: url }, '');
-      else if (mode === 'remplacer') history.replaceState({ demoUrl: url }, '');
+      if (mode === 'ajouter') history.pushState(etat, '');
+      else if (mode === 'remplacer') history.replaceState(etat, '');
     } catch (e) { /* cadre qui refuse l'historique : navigation sans Retour */ }
   };
-  window.addEventListener('popstate', (e) => { if (e.state && e.state.demoUrl) window.__naviguer(e.state.demoUrl, 'aucun'); });
+  const prendreQui = (q) => { if (q && S.UTILISATEURS[q] && qui.value !== q) { qui.value = q; S.changerUtilisateur(q); } };
+  window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.demoUrl) { prendreQui(e.state.demoQui); window.__naviguer(e.state.demoUrl, 'aucun'); }
+  });
+  // Un NOUVEAU cadre à chaque page : changer le contenu d'un cadre existant ajoute, sur certains Android, des entrées
+  // d'historique au cadre lui-même, qui se mêlent aux nôtres. Un cadre neuf n'en ajoute aucune.
+  const afficher = (html) => {
+    const ancien = document.getElementById('app');
+    const neuf = document.createElement('iframe');
+    neuf.id = 'app'; neuf.title = ancien.title; neuf.srcdoc = html;
+    ancien.replaceWith(neuf);
+  };
   window.__naviguer = (url, mode = 'ajouter') => {
     const u = new URL(url, 'https://demo.local' + window.__demoCourant.path);
     const courant = window.__demoCourant.path + window.__demoCourant.search;
@@ -80,7 +94,7 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
       <h1>Page en veille</h1><p>« ${u.pathname.replace(/[<>&]/g, '')} » n'est pas dans le HTML de test (module de l'app de Mike).</p>
       <p><a href="#" onclick="parent.__naviguer('/');return false">Retour à l'accueil</a></p></body>`;
     inscrire(`${u.pathname}${u.search}${u.hash}`, mode);
-    cadre.srcdoc = html;
+    afficher(html);
   };
   const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search + (window.__demoCourant.hash || ''), 'remplacer');
   // Dernier lien de demande de prix créé : l'ouvrir comme le sous-traitant (sans compte)
@@ -88,14 +102,17 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   setInterval(() => { boutonLien.hidden = !S.dernierLien(); }, 700);
   boutonLien.addEventListener('click', () => window.__naviguer(S.dernierLien()));
   const heure = () => { document.getElementById('heure').textContent = S.heure().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }); };
-  document.getElementById('qui').addEventListener('change', (e) => { S.changerUtilisateur(e.target.value); window.__naviguer('/'); });
+  qui.addEventListener('change', (e) => { S.changerUtilisateur(e.target.value); window.__naviguer('/'); });
   document.getElementById('plus5').addEventListener('click', () => { S.avancer(5); heure(); recharger(); });
   document.getElementById('plus30').addEventListener('click', () => { S.avancer(30); heure(); recharger(); });
   document.getElementById('arrive').addEventListener('click', () => { const l = S.leadArrive(); heure(); window.__naviguer(`/lead?id=${l.id}`); });
   // Lien direct par utilisateur : …#simon, #marc, #sophie, #karim, #clim
   const depart = (location.hash || '').slice(1);
-  if (S.UTILISATEURS[depart]) { S.changerUtilisateur(depart); document.getElementById('qui').value = depart; }
+  if (S.UTILISATEURS[depart]) { S.changerUtilisateur(depart); qui.value = depart; }
   heure();
-  window.__naviguer('/', 'remplacer');
+  // Rechargé au milieu de l'historique (Retour qui recharge, rotation de l'écran) : on reprend la page de cette étape
+  const repris = history.state && history.state.demoUrl ? history.state : null;
+  if (repris) prendreQui(repris.demoQui);
+  window.__naviguer(repris ? repris.demoUrl : '/', 'remplacer');
 })();
 </script>
