@@ -23,6 +23,14 @@ export const FOURNISSEURS = {
   ont: 'Importation Est ontarien (FICTIF)',
 };
 
+// Installation par type : prix au client et coût (sous-traitant). Marge d'installation de 25 %, comme la grille (ADR-060).
+export const INSTALLATION = {
+  mural_simple: { prix: 160000, cout: 120000 },
+  mural_multi: { prix: 280000, cout: 210000 },
+  central: { prix: 420000, cout: 315000 },
+  bienergie: { prix: 380000, cout: 285000 },
+};
+
 // Vendeurs fictifs : poids de vente par succursale (certains vendent dans deux territoires)
 export const VENDEURS = {
   'e-marc': { nom: 'Marc Vendeur (FICTIF)', succ: { HO: 5, ST: 1.5 } },
@@ -97,6 +105,10 @@ export function ventesFictives(fin = '2026-10') {
         const v = ventes[ventes.length - 1];
         // Coût : marge du modèle, moins le rabais consenti (prix sous la liste = marge plus mince)
         v.cout_cents = Math.round(modele.prix * (1 - modele.marge) * (0.97 + r() * 0.06) / 100) * 100;
+        // Part installation (sans tirage au hasard : les totaux restent les mêmes) ; le reste = la machine
+        const inst = INSTALLATION[type];
+        v.prix_installation_cents = Math.round(inst.prix * (v.prix_cents / modele.prix) / 100) * 100;
+        v.cout_installation_cents = inst.cout;
       }
     }
   });

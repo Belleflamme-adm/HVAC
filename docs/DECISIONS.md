@@ -645,3 +645,13 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - Machines en stock : par lieu (entrepôt central et succursales), empilées par type.
   - Vendeurs par territoire et type de machine : chaque vendeur avec ses totaux, puis une ligne par territoire où il a vendu, avec les unités par type, les ventes et la marge.
 - **À la greffe** : vendeurs et marges depuis les devis et factures de Mike ; stock depuis son module d'inventaire (relevé, réceptions, réservations).
+
+## ADR-070 | Deux marges : avec installation (référence) et avant installation
+- **Date** : 2026-10-24 | **Statut** : Maquette (données fictives)
+- **Décision de Simon** : la marge brute de référence inclut l'installation, et on garde ça comme ça. On affiche aussi la marge avant installation (la machine seule).
+- **Calcul** :
+  - Marge avec installation = (prix total - coût de la machine - coût de l'installation) / prix total.
+  - Marge avant installation = (prix de la machine - coût de la machine) / prix de la machine, sans la part installation du prix ni son coût.
+  - Chaque vente porte donc son prix et son coût d'installation à part (`prix_installation_cents`, `cout_installation_cents`).
+- **Où** : deux tuiles côte à côte, le tableau des vendeurs (colonnes « Marge totale » et « Marge avant inst. ») et les infobulles des vendeurs. Les tuiles passent en 2 rangées de 4.
+- **À la greffe** : la part installation vient de la ligne d'installation du devis de Mike (coût du sous-traitant, prix client) ; à confirmer dans ses données.

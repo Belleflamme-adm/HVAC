@@ -1,5 +1,5 @@
 // Tableau exécutif des machines HVAC (ADR-068, ADR-069) : d'où viennent les machines, où elles sont vendues,
-// quels modèles se vendent le plus, dans quel territoire, par quel vendeur ; marge brute et stock. Données FICTIVES tant que l'app de Mike n'est pas branchée.
+// quels modèles se vendent le plus, dans quel territoire, par quel vendeur ; marge brute (avec et avant installation) et stock. Données FICTIVES tant que l'app de Mike n'est pas branchée.
 // Graphiques en SVG maison (aucune librairie) ; couleurs validées sur le fond sombre (outil de validation dataviz).
 import { initPage } from './bf-page.js?v=0.4.0';
 import { h, remplir } from './bf-dom.js?v=0.4.0';
@@ -235,7 +235,13 @@ if (user) {
       const avant = base.filter((v) => P.avant.includes(v.mois));
       const somme = (l) => l.reduce((s, v) => s + v.prix_cents, 0);
       const delta = (a, b) => (b ? (a - b) / b : null);
+      // Marge totale : machine + installation (la marge de référence). Marge avant installation : la machine seule.
       const marge = (l) => { const p = somme(l); return p ? (p - l.reduce((s, v) => s + v.cout_cents, 0)) / p : 0; };
+      const margeMachine = (l) => {
+        const p = l.reduce((s, v) => s + v.prix_cents - v.prix_installation_cents, 0);
+        return p ? (p - l.reduce((s, v) => s + v.cout_cents - v.cout_installation_cents, 0)) / p : 0;
+      };
+      const margeMachine$ = (l) => l.reduce((s, v) => s + (v.prix_cents - v.prix_installation_cents) - (v.cout_cents - v.cout_installation_cents), 0);
       // Stock au dernier jour : selon la succursale (son stock, plus l'entrepôt central qui la sert), le type et la marque
       const stockVu = stock.filter((x) => (!filtres.type || x.type === filtres.type) && (!filtres.marque || x.marque === filtres.marque)
         && (!filtres.succursale || x.lieu === filtres.succursale || x.lieu === 'entrepot'));
@@ -280,14 +286,16 @@ if (user) {
         h('div', { class: 'bf-dash__tuiles' },
           tuile('machines', 'Machines vendues', entier(ventes.length), delta(ventes.length, avant.length), P.compare),
           tuile('argent', 'Ventes avant taxes', compact(somme(ventes) / 100), delta(somme(ventes), somme(avant)), P.compare),
+          tuile('marge', 'Marge brute (avec installation)', pctTxt(marge(ventes)), avant.length ? marge(ventes) - marge(avant) : null, P.compare,
+            { points: true, note: `${compact((somme(ventes) - ventes.reduce((s, v) => s + v.cout_cents, 0)) / 100)} de marge` }),
+          tuile('marge', 'Marge avant installation', pctTxt(margeMachine(ventes)), avant.length ? margeMachine(ventes) - margeMachine(avant) : null, P.compare,
+            { points: true, note: `${compact(margeMachine$(ventes) / 100)} sur les machines seules` }),
           tuile('moyenne', 'Prix moyen par machine', ventes.length ? `${entier(somme(ventes) / ventes.length / 100)} $` : 'n/d',
             delta(ventes.length ? somme(ventes) / ventes.length : 0, avant.length ? somme(avant) / avant.length : 0), P.compare),
-          tuile('marge', 'Marge brute', pctTxt(marge(ventes)), avant.length ? marge(ventes) - marge(avant) : null, P.compare,
-            { points: true, note: `${compact((somme(ventes) - ventes.reduce((s, v) => s + v.cout_cents, 0)) / 100)} de marge` }),
           tuile('stock', 'Machines en stock', entier(enStock), null, '',
             { note: semaines ? `≈ ${semaines.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} semaines de ventes | ${compact(stockVu.reduce((s, x) => s + x.valeur_cents, 0) / 100)} au coût` : 'au dernier jour du mois' }),
-          tuile('carte', 'Municipalités desservies', entier(munis.size), null, ''),
-          tuile('entrepot', 'Livrées de l\'entrepôt', pctTxt(partEntrepot), partAvant ? (partEntrepot - partAvant) / partAvant : null, P.compare)),
+          tuile('entrepot', 'Livrées de l\'entrepôt', pctTxt(partEntrepot), partAvant ? (partEntrepot - partAvant) / partAvant : null, P.compare),
+          tuile('carte', 'Municipalités desservies', entier(munis.size), null, '')),
         h('div', { class: 'bf-dash__rangee bf-dash__rangee--2-1' },
           carteGraph('Machines vendues par mois', filtres.periode === '12m' ? '12 derniers mois' : `12 derniers mois | ${P.libelle} en plein`, ...colonnesMensuelles(base, P.mois, typesVisibles)),
           carteGraph('Répartition par type de système', P.libelle, anneau(ventes, typesVisibles))),
@@ -316,8 +324,8 @@ if (user) {
           carteGraph('Ventes par vendeur', `${P.libelle} | unités par type de système`,
             h('div', { class: 'bf-dash__legende' }, typesVisibles.map((t) => h('span', {}, h('span', { class: 'bf-dash__cle', style: `background:${COULEUR_TYPE[t]}` }), TYPES[t]))),
             parVendeur.length ? barresEmpilees(parVendeur.map(({ vd, v }) => ({
-              libelle: vd.nom, sous: `${compact(somme(v) / 100)} | marge ${pctTxt(marge(v))}`, total: v.length,
-              parType: Object.fromEntries(typesVisibles.map((t) => [t, compte(v, t)])), bulle: [[compact(somme(v) / 100), 'avant taxes'], [pctTxt(marge(v)), 'de marge brute']] })), typesVisibles)
+              libelle: vd.nom, sous: `${compact(somme(v) / 100)} | marge ${pctTxt(marge(v))} | avant inst. ${pctTxt(margeMachine(v))}`, total: v.length,
+              parType: Object.fromEntries(typesVisibles.map((t) => [t, compte(v, t)])), bulle: [[compact(somme(v) / 100), 'avant taxes'], [pctTxt(marge(v)), 'marge avec installation'], [pctTxt(margeMachine(v)), 'marge avant installation']] })), typesVisibles)
               : h('p', { class: 'bf-dash__muet' }, 'Aucune vente.')),
           carteGraph('Machines en stock', 'Au 31 octobre 2026 | par lieu et par type',
             parLieu.length ? barresEmpilees(parLieu.map(({ nom, l }) => ({ libelle: nom, total: l.reduce((s, x) => s + x.qte, 0),
@@ -328,12 +336,13 @@ if (user) {
           parVendeur.length ? h('div', { class: 'bf-dash__defile' }, h('table', { class: 'bf-dash__table bf-dash__vendeurs' },
             h('thead', {}, h('tr', {}, h('th', {}, 'Vendeur | territoire'),
               ...typesVisibles.map((t) => h('th', { class: 'num' }, h('span', { class: 'bf-dash__cle', style: `background:${COULEUR_TYPE[t]}` }), TYPES[t])),
-              h('th', { class: 'num' }, 'Total'), h('th', { class: 'num' }, 'Ventes'), h('th', { class: 'num' }, 'Marge'))),
+              h('th', { class: 'num' }, 'Total'), h('th', { class: 'num' }, 'Ventes'), h('th', { class: 'num', title: 'Machine et installation' }, 'Marge totale'),
+              h('th', { class: 'num', title: 'Machine seule, sans l\'installation' }, 'Marge avant inst.'))),
             h('tbody', {}, parVendeur.flatMap(({ vd, v }) => {
               const territoires = Object.entries(SUCCURSALES).map(([k, sc]) => ({ sc, l: v.filter((x) => x.succursale === k) })).filter((x) => x.l.length);
               const ligne = (libelle, l, classe) => h('tr', { class: classe }, h('td', {}, libelle),
                 ...typesVisibles.map((t) => h('td', { class: 'num' }, compte(l, t) ? entier(compte(l, t)) : '')),
-                h('td', { class: 'num' }, h('strong', {}, entier(l.length))), h('td', { class: 'num' }, compact(somme(l) / 100)), h('td', { class: 'num' }, pctTxt(marge(l))));
+                h('td', { class: 'num' }, h('strong', {}, entier(l.length))), h('td', { class: 'num' }, compact(somme(l) / 100)), h('td', { class: 'num' }, pctTxt(marge(l))), h('td', { class: 'num' }, pctTxt(margeMachine(l))));
               return [ligne(vd.nom, v, 'bf-dash__vendeur'), ...(territoires.length > 1 || filtres.succursale === '' ? territoires.map(({ sc, l }) => ligne(`↳ ${sc.nom}`, l, 'bf-dash__territoire')) : [])];
             })))) : h('p', { class: 'bf-dash__muet' }, 'Aucune vente.')),
         carteGraph('Modèles par territoire', `${P.libelle} | les 6 modèles les plus vendus, en unités`,

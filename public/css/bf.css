@@ -445,3 +445,4 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dash__vendeurs .bf-dash__territoire td:first-child { padding-left: 22px; }
 .bf-dash__vendeurs th .bf-dash__cle { margin-right: 5px; }
 .bf-dash__tuile-icone { width: 34px; height: 34px; }
+@media (min-width: 900px) { .bf-dash__tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
