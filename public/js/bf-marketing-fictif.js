@@ -16,6 +16,10 @@ export const SOURCES = {
 
 export const TYPES_DEMANDE = { mural_simple: 'Murale simple', mural_multi: 'Murale multi', central: 'Système central', bienergie: 'Biénergie' };
 const VALEUR_TYPE = { mural_simple: 520000, mural_multi: 1050000, central: 1500000, bienergie: 1480000 };   // vente moyenne en cents
+// Marge brute avec installation par type (comme le tableau des machines), ajustée par campagne : les leads de promotion
+// ou de chasse au prix obtiennent plus de rabais (sans tirage au hasard : les autres chiffres ne bougent pas)
+const MARGE_TYPE = { mural_simple: 0.33, mural_multi: 0.31, central: 0.28, bienergie: 0.29 };
+const AJUST_MARGE = { 'fb-clim-ete': -0.03, 'g-pmax': -0.04, 'ig-reels': -0.02, 'autres-salon': -0.05, 'ref-bouche': 0.02, 'web-seo': 0.01 };
 
 // Saison par mois (janv. -> déc.) : climatisation au printemps-été, chauffage à l'automne
 const SAISON_CLIM = [0.2, 0.2, 0.35, 0.8, 1.4, 1.7, 1.6, 1.1, 0.5, 0.25, 0.2, 0.2];
@@ -102,7 +106,8 @@ export function marketingFictif(fin = '2026-10') {
         const valeur = vendu ? Math.round((VALEUR_TYPE[type] * (0.85 + r() * 0.3)) / 100) * 100 : 0;
         leads.push({ mois, jour_semaine: tirer(r, JOURS.map((p, i) => [i, p])), heure: tirer(r, HEURES.map((p, i) => [i, p])),
           source: c.source, campagne: c.code, type, succursale: succ, municipalite: tirer(r, SUCCURSALES[succ].villes).replace('--', '–'),
-          contacte, visite, vendu, valeur_cents: valeur });
+          contacte, visite, vendu, valeur_cents: valeur,
+          marge_cents: vendu ? Math.round(valeur * (MARGE_TYPE[type] + (AJUST_MARGE[c.code] || 0))) : 0 });
         if (aud) {
           const cle = `${mois}|${c.code}|${genre}|${AGES[ageIdx]}`;
           const a = auditoire.get(cle) || { mois, campagne: c.code, source: c.source, genre, age: AGES[ageIdx], leads: 0, depense_cents: 0, ventes: 0 };
@@ -119,3 +124,6 @@ export const JOURS_SEMAINE = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'S
 export const JOURS_LONGS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 // Campagnes qui coûtent quelque chose (le coût par lead, par vente et le rendement se calculent sur leurs leads seulement)
 export const CAMPAGNES_PAYANTES = new Set(CAMPAGNES.filter((c) => c.budget > 0 || c.fixe).map((c) => c.code));
+
+// Budget mensuel prévu par source, en dollars (fictif ; à remplir par Simon dans l'app une fois branchée)
+export const BUDGET_DEFAUT = { facebook: 10500, google: 10000, site_web: 700, reference: 0, instagram: 1400, autres: 400 };

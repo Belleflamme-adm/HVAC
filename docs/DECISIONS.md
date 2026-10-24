@@ -677,3 +677,10 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Composants communs** : `public/js/bf-dash.js` (tuiles, infobulle, barres, colonnes empilées, anneau, lignes, panneau), partagé avec le tableau des machines. Correction au passage : la carte du tableau des machines gardait les bornes de couleur du premier affichage ; elle suit maintenant les filtres.
 - **À brancher plus tard** : leads de Monday et du CRM (source, campagne, ville, type, résultat) ; dépenses, clics et auditoires par les rapports Facebook et Google Ads (API à vérifier au moment de le faire, accès donnés par Simon) ; ventes par les devis de Mike.
 - **Couleurs** : 6 sources (bleu, orange, vert d'eau, ocre, magenta, violet), validées sur le fond sombre.
+
+## ADR-073 | Marketing : rendement sur la marge et budget prévu par source
+- **Date** : 2026-10-24 | **Statut** : Maquette (données fictives)
+- **Demande** (Simon) : ajouter le rendement sur la marge et un budget prévu par source.
+- **Rendement sur la marge** = marge brute avec installation des ventes issues des campagnes payées / dépense. Nouvelle tuile ; colonnes « Marge $ » et « Rend. marge » au tableau des campagnes ; le classement par source et les pistes se font maintenant sur la marge. Alerte ⚠ sous 3 $ de marge par 1 $ dépensé.
+- **Budget prévu** : un montant mensuel par source, multiplié par le nombre de mois de la période. Tuile « Budget prévu » (part utilisée), barres prévu / dépensé par source (dépassé au-delà de 105 %, sous le budget sous 85 %), courbe du dépensé et du prévu par mois, pistes (dépassement, budget restant sur une source rentable). Le budget est global : comparé aux dépenses de toutes les succursales.
+- **Maquette** : le budget se modifie dans la page et reste dans le navigateur (`bf_budget_marketing`). Dans l'app branchée : table de budgets en base, modifiable par Simon et Mike, avec historique.

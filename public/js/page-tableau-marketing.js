@@ -1,4 +1,4 @@
-// Tableau marketing (ADR-072) : d'où viennent les leads, ce qu'ils coûtent, ce qu'ils rapportent, par source, campagne,
+// Tableau marketing (ADR-072, ADR-073 : rendement sur la marge, budget prévu par source) : d'où viennent les leads, ce qu'ils coûtent, ce qu'ils rapportent, par source, campagne,
 // secteur et auditoire, pour décider où mettre le budget. Données FICTIVES tant que Monday, Facebook et Google ne sont pas branchés.
 // Loi 25 : aucun genre ni âge au dossier d'un lead ; l'auditoire vient des rapports agrégés des plateformes.
 import { initPage } from './bf-page.js?v=0.4.0';
@@ -6,7 +6,7 @@ import { h, remplir } from './bf-dom.js?v=0.4.0';
 import { voitBoard } from './bf-crm.js?v=0.4.0';
 import { creerCarte, chargerMunicipalites, chargerReperes } from './bf-carte.js?v=0.4.0';
 import { SUCCURSALES, moisJusqua, indexVilles } from './bf-ventes-fictives.js?v=0.4.0';
-import { SOURCES, CAMPAGNES, CAMPAGNES_PAYANTES, TYPES_DEMANDE, GENRES, AGES, JOURS_SEMAINE, JOURS_LONGS, marketingFictif } from './bf-marketing-fictif.js?v=0.4.0';
+import { SOURCES, CAMPAGNES, CAMPAGNES_PAYANTES, TYPES_DEMANDE, GENRES, AGES, JOURS_SEMAINE, JOURS_LONGS, BUDGET_DEFAUT, marketingFictif } from './bf-marketing-fictif.js?v=0.4.0';
 import { SEQ, compact, entier, pctTxt, dollars, montrerBulle, cacherBulle, survol, carteGraph, vide, tuile, barres,
   colonnesEmpilees, lignes, anneau, celluleSeq, panneauDash } from './bf-dash.js?v=0.4.0';
 
@@ -30,11 +30,14 @@ function kpi(leads, depenses) {
   const payes = leads.filter((l) => CAMPAGNES_PAYANTES.has(l.campagne));
   const ventesPayees = payes.filter((l) => l.vendu);
   const valeurPayee = ventesPayees.reduce((s, l) => s + l.valeur_cents, 0) / 100;
+  const margePayee = ventesPayees.reduce((s, l) => s + l.marge_cents, 0) / 100;
   return {
     leads: leads.length, depense: dep, visites: leads.filter((l) => l.visite).length, contactes: leads.filter((l) => l.contacte).length,
     ventes: ventes.length, valeur, conv: leads.length ? ventes.length / leads.length : null, payes: payes.length,
     cpl: dep && payes.length ? dep / payes.length : null, cpv: dep && ventesPayees.length ? dep / ventesPayees.length : null,
     rendement: dep ? valeurPayee / dep : null, valeurPayee,
+    // Rendement sur la marge : marge brute (avec installation) des ventes issues des campagnes payées, par 1 $ dépensé
+    rendementMarge: dep ? margePayee / dep : null, margePayee, marge: ventes.reduce((s, l) => s + l.marge_cents, 0) / 100,
     clics: depenses.reduce((s, d) => s + d.clics, 0), impressions: depenses.reduce((s, d) => s + d.impressions, 0),
   };
 }
@@ -51,6 +54,12 @@ if (user) {
     const [geo, reperes] = await Promise.all([chargerMunicipalites(), chargerReperes()]);
     const codeVille = indexVilles(geo);
     const filtres = { periode: '12m', succursale: '', source: '', type: '' };
+    // Budget mensuel prévu par source (recalcul différé : le champ modifié est remplacé par le nouvel affichage). Maquette : gardé dans ce navigateur seulement ; dans l'app branchée, en base.
+    const CLE_BUDGET = 'bf_budget_marketing';
+    let budget = { ...BUDGET_DEFAUT };
+    try { const b = JSON.parse(localStorage.getItem(CLE_BUDGET) || 'null'); if (b) budget = { ...budget, ...b }; } catch { /* stockage indisponible */ }
+    const sauverBudget = () => { try { localStorage.setItem(CLE_BUDGET, JSON.stringify(budget)); } catch { /* stockage indisponible */ } };
+    let editionBudget = false;
     const choix = (nom, libelle, options) => {
       const sel = h('select', { 'aria-label': libelle }, options.map(([v, t]) => h('option', { value: v, selected: filtres[nom] === v }, t)));
       sel.addEventListener('change', () => { filtres[nom] = sel.value; rendre(); });
@@ -121,10 +130,21 @@ if (user) {
       const matrice = parSource.map(({ k }) => typesVus.map((t) => leads.filter((l) => l.source === k && l.type === t).length));
       const maxM = Math.max(1, ...matrice.flat());
 
+      // Budget prévu vs dépensé : par source, toutes succursales (le budget est global)
+      const sourcesBudget = Object.keys(SOURCES).filter((k) => !filtres.source || k === filtres.source);
+      const depGlobal = donnees.depenses.filter((d) => dansP(d) && sourcesBudget.includes(d.source));
+      const parBudget = sourcesBudget.map((k) => ({ k, s: SOURCES[k], prevu: (Number(budget[k]) || 0) * P.mois.length,
+        depense: depGlobal.filter((d) => d.source === k).reduce((t, d) => t + d.depense_cents, 0) / 100 })).filter((x) => x.prevu || x.depense);
+      const prevuTotal = parBudget.reduce((t, x) => t + x.prevu, 0); const depTotal = parBudget.reduce((t, x) => t + x.depense, 0);
+      const budgetMois = mois12.map((m) => sourcesBudget.reduce((t, k) => t + (Number(budget[k]) || 0), 0));
+      const depMois = mois12.map((m) => donnees.depenses.filter((d) => d.mois === m && sourcesBudget.includes(d.source)).reduce((t, d) => t + d.depense_cents, 0) / 100);
+      const etatBudget = (x) => (!x.prevu ? (x.depense ? 'hors' : 'ok') : x.depense / x.prevu > 1.05 ? 'depasse' : x.depense / x.prevu < 0.85 ? 'sous' : 'ok');
+
       remplir(corps,
-        h('div', { class: 'bf-dash__tuiles' },
+        h('div', { class: 'bf-dash__tuiles bf-dash__tuiles--5' },
           tuile('leads', 'Leads reçus', entier(K.leads), delta(K.leads, A.leads), P.compare),
           tuile('porte_voix', 'Dépenses marketing', compact(K.depense), delta(K.depense, A.depense), P.compare, { hausseBonne: false }),
+          tuile('cible', 'Budget prévu', compact(prevuTotal), null, '', { note: prevuTotal ? `${pctTxt(depTotal / prevuTotal)} utilisé (${compact(depTotal)}), toutes succursales` : 'aucun budget inscrit' }),
           tuile('cible', 'Coût par lead', K.depense ? nd(K.cpl, dollars) : 'sans coût', delta(K.cpl, A.cpl), P.compare, { hausseBonne: false, note: `${entier(K.payes)} leads de campagnes payées` }),
           tuile('vente', 'Taux de conversion', nd(K.conv, (v) => pctTxt(v, 1)), K.conv !== null && A.conv !== null ? K.conv - A.conv : null, P.compare,
             { points: true, note: `${entier(K.ventes)} ventes sur ${entier(K.leads)} leads` }),
@@ -132,6 +152,8 @@ if (user) {
           tuile('machines', 'Ventes générées', compact(K.valeur), delta(K.valeur, A.valeur), P.compare),
           tuile('rendement', 'Rendement', K.depense ? rendementTxt(K.rendement) : 'sans coût', delta(K.rendement, A.rendement), P.compare,
             { note: 'de ventes pour chaque 1 $ dépensé' }),
+          tuile('marge', 'Rendement sur la marge', K.depense ? rendementTxt(K.rendementMarge) : 'sans coût', delta(K.rendementMarge, A.rendementMarge), P.compare,
+            { note: `de marge brute pour chaque 1 $ dépensé (${compact(K.margePayee)} de marge)` }),
           tuile('carte', 'Leads sans coût', pctTxt(K.leads ? gratuits / K.leads : 0), null, '', { note: 'références, appels et visites en magasin' })),
 
         h('div', { class: 'bf-dash__rangee bf-dash__rangee--2-1' },
@@ -145,15 +167,43 @@ if (user) {
             ...(payantes.length ? lignes({ mois: mois12, valeurs: cplMois, pasAxe: 20, format: (v) => dollars(v), enPlein: (m) => P.mois.includes(m),
               series: payantes.map((s) => ({ cle: s, libelle: SOURCES[s].libelle, couleur: SOURCES[s].couleur })), aria: 'Coût par lead par mois et par source payante' })
               : [vide('Aucune source payante dans ce filtre.')])),
-          carteGraph('Rendement par source', `${P.libelle} | ventes pour chaque 1 $ dépensé`,
-            barres(parSource.filter((x) => x.K.depense).sort((a, b) => b.K.rendement - a.K.rendement).map(({ s, K: k }) => ({
-              libelle: s.libelle, sous: `${compact(k.depense)} dépensés | ${compact(k.valeurPayee)} de ventes`, valeur: k.rendement, texte: rendementTxt(k.rendement), couleur: s.couleur,
-              bulle: [[nd(k.cpl, dollars), 'par lead'], [nd(k.cpv, dollars), 'par vente'], [nd(k.conv, (v) => pctTxt(v, 1)), 'des leads achètent']] }))),
-            h('p', { class: 'bf-dash__muet' }, 'Calculé sur les leads des campagnes payées. Les références, les appels et les visites en magasin sont « sans coût ».'))),
+          carteGraph('Rendement sur la marge par source', `${P.libelle} | marge brute pour chaque 1 $ dépensé`,
+            barres(parSource.filter((x) => x.K.depense).sort((a, b) => b.K.rendementMarge - a.K.rendementMarge).map(({ s, K: k }) => ({
+              libelle: s.libelle, sous: `${compact(k.depense)} dépensés | ${compact(k.margePayee)} de marge | ventes : ${rendementTxt(k.rendement)} par 1 $`,
+              valeur: k.rendementMarge, texte: rendementTxt(k.rendementMarge), couleur: s.couleur,
+              bulle: [[rendementTxt(k.rendement), 'de ventes par 1 $'], [nd(k.cpl, dollars), 'par lead'], [nd(k.cpv, dollars), 'par vente'], [nd(k.conv, (v) => pctTxt(v, 1)), 'des leads achètent']] }))),
+            h('p', { class: 'bf-dash__muet' }, 'Marge brute avec installation, sur les leads des campagnes payées. Les références, les appels et les visites en magasin sont « sans coût ».'))),
+
+        h('div', { class: 'bf-dash__rangee bf-dash__rangee--1-2' },
+          carteGraph('Budget prévu et dépensé, par source', `${P.libelle} | toutes succursales`,
+            parBudget.length ? h('ol', { class: 'bf-dash__budget' }, parBudget.map((x) => {
+              const e = etatBudget(x); const max = Math.max(x.prevu, x.depense) || 1;
+              const li = h('li', {},
+                h('span', { class: 'bf-dash__barre-libelle' }, h('span', {}, h('span', { class: 'bf-dash__cle', style: `background:${x.s.couleur}` }), x.s.libelle),
+                  h('span', { class: `bf-dash__muet${e === 'depasse' || e === 'hors' ? ' bf-dash__alerte' : ''}` },
+                    x.prevu ? `${compact(x.depense)} sur ${compact(x.prevu)} | ${e === 'depasse' ? '⚠ ' : ''}${pctTxt(x.depense / x.prevu)}${e === 'depasse' ? ' (dépassé)' : e === 'sous' ? ' (sous le budget)' : ''}`
+                      : `${compact(x.depense)} dépensés | ⚠ aucun budget prévu`)),
+                h('span', { class: 'bf-dash__jauge-budget' },
+                  h('span', { class: 'bf-dash__jauge-prevu', style: `width:${(x.prevu / max) * 100}%` }),
+                  h('span', { class: 'bf-dash__jauge-depense', style: `width:${(x.depense / max) * 100}%;background:${x.s.couleur}` })),
+                editionBudget ? h('label', { class: 'bf-dash__saisie' }, h('input', { type: 'number', min: 0, step: 100, value: budget[x.k] || 0, 'aria-label': `Budget mensuel ${x.s.libelle}`,
+                  onchange: (ev) => { budget[x.k] = Math.max(0, Math.round(Number(ev.target.value) || 0)); sauverBudget(); setTimeout(rendre, 0); } }), h('span', {}, '$ / mois')) : null);
+              survol(li, () => [[compact(x.depense), `dépensés, ${x.s.libelle}`], [compact(x.prevu), 'prévus'], [x.prevu ? pctTxt(x.depense / x.prevu) : 'n/d', 'du budget utilisé']]);
+              return li;
+            })) : vide('Aucun budget ni dépense.'),
+            h('div', { class: 'bf-dash__actions' },
+              h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { editionBudget = !editionBudget; rendre(); } }, editionBudget ? 'Terminer' : 'Modifier le budget mensuel'),
+              editionBudget ? h('button', { class: 'bf-dash__bouton', type: 'button', onclick: () => { budget = { ...BUDGET_DEFAUT }; sauverBudget(); rendre(); } }, 'Remettre le budget de départ') : null),
+            h('p', { class: 'bf-dash__muet' }, 'Budget mensuel par source, multiplié par le nombre de mois de la période. Maquette : le budget modifié est gardé dans ce navigateur seulement.')),
+          carteGraph('Dépensé et prévu par mois', `12 derniers mois | ${filtres.source ? SOURCES[filtres.source].libelle : 'toutes les sources'}, toutes succursales`,
+            ...lignes({ mois: mois12, valeurs: { prevu: budgetMois, depense: depMois }, pasAxe: depMois.some((v) => v > 10000) ? 5000 : 1000, format: (v) => compact(v), enPlein: (m) => P.mois.includes(m),
+              series: [{ cle: 'depense', libelle: 'Dépensé', couleur: 'var(--d-m1)' }, { cle: 'prevu', libelle: 'Budget prévu', couleur: '#b6c0d4' }],
+              aria: 'Dépenses et budget prévu par mois',
+              bulleFin: (i) => [[budgetMois[i] ? pctTxt(depMois[i] / budgetMois[i]) : 'n/d', 'du budget du mois']] }))),
 
         carteGraph('Performance par source et par campagne', `${P.libelle} | le tableau pour décider où mettre l'argent`,
           h('div', { class: 'bf-dash__defile' }, h('table', { class: 'bf-dash__table bf-dash__vendeurs' },
-            h('thead', {}, h('tr', {}, ['Source | campagne', 'Dépenses', 'Clics', 'Leads', 'Coût / lead', 'Visites', 'Ventes', 'Conversion', 'Coût / vente', 'Ventes $', 'Rendement']
+            h('thead', {}, h('tr', {}, ['Source | campagne', 'Dépenses', 'Clics', 'Leads', 'Coût / lead', 'Visites', 'Ventes', 'Conversion', 'Coût / vente', 'Ventes $', 'Rend. ventes', 'Marge $', 'Rend. marge']
               .map((t, i) => h('th', { class: i ? 'num' : '' }, t)))),
             h('tbody', {}, parSource.flatMap(({ k, s, K: ks }) => {
               const ligne = (libelle, x, classe, couleur) => h('tr', { class: classe },
@@ -162,11 +212,13 @@ if (user) {
                 h('td', { class: 'num' }, entier(x.leads)), h('td', { class: 'num' }, x.depense ? nd(x.cpl, dollars) : '0 $'),
                 h('td', { class: 'num' }, entier(x.visites)), h('td', { class: 'num' }, entier(x.ventes)), h('td', { class: 'num' }, nd(x.conv, (v) => pctTxt(v, 1))),
                 h('td', { class: 'num' }, x.depense ? nd(x.cpv, dollars) : '0 $'), h('td', { class: 'num' }, compact(x.valeur)),
-                h('td', { class: `num${x.rendement !== null && x.rendement < 10 ? ' bf-dash__alerte' : ''}` }, x.rendement !== null && x.rendement < 10 ? `⚠ ${rendementTxt(x.rendement)}` : rendementTxt(x.rendement)));
+                h('td', { class: 'num' }, rendementTxt(x.rendement)), h('td', { class: 'num' }, compact(x.marge)),
+                h('td', { class: `num${x.rendementMarge !== null && x.rendementMarge < 3 ? ' bf-dash__alerte' : ''}` },
+                  x.rendementMarge !== null && x.rendementMarge < 3 ? `⚠ ${rendementTxt(x.rendementMarge)}` : rendementTxt(x.rendementMarge)));
               const camps = parCampagne.filter((x) => x.c.source === k);
               return [ligne(s.libelle, ks, 'bf-dash__vendeur', s.couleur), ...(camps.length > 1 ? camps.map(({ c, K: kc }) => ligne(`↳ ${c.nom}`, kc, 'bf-dash__territoire')) : [])];
             })))),
-          h('p', { class: 'bf-dash__muet' }, '⚠ = moins de 10 $ de ventes par 1 $ dépensé. Ventes $ = valeur des ventes conclues à partir de ces leads, avant taxes.')),
+          h('p', { class: 'bf-dash__muet' }, '⚠ = moins de 3 $ de marge brute par 1 $ dépensé. Ventes $ = valeur des ventes conclues à partir de ces leads, avant taxes. Marge $ = marge brute avec installation.')),
 
         h('div', { class: 'bf-dash__rangee' },
           carteGraph('Du lead à la vente', `${P.libelle} | où on perd les clients`,
@@ -225,16 +277,22 @@ if (user) {
         const liste = [];
         const payees = parCampagne.filter((x) => x.K.depense > 0 && x.K.leads >= 10 && x.c.cpc > 0);   // publicités Facebook, Google, Instagram
         if (payees.length) {
-          const meilleure = [...payees].sort((a, b) => b.K.rendement - a.K.rendement)[0];
-          const pire = [...payees].sort((a, b) => a.K.rendement - b.K.rendement)[0];
-          liste.push(`Augmenter : « ${meilleure.c.nom} » rapporte ${rendementTxt(meilleure.K.rendement)} par 1 $ (${nd(meilleure.K.cpv, dollars)} par vente).`);
-          if (pire !== meilleure && pire.K.rendement < 15) liste.push(`Réduire ou revoir : « ${pire.c.nom} » ne rapporte que ${rendementTxt(pire.K.rendement)} par 1 $ ; ses leads achètent ${pctTxt(pire.K.conv || 0, 1)} du temps.`);
+          const meilleure = [...payees].sort((a, b) => b.K.rendementMarge - a.K.rendementMarge)[0];
+          const pire = [...payees].sort((a, b) => a.K.rendementMarge - b.K.rendementMarge)[0];
+          liste.push(`Augmenter : « ${meilleure.c.nom} » rapporte ${rendementTxt(meilleure.K.rendementMarge)} de marge par 1 $ (${nd(meilleure.K.cpv, dollars)} par vente).`);
+          if (pire !== meilleure && pire.K.rendementMarge < 5) liste.push(`Réduire ou revoir : « ${pire.c.nom} » ne rapporte que ${rendementTxt(pire.K.rendementMarge)} de marge par 1 $ ; ses leads achètent ${pctTxt(pire.K.conv || 0, 1)} du temps et obtiennent plus de rabais.`);
           const moinsCher = [...payees].sort((a, b) => a.K.cpl - b.K.cpl)[0];
           if (moinsCher !== meilleure) liste.push(`Attention au coût par lead : « ${moinsCher.c.nom} » a les leads les moins chers (${dollars(moinsCher.K.cpl)}), mais ce n'est pas la plus rentable. Juger au coût par vente, pas au coût par lead.`);
         }
         const web = parCampagne.find((x) => x.c.code === 'web-seo');
-        if (web && web.K.rendement && payees.length && web.K.rendement > Math.max(...payees.map((x) => x.K.rendement))) {
-          liste.push(`Le site web rapporte ${rendementTxt(web.K.rendement)} par 1 $ investi dans le référencement et le contenu, mieux que toute publicité. Ses volumes sont petits (${entier(web.K.leads)} leads) : investir dans le contenu à long terme.`);
+        if (web && web.K.rendementMarge && payees.length && web.K.rendementMarge > Math.max(...payees.map((x) => x.K.rendementMarge))) {
+          liste.push(`Le site web rapporte ${rendementTxt(web.K.rendementMarge)} de marge par 1 $ investi dans le référencement et le contenu, mieux que toute publicité. Ses volumes sont petits (${entier(web.K.leads)} leads) : investir dans le contenu à long terme.`);
+        }
+        // Budget : dépassements et budget non utilisé sur une source rentable
+        for (const x of parBudget) {
+          const e = etatBudget(x); const k = parSource.find((p) => p.k === x.k)?.K;
+          if (e === 'depasse') liste.push(`Budget dépassé : ${x.s.libelle} a dépensé ${pctTxt(x.depense / x.prevu)} du budget prévu (${compact(x.depense - x.prevu)} de plus).`);
+          if (e === 'sous' && k?.rendementMarge > 8) liste.push(`Budget non utilisé : ${x.s.libelle} a ${compact(x.prevu - x.depense)} de budget restant et rapporte ${rendementTxt(k.rendementMarge)} de marge par 1 $. Le dépenser vaut probablement la peine.`);
         }
         const secteurs = parSucc.map(({ s, l }) => ({ s, k: kpi(l, []) })).filter((x) => x.k.leads >= 20);
         if (secteurs.length > 1) {
