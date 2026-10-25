@@ -1,5 +1,6 @@
-// Dossier de job LogisVert (ADR-084) : numéro AHRI du système, chaque appareil (marque, modèle, numéro de série)
-// avec la photo de sa plaque et la photo de l'appareil installé. Obligatoire pour TOUTES les jobs, extras ou pas :
+// Dossier de job LogisVert (ADR-084) : chaque appareil (marque, modèle, numéro de série) avec la photo de sa plaque
+// signalétique et la photo de l'appareil installé. Le numéro AHRI est inscrit par Belleflamme, pas par le
+// sous-traitant (ADR-088). Obligatoire pour TOUTES les jobs, extras ou pas :
 // sans dossier complet, pas de facture finale du sous-traitant et pas d'étape « Terminé ».
 // Ces pièces servent à la demande LogisVert (Hydro-Québec) faite avec le client.
 import { api } from './bf-api.js?v=0.4.0';
@@ -14,7 +15,7 @@ async function envoyerPhoto(projet, equipement, categorie, fichiers) {
 }
 
 // zone : conteneur à remplir ; j : la job (Mes jobs) ; modifiable : le sous-traitant, avant sa facture finale
-export function sectionDossier(j, { modifiable, msg, apres = () => {} }) {
+export function sectionDossier(j, { modifiable, belleflamme = false, msg, apres = () => {} }) {
   const zone = h('section', { class: 'bf-dossier', 'aria-label': 'Dossier LogisVert' }, h('p', { class: 'bf-muet' }, 'Chargement du dossier LogisVert…'));
   const recharger = () => charger().then(apres);
   const agir = async (fn, ok) => { try { await fn(); await recharger(); if (ok) message(msg, ok, 'ok'); } catch (e) { message(msg, e.message); } };
@@ -68,21 +69,23 @@ export function sectionDossier(j, { modifiable, msg, apres = () => {} }) {
     const photosDe = (eq, cat) => d.photos.filter((p) => p.equipement_id === eq && p.categorie === cat);
     const retirerPhoto = modifiable ? (p) => agir(() => api.patch('job-dossier', { action: 'retirer_photo', id: p.id }), 'Photo retirée.') : null;
     const zoneForm = h('div');
-    const ahri = h('input', { name: 'ahri', inputmode: 'numeric', value: d.numero_ahri || '', placeholder: 'Ex. 210987654', 'aria-label': 'Numéro de certificat AHRI', disabled: !modifiable, maxlength: 16 });
+    const ahri = h('input', { name: 'ahri', inputmode: 'numeric', value: d.numero_ahri || '', placeholder: 'Ex. 210987654', 'aria-label': 'Numéro de certificat AHRI', maxlength: 16 });
     zone.replaceChildren(...[
       h('div', { class: 'bf-dossier__tete' }, h('h3', {}, 'Dossier LogisVert'),
         d.manques.length ? h('span', { class: 'bf-pastille bf-extra--refuse' }, `${d.manques.length} élément(s) manquant(s)`) : h('span', { class: 'bf-pastille bf-extra--approuve' }, '✓ Dossier complet')),
       d.manques.length ? h('ul', { class: 'bf-dossier__manques' }, d.manques.map((m) => h('li', {}, m))) : null,
       d.manques.length && modifiable ? h('p', { class: 'bf-muet' }, 'Obligatoire pour chaque job : sans dossier complet, pas de facture finale et la job ne peut pas passer à « Terminé ».') : null,
-      h('form', { class: 'bf-dossier__ahri', onsubmit: (e) => { e.preventDefault(); agir(() => api.patch('job-dossier', { action: 'ahri', projet: j.id, numero_ahri: ahri.value }), 'Numéro AHRI enregistré.'); } },
-        h('label', {}, 'Numéro de certificat AHRI du système *', ahri),
-        modifiable ? h('button', { class: 'bf-bouton bf-bouton--discret', type: 'submit' }, 'Enregistrer') : null),
+      // AHRI : Belleflamme seulement (certificat de la combinaison, à partir de la soumission ou de la plaque)
+      belleflamme ? h('form', { class: 'bf-dossier__ahri', onsubmit: (e) => { e.preventDefault(); agir(() => api.patch('job-dossier', { action: 'ahri', projet: j.id, numero_ahri: ahri.value }), 'Numéro AHRI enregistré.'); } },
+        h('label', {}, 'Numéro de certificat AHRI du système (Belleflamme, pour LogisVert)', ahri),
+        h('button', { class: 'bf-bouton bf-bouton--discret', type: 'submit' }, 'Enregistrer'),
+        d.numero_ahri ? null : h('span', { class: 'bf-muet' }, 'À inscrire avant la demande LogisVert')) : null,
       ...d.equipements.map((eq) => h('div', { class: 'bf-dossier__appareil' },
         h('div', { class: 'bf-dossier__appareil-tete' },
           h('div', {}, h('strong', {}, ROLES_APPAREIL[eq.role] || eq.role), ` | ${eq.marque} ${eq.modele}`, h('div', { class: 'bf-muet' }, `N° de série : ${eq.numero_serie}`)),
           modifiable ? h('button', { type: 'button', class: 'bf-lien', onclick: () => { if (confirm(`Retirer ${eq.marque} ${eq.modele} (${eq.numero_serie}) du dossier ?`)) agir(() => api.patch('job-dossier', { action: 'retirer_equipement', id: eq.id }), 'Appareil retiré.'); } }, 'Retirer') : null),
         COMPTES.includes(eq.role) ? h('div', { class: 'bf-dossier__photos' },
-          ...[['plaque', 'Plaque signalétique'], ['installe', 'Appareil installé']].map(([cat, lib]) => {
+          ...[['plaque', 'Plaque signalétique (homologation)'], ['installe', 'Appareil installé']].map(([cat, lib]) => {
             const l = photosDe(eq.id, cat);
             return h('div', { class: `bf-dossier__case${l.length ? '' : ' bf-dossier__case--manque'}` },
               h('span', { class: 'bf-muet' }, `${lib}${l.length ? '' : ' *'}`), l.length ? vignettes(l, { titre: `${eq.modele} | ${lib}`, retirer: retirerPhoto }) : null,

@@ -130,3 +130,10 @@
   - Corps : `{ "lead_ref": "<hvac_lead>", "telephone": "...", "pointage_ref": "<id de la visite chez Mike>", "visite_le": "2026-11-04T13:30:00-05:00" }`, ou `{ "pointage_ref": "...", "annulee": true }`.
   - Envoyé à la création, au déplacement et à l'annulation de la visite.
 - Variables Netlify : `POINTAGE_SYNC_ENABLED=true`, `POINTAGE_WEBHOOK_SECRET` (même valeur chez Mike, saisie par Simon) et `SUPABASE_SERVICE_ROLE_KEY`. Puis mettre le paramètre `visites_pointage_seulement` à true.
+
+## Dépôt reçu dans l'app de Mike (ADR-087) | contrat PROPOSÉ à Mike
+- Migration `20261025000200_depot_recu.sql` : `projets.depot_recu_le`, `depot_montant_cents` et `depot_ref`, la fonction `hvac_depot_recu` (clé serveur seulement) et `projets_macro_v`.
+- **Webhook** : `POST /.netlify/functions/paiement-webhook`, signé comme `pointage-webhook` (en-têtes `X-Belleflamme-Horodatage` et `X-Belleflamme-Signature`).
+  - Corps : `{ "type": "depot", "devis_numero_mike": "120815", "paiement_ref": "<id du paiement chez Mike>", "montant_cents": 394000, "paye_le": "2026-11-02T15:04:00-05:00" }`.
+- Variables Netlify : `PAIEMENT_SYNC_ENABLED=true`, `PAIEMENT_WEBHOOK_SECRET` (même valeur chez Mike) et `SUPABASE_SERVICE_ROLE_KEY`.
+- Migration `20261025000300_ahri_belleflamme.sql` (ADR-088) : `app.dossier_job` sans l'AHRI et `hvac_job_ahri` réservé à Belleflamme.

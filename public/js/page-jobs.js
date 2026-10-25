@@ -163,7 +163,7 @@ if (user) {
           !j.lignes.length ? h('tr', {}, h('td', { colspan: 4, class: 'bf-muet' }, 'Lignes à venir : Belleflamme les inscrit avec le projet.')) : null),
         h('tfoot', {}, h('tr', {}, h('th', { colspan: 3 }, 'Ton installation (avant taxes)'), h('th', { class: 'num' }, formatCents(j.total_cents)))))),
       j.statut === 'attente_paiement' ? h('p', { class: 'bf-muet' }, 'Le dossier LogisVert et la feuille d\'extra s\'ouvrent quand le dépôt du client est reçu.')
-        : [sectionDossier(j, { modifiable: estSt && j.extras_ouverts, msg }), feuilleExtras(j)]);
+        : [sectionDossier(j, { modifiable: estSt && j.extras_ouverts, belleflamme: ['Admin tout', 'Direction', 'Coordonnateur'].includes(user.role), msg }), feuilleExtras(j)]);
   }
 
   async function charger(fournisseur) {

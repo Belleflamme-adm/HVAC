@@ -55,6 +55,7 @@ if (user) {
         p.montant_avant_taxes_cents ? h('strong', {}, formatCents(p.montant_avant_taxes_cents)) : null),
       h('p', { class: 'bf-muet' }, [p.vendeur_nom, p.devis_numero_mike ? `soumission #${p.devis_numero_mike}` : null, p.signe_le ? `signé le ${jour(p.signe_le)}` : null].filter(Boolean).join(' | ')),
       p.installation_prevue_le ? h('p', {}, `Installation : ${jour(p.installation_prevue_le)}`) : null,
+      p.depot_recu_le ? h('p', { class: 'bf-macro__depot' }, `💳 Dépôt reçu le ${jour(p.depot_recu_le)}${p.depot_montant_cents ? ` | ${formatCents(p.depot_montant_cents)}` : ''}`) : null,
       p.sous_traitant_nom ? h('p', { class: 'bf-macro__st' }, `🧰 ${p.sous_traitant_nom}`, p.cout_installation_cents ? ` | install. ${formatCents(p.cout_installation_cents)}` : '') : null,
       p.extras_a_approuver ? h('a', { href: '/extras', class: 'bf-macro__extras' }, `➕ ${p.extras_a_approuver} extra(s) à approuver`) : null,
       p.extras_approuves_cents ? h('p', { class: 'bf-macro__st' }, `Extras approuvés : ${formatCents(p.extras_approuves_cents)}`) : null,

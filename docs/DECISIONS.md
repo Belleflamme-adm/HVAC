@@ -881,3 +881,29 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - le navigateur ne peut ni forger une activité « Pointage », ni changer la référence Pointage d'un lead.
 - **HTML de test** : Pointage est simulé comme branché. Le bouton ouvre une fausse fenêtre Pointage (formulaire de pré-installation Ventilation : date, enregistrer, annuler la visite), et le lead se met à jour seul.
 - **À fixer avec Mike** : le format du webhook (contrat proposé dans `docs/MIGRATION.md`), les paramètres d'URL de Pointage pour transmettre la référence du lead, et ce que son formulaire de pré-installation peut nous renvoyer (par exemple, pour le dossier LogisVert).
+
+## ADR-087 | Dépôt reçu dans l'app de Mike : le projet passe seul à « À céduler »
+- **Date** : 2026-10-25 | **Statut** : Livrée (en local et HTML de test), branchement à faire avec Mike
+- **Demande** (Simon) : quand l'app de Mike reçoit le paiement du dépôt, elle nous l'envoie, et le projet passe du Macro « Signé, attente du dépôt » à « À céduler ».
+- **Fonctionnement** : webhook signé `paiement-webhook` (même signature que Pointage, `lib/signature.js`), puis `hvac_depot_recu` (clé serveur seulement) :
+  - le projet est retrouvé par le numéro de soumission de Mike et passe **automatiquement** à « À céduler ». On note la date, le montant et la référence du paiement ;
+  - avis à la planification (« Dépôt reçu : à céduler ») et au sous-traitant attitré (« Job confirmée » : coordonnées du client et dossier ouverts) ;
+  - un même paiement rejoué ne compte qu'une fois. Seul le type « depot » fait avancer le projet ; les autres paiements sont ignorés ;
+  - si le projet est déjà plus loin : le dépôt est noté, l'étape ne bouge pas. S'il est **annulé** : le dépôt est noté et la planification reçoit un avis (« à vérifier, remboursement ? ») ;
+  - si la soumission est inconnue : refus 404, et Mike réessaie (par exemple, si le paiement arrive avant la signature).
+- **Macro** : la carte affiche « 💳 Dépôt reçu le ... | montant ». La flèche manuelle reste disponible, au besoin et d'ici le branchement.
+- **HTML de test** : bouton « Un dépôt arrive de l'app de Mike » dans la barre de test (dépôt de 40 % du montant, ADR-009, sur le plus ancien projet en attente).
+- **Inactif** tant que `PAIEMENT_SYNC_ENABLED=false` (503).
+- **Correction en passant** : le contrôle de syntaxe automatique couvre maintenant aussi le faux serveur du HTML de test.
+- **Limite connue** : les avis sont créés en base, mais il n'y a pas encore d'écran pour les lire ni d'envoi des courriels et textos (prochain chantier proposé).
+
+## ADR-088 | Le numéro AHRI est inscrit par Belleflamme, pas par le sous-traitant
+- **Date** : 2026-10-25 | **Statut** : Livrée (en local et HTML de test). Remplace la partie AHRI de l'ADR-084.
+- **Demande** (Simon) : le sous-traitant n'inscrit pas le code AHRI. Il prend les photos de la machine et de la plaque d'homologation.
+- **Précision** : le numéro AHRI est le certificat d'une **combinaison** (unité extérieure + intérieure). Il n'est généralement pas imprimé sur la plaque, qui montre le modèle, le numéro de série et souvent le logo ENERGY STAR. Belleflamme l'inscrit à partir de la soumission, du répertoire AHRI ou de la photo de la plaque.
+- **Changements** :
+  - l'AHRI n'est plus exigé dans le dossier du sous-traitant : il ne bloque ni sa facture finale ni l'étape « Terminé » ;
+  - `hvac_job_ahri` est réservé à Simon, Mike et la planification ;
+  - le champ AHRI n'apparaît plus chez le sous-traitant. Chez Belleflamme, il porte la mention « à inscrire avant la demande LogisVert » ;
+  - la case photo s'appelle « Plaque signalétique (homologation) ».
+- **Question ouverte (à Simon)** : le sous-traitant inscrit encore la marque, le modèle et le numéro de série de chaque appareil. Faut-il les lui retirer aussi, et laisser Belleflamme les lire sur la photo de la plaque ?

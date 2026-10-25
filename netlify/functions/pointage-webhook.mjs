@@ -4,17 +4,15 @@
 import { config } from '../../lib/config.js';
 import { json, erreur, methode } from '../../lib/http.js';
 import { creerAccesSysteme } from '../../lib/data/systeme.js';
-import { verifierSignature, normaliserVisite } from '../../lib/modules/pointage.js';
+import { lireSigne } from '../../lib/signature.js';
+import { normaliserVisite } from '../../lib/modules/pointage.js';
 
 export async function handler(event, _context, { systeme } = {}) {
   const refus = methode(event, 'POST');
   if (refus) return refus;
   const cfg = config();
   if (!cfg.pointageSyncEnabled) return erreur(503, 'desactive', 'Synchro Pointage désactivée (POINTAGE_SYNC_ENABLED=false)');
-  const h = Object.fromEntries(Object.entries(event.headers || {}).map(([k, v]) => [k.toLowerCase(), v]));
-  const corpsBrut = event.isBase64Encoded ? Buffer.from(event.body || '', 'base64').toString('utf8') : (event.body || '');
-  const probleme = verifierSignature({ secret: cfg.pointageWebhookSecret, horodatage: h['x-belleflamme-horodatage'],
-    signature: h['x-belleflamme-signature'], corpsBrut });
+  const { corpsBrut, probleme } = lireSigne(event, cfg.pointageWebhookSecret);
   if (probleme) return erreur(401, 'signature', probleme);
   let corps;
   try { corps = JSON.parse(corpsBrut); } catch { return erreur(400, 'json', 'Corps JSON invalide'); }

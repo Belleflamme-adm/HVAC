@@ -49,6 +49,7 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   <button type="button" id="plus5">+5 min</button>
   <button type="button" id="plus30">+30 min</button>
   <button type="button" class="vert" id="arrive">Un lead arrive de Monday</button>
+  <button type="button" class="vert" id="depot">Un dépôt arrive de l'app de Mike</button>
   <button type="button" id="lien-st" hidden>Ouvrir le lien comme le sous-traitant</button>
   <span id="adresse"></span>
   <span class="version">Version __VERSION__ | données fictives, rien n'est enregistré</span>
@@ -119,6 +120,12 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   document.getElementById('plus5').addEventListener('click', () => { S.avancer(5); heure(); recharger(); });
   document.getElementById('plus30').addEventListener('click', () => { S.avancer(30); heure(); recharger(); });
   document.getElementById('arrive').addEventListener('click', () => { const l = S.leadArrive(); heure(); window.__naviguer(`/lead?id=${l.id}`); });
+  // Dépôt simulé (ADR-087) : le plus ancien projet en attente du dépôt passe seul à « À céduler »
+  document.getElementById('depot').addEventListener('click', () => {
+    const r = S.depotRecu();
+    if (!r) { alert('Aucun projet en attente du dépôt dans le Macro.'); return; }
+    window.__naviguer('/macro');
+  });
   // Pointage simulé (ADR-086) : le vrai Pointage est dans l'app de Mike. Ici, une fenêtre imite le formulaire de
   // pré-installation Ventilation ; à l'enregistrement, la visite part comme le ferait le webhook, et le lead se met à jour seul.
   window.__pointageSimule = (url) => {

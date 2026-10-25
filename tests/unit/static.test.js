@@ -65,3 +65,8 @@ test('aucun tiret cadratin dans les textes', () => {
 test('syntaxe valide pour tous les scripts du front', () => {
   for (const f of JS) execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' });
 });
+
+// Même chose pour le faux serveur du HTML de test : une erreur le casse en entier
+test('syntaxe valide pour le faux serveur du HTML de test', () => {
+  for (const f of fichiers('scripts/demo', ['.js'])) execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' });
+});

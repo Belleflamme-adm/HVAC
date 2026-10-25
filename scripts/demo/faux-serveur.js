@@ -424,8 +424,7 @@
   const equipementsDe = (p) => etat.equipements.filter((e) => e.projet_id === p.id && e.actif);
   const photosJobDe = (p) => etat.photosJob.filter((ph) => ph.projet_id === p.id && ph.statut === 'televersee');
   function dossierManques(p) {
-    const m = [];
-    if (!p.numero_ahri) m.push('numéro AHRI du système');
+    const m = [];   // l'AHRI est inscrit par Belleflamme : il n'est pas exigé du sous-traitant (ADR-088)
     const eqs = equipementsDe(p);
     if (!eqs.some((e) => e.role === 'exterieur')) m.push('au moins un appareil extérieur (marque, modèle, numéro de série)');
     if (!eqs.some((e) => ['interieur', 'fournaise'].includes(e.role))) m.push('au moins un appareil intérieur (marque, modèle, numéro de série)');
@@ -785,6 +784,7 @@
       },
       PATCH: (_q, b) => {
         if (b.action === 'ahri') {
+          if (user().sousTraitantId || !['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role)) throw new Erreur(403, 'Le numéro AHRI est inscrit par Belleflamme');
           const p = dossierOuvert(etat.projets.find((y) => y.id === b.projet));
           const n = String(b.numero_ahri || '').replace(/\s/g, '');
           exiger(/^[0-9]{5,12}$/.test(n), 'Numéro AHRI : 5 à 12 chiffres');
@@ -1063,6 +1063,18 @@
           visite_le: p.visite_le, source: 'pointage', pointage_ref: p.pointage_ref }, etat.maintenant, l.assigne_a);
       }
       return { lead_id: l.id, change: true };
+    },
+    // Dépôt reçu dans l'app de Mike (ADR-087) : mêmes règles que hvac_depot_recu. Sans numéro : le plus ancien en attente.
+    depotRecu(p = {}) {
+      const pr = p.devis_numero_mike ? etat.projets.find((x) => x.devis_numero_mike === p.devis_numero_mike)
+        : etat.projets.filter((x) => x.statut === 'attente_paiement').sort((a, b) => a.signe_le.localeCompare(b.signe_le))[0];
+      if (!pr) return null;
+      if (pr.depot_ref && pr.depot_ref === p.paiement_ref) return { projet: pr, change: false };
+      const montant = p.montant_cents ?? (Math.round((pr.montant_avant_taxes_cents || 0) * 0.4) || null);   // dépôt de 40 % (ADR-009)
+      Object.assign(pr, { depot_recu_le: iso(etat.maintenant), depot_montant_cents: montant, depot_ref: p.paiement_ref || `PAY-${Date.now().toString(36)}` });
+      if (pr.statut !== 'attente_paiement') return { projet: pr, change: false };
+      pr.statut = 'a_planifier'; pr.updated_at = iso(etat.maintenant);
+      return { projet: pr, change: true };
     },
     leadPointage: (id) => { const l = etat.leads.find((x) => x.id === id); return l && { id: l.id, nom: l.contact_nom, tel: l.contact_tel, ville: l.ville, visite_le: l.visite_prevue_le, ref: l.visite_pointage_ref }; },
     avancer: (min) => { etat.maintenant += min * M; },

@@ -14,14 +14,18 @@ grant select on t_dj to authenticated;
 
 -- Avant le dépôt : dossier fermé au sous-traitant
 select test.comme('00000000-0000-0000-0000-0000000000c1');
-select test.echec($$select public.hvac_job_ahri((select id from t_dj), '210123456')$$, 'dossier avant le dépôt', 'Dossier fermé');
+select test.echec($$select public.hvac_job_equipement_ajouter((select id from t_dj), '{"role":"exterieur","marque":"M","modele":"X","numero_serie":"S0"}')$$, 'dossier avant le dépôt', 'Dossier fermé');
 select test.comme('00000000-0000-0000-0000-00000000000a');
 update public.projets set statut = 'en_cours' where id = (select id from t_dj);
 
 select test.comme('00000000-0000-0000-0000-0000000000c1');
-select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 3), 'dossier vide : AHRI, extérieur, intérieur');
+select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 2), 'dossier vide : extérieur, intérieur (AHRI non exigé du sous-traitant)');
+select test.echec($$select public.hvac_job_ahri((select id from t_dj), '210987654')$$, 'le sous-traitant n''inscrit pas l''AHRI', 'inscrit par Belleflamme');
+-- Belleflamme inscrit l'AHRI
+select test.comme('00000000-0000-0000-0000-00000000000a');
 select test.echec($$select public.hvac_job_ahri((select id from t_dj), '12-AB')$$, 'AHRI invalide', 'AHRI');
 select public.hvac_job_ahri((select id from t_dj), '210 987 654');
+select test.comme('00000000-0000-0000-0000-0000000000c1');
 create temp table t_ext as select public.hvac_job_equipement_ajouter((select id from t_dj), '{"role":"exterieur","marque":"Mitsubishi","modele":"MXZ-2C20NAHZ","numero_serie":"31u 00123"}') as id;
 grant select on t_ext to authenticated;
 select test.echec($$select public.hvac_job_equipement_ajouter((select id from t_dj), '{"role":"exterieur","marque":"mitsubishi","modele":"X","numero_serie":"31U00123"}')$$,
@@ -63,11 +67,12 @@ select test.ok((select installation_terminee_le is not null from public.projets 
 -- Facture finale : dossier figé ensuite
 select test.comme('00000000-0000-0000-0000-0000000000c1');
 select test.ok((select public.hvac_facture_finale((select id from t_dj)) = 210000), 'facture finale avec dossier complet');
-select test.echec($$select public.hvac_job_ahri((select id from t_dj), '210000000')$$, 'dossier figé après la facture finale', 'figé');
+select test.echec($$select public.hvac_job_equipement_ajouter((select id from t_dj), '{"role":"interieur","marque":"Mitsubishi","modele":"MSZ","numero_serie":"ZZ1"}')$$, 'dossier figé après la facture finale', 'figé');
 
 -- Un vendeur ne touche pas au dossier ; un compte sans employé ne le lit pas
 select test.comme('00000000-0000-0000-0000-00000000000c');
-select test.echec($$select public.hvac_job_ahri((select id from t_dj), '210000000')$$, 'un vendeur ne modifie pas le dossier', 'introuvable');
+select test.echec($$select public.hvac_job_ahri((select id from t_dj), '210000000')$$, 'un vendeur n''inscrit pas l''AHRI', 'inscrit par Belleflamme');
+select test.echec($$select public.hvac_job_equipement_ajouter((select id from t_dj), '{"role":"interieur","marque":"M","modele":"X","numero_serie":"S9"}')$$, 'un vendeur ne modifie pas le dossier', 'introuvable');
 select test.comme('00000000-0000-0000-0000-0000000000d9');
 select test.echec($$select public.hvac_job_dossier((select id from t_dj))$$, 'compte sans employé', 'introuvable');
 select test.echec($$select * from public.hvac_photos_a_purger()$$, 'purge réservée au serveur', 'permission');
