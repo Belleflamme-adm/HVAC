@@ -88,7 +88,8 @@
     else if (a.type === 'perdu') { l.statut = 'perdu'; l.raison_perte = a.note; }
     else if (a.type === 'reouvert') l.statut = l.premier_contact_le ? 'contacte' : 'pris_en_charge';
     else if (['converti', 'perdu'].includes(l.statut)) { /* fermé */ }
-    else if (a.type === 'visite_planifiee') { l.statut = 'inspection_planifiee'; l.visite_prevue_le = a.visite_le; }
+    else if (a.type === 'visite_planifiee') { l.statut = 'inspection_planifiee'; l.visite_prevue_le = a.visite_le; l.visite_pointage_ref = a.pointage_ref || l.visite_pointage_ref || null; }
+    else if (a.type === 'visite_annulee') { l.visite_prevue_le = null; l.visite_pointage_ref = null; if (l.statut === 'inspection_planifiee') l.statut = l.premier_contact_le ? 'contacte' : 'pris_en_charge'; }
     else if (['appel', 'courriel', 'texto'].includes(a.type) && ['nouveau', 'pris_en_charge'].includes(l.statut)) l.statut = 'contacte';
     else if (a.type === 'prise_en_charge' && l.statut === 'nouveau') l.statut = 'pris_en_charge';
   }
@@ -507,6 +508,8 @@
 
   const routes = {
     'session-me': () => ({ token: 'demo', user: user() }),
+    // HTML de test : Pointage simulé comme branché (ADR-086)
+    integrations: { GET: () => ({ pointage: true }) },
     'session-logout': () => ({ ok: true }),
     leads: {
       GET: (q) => {
@@ -543,6 +546,8 @@
     },
     'lead-activite': {
       POST: (q, b) => {
+        exiger(b.type !== 'visite_planifiee', 'La date de visite vient de Pointage : planifie la visite dans Pointage');
+        exiger(!['visite_annulee', 'attribution'].includes(b.type), 'Activité réservée');
         const l = visibles().find((x) => x.id === q.id);
         if (!l) throw new Erreur(403, 'Ce lead est attribué à un autre vendeur');
         exiger(!(b.type === 'visite_planifiee' && !b.visite_le), 'Date de visite requise');
@@ -1045,6 +1050,21 @@
   window.__demoServeur = {
     etat, UTILISATEURS,
     changerUtilisateur: (qui) => { etat.qui = qui; },
+    // Pointage simulé (ADR-086) : mêmes règles que hvac_visite_pointage (webhook signé de l'app de Mike)
+    visitePointage(p) {
+      const l = p.lead_ref ? etat.leads.find((x) => x.id === p.lead_ref) : etat.leads.find((x) => x.visite_pointage_ref === p.pointage_ref);
+      if (!l) throw new Error('Lead introuvable pour cette visite');
+      if (p.annulee) {
+        if (l.visite_pointage_ref !== p.pointage_ref) return { change: false };
+        activite(l, { type: 'visite_annulee', note: 'Visite annulée dans Pointage', source: 'pointage', pointage_ref: p.pointage_ref }, etat.maintenant, l.assigne_a);
+      } else {
+        if (l.visite_pointage_ref === p.pointage_ref && l.visite_prevue_le === p.visite_le) return { change: false };
+        activite(l, { type: 'visite_planifiee', note: l.visite_pointage_ref === p.pointage_ref ? 'Visite déplacée dans Pointage' : 'Visite planifiée dans Pointage',
+          visite_le: p.visite_le, source: 'pointage', pointage_ref: p.pointage_ref }, etat.maintenant, l.assigne_a);
+      }
+      return { lead_id: l.id, change: true };
+    },
+    leadPointage: (id) => { const l = etat.leads.find((x) => x.id === id); return l && { id: l.id, nom: l.contact_nom, tel: l.contact_tel, ville: l.ville, visite_le: l.visite_prevue_le, ref: l.visite_pointage_ref }; },
     avancer: (min) => { etat.maintenant += min * M; },
     leadArrive: () => creerLead({}),
     heure: () => new Date(etat.maintenant),

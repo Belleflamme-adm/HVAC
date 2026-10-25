@@ -611,3 +611,4 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-dossier__photo { padding: 6px 12px; font-size: 14px; justify-self: start; }
 .bf-macro__dossier { font-size: 13px; font-weight: 700; border-radius: 8px; padding: 2px 8px; justify-self: start; text-decoration: none; background: #e3f5ec; color: #11734a; }
 .bf-macro__dossier--manque { background: #fdecec; color: #b4232c; }
+.bf-pastille--pointage { background: #e3ecff; color: #1d47c2; margin-left: 6px; }

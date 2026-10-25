@@ -861,3 +861,23 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - un cadre neuf est créé à chaque page : changer le contenu d'un cadre existant ajoutait, sur certains Android, des entrées d'historique propres au cadre.
   - Testé : 3 tuiles puis Retour × 3, avec et sans rechargement à chaque Retour, et tuiles ouvertes depuis une fenêtre de groupe.
   - Limite : un rechargement remet les données fictives à zéro (rien n'est enregistré dans le HTML de test). La page affichée, elle, est la bonne.
+
+## ADR-086 | La date de visite vient de Pointage, sans double saisie
+- **Date** : 2026-10-25 | **Statut** : Livrée (en local et HTML de test), branchement à faire avec Mike
+- **Demande** (Simon) : la visite est inscrite dans le calendrier Pointage de l'app de Mike, puis faite avec le formulaire de pré-installation Ventilation. La même date doit arriver dans le lead : le vendeur ne l'inscrit pas une deuxième fois. Tout doit être connecté.
+- **Fonctionnement** :
+  - **Fiche du lead** : bouton « 📅 Planifier dans Pointage » (ou « Changer la visite »). Il ouvre Pointage avec la référence du lead, le nom du client, son téléphone et la division (paramètres d'URL à confirmer avec Mike).
+  - **Retour de Pointage** : webhook `pointage-webhook`. La date arrive seule dans le lead : statut « Visite planifiée », date affichée « 📅 reçue de Pointage », journal marqué « Pointage », au nom du vendeur du lead. Elle compte pour la rapidité comme une prise en charge.
+  - **Visite déplacée** dans Pointage : la nouvelle date remplace l'ancienne, retrouvée par la référence Pointage, et les deux restent au journal.
+  - **Visite annulée** : la date disparaît et le statut revient à Contacté ou Pris en charge.
+  - **Lead retrouvé** par sa référence. À défaut, par le téléphone du client, seulement s'il désigne **un seul** lead ouvert. Sinon, c'est refusé avec un message clair.
+  - Un même envoi rejoué ne crée rien en double.
+- **Plus de double saisie** :
+  - quand Pointage est branché (`POINTAGE_SYNC_ENABLED=true` et paramètre `visites_pointage_seulement`), le bouton de saisie manuelle disparaît et la base refuse une date de visite saisie par le vendeur ;
+  - d'ici le branchement, une saisie « temporaire » reste possible pour ne pas bloquer les vendeurs.
+- **Sécurité** :
+  - webhook signé (HMAC-SHA256 avec un secret partagé avec Mike, horodatage refusé après 5 minutes contre le rejeu), inactif tant que le drapeau est à false (503) ;
+  - la fonction de la base n'est exécutable que par la clé serveur ;
+  - le navigateur ne peut ni forger une activité « Pointage », ni changer la référence Pointage d'un lead.
+- **HTML de test** : Pointage est simulé comme branché. Le bouton ouvre une fausse fenêtre Pointage (formulaire de pré-installation Ventilation : date, enregistrer, annuler la visite), et le lead se met à jour seul.
+- **À fixer avec Mike** : le format du webhook (contrat proposé dans `docs/MIGRATION.md`), les paramètres d'URL de Pointage pour transmettre la référence du lead, et ce que son formulaire de pré-installation peut nous renvoyer (par exemple, pour le dossier LogisVert).

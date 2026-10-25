@@ -69,6 +69,7 @@ window.__nav = (u) => parent.__naviguer(String(u));
     const a = e.target.closest && e.target.closest('a[href]');
     if (!a) return;
     const h = a.getAttribute('href');
+    if (a.dataset.pointage) { e.preventDefault(); parent.__pointageSimule(h); return; }   // Pointage simulé (ADR-086)
     if (h.startsWith('/')) { e.preventDefault(); (window.__bfApresFenetre || ((f) => f()))(() => __nav(h)); }
   }, true);
 })();`;

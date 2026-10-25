@@ -115,3 +115,18 @@
 - À la greffe :
   - les appareils et l'AHRI alimentent la section équipements HVAC du Macro de Mike et sa demande de subvention LogisVert (numéros de série, à confirmer) ;
   - `equipements_installes.photo_plaque_id` (table `documents`) n'est pas utilisé : les photos de plaque sont dans `projet_photos`. Arrimer avec la convention de fichiers de Mike.
+
+## Visites de Pointage vers le lead (ADR-086) | contrat PROPOSÉ à Mike
+- Migration `20261025000100_visite_pointage.sql` :
+  - `lead_activites.source` et `pointage_ref` ;
+  - activité `visite_annulee` ;
+  - `leads.visite_pointage_ref` ;
+  - paramètre `visites_pointage_seulement` ;
+  - fonction `hvac_visite_pointage` (clé serveur seulement) ;
+  - vues `leads_v`, `crm_rapidite_v` et `crm_evaluation_v` recréées à l'identique.
+- **Lien vers Pointage** (bouton du lead) : `https://belleflammetime.netlify.app/?hvac_lead=<id du lead>&client=<nom>&tel=<téléphone>&division=Ventilation`. Pointage garde `hvac_lead` avec la visite.
+- **Webhook** : `POST /.netlify/functions/pointage-webhook`
+  - En-têtes : `X-Belleflamme-Horodatage` (secondes Unix) et `X-Belleflamme-Signature: sha256=<hex>`, où la signature est HMAC-SHA256(secret, `horodatage.corps`). Refusé après 5 minutes.
+  - Corps : `{ "lead_ref": "<hvac_lead>", "telephone": "...", "pointage_ref": "<id de la visite chez Mike>", "visite_le": "2026-11-04T13:30:00-05:00" }`, ou `{ "pointage_ref": "...", "annulee": true }`.
+  - Envoyé à la création, au déplacement et à l'annulation de la visite.
+- Variables Netlify : `POINTAGE_SYNC_ENABLED=true`, `POINTAGE_WEBHOOK_SECRET` (même valeur chez Mike, saisie par Simon) et `SUPABASE_SERVICE_ROLE_KEY`. Puis mettre le paramètre `visites_pointage_seulement` à true.

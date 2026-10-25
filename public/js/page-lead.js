@@ -9,6 +9,10 @@ import { formatCents } from './bf-money.js?v=0.4.0';
 import { SOURCES_LEAD, ACTIVITES, RESULTATS, TYPES_DEMANDE, pastilleLead, pastilleType, filigranePerdu, delaiLead, heure, duree, voitBoard } from './bf-crm.js?v=0.4.0';
 
 const URL_POINTAGE = 'https://belleflammetime.netlify.app';   // app de Mike : lien seulement
+// Visite (ADR-086) : planifiée UNE fois dans Pointage (pré-installation Ventilation). Le lien porte la référence du lead ;
+// Pointage la renvoie avec la date, qui arrive seule dans le lead. Paramètres d'URL à confirmer avec Mike.
+const lienPointage = (l) => `${URL_POINTAGE}/?hvac_lead=${encodeURIComponent(l.id)}&client=${encodeURIComponent(l.contact_nom || '')}`
+  + `&tel=${encodeURIComponent(l.contact_tel || '')}&division=Ventilation`;
 
 const user = await initPage();
 if (user) {
@@ -23,6 +27,9 @@ if (user) {
 
   // Formulaire de geste : un seul à la fois, selon le bouton choisi
   const panneau = h('div');
+  // Pointage branché ? Alors la date de visite vient seulement de Pointage (plus de saisie dans le lead)
+  let pointage = false;
+  try { ({ pointage } = await api.get('integrations')); } catch { /* inconnu : saisie temporaire permise */ }
   const PLANIF = ['Admin tout', 'Direction', 'Coordonnateur'];
 
   // Soumission signée par le client (dans l'app de Mike) : Simon, Mike ou la planification l'inscrivent d'ici la greffe
@@ -106,7 +113,8 @@ if (user) {
       h('h2', {}, ACTIVITES[type]),
       resultats ? h('label', {}, 'Résultat', h('select', { name: 'resultat' }, resultats.map((r) => h('option', { value: r }, RESULTATS[r])))) : null,
       type === 'visite_planifiee' ? h('p', { class: 'bf-muet' },
-        'Planifie la visite dans ', h('a', { href: URL_POINTAGE, target: '_blank', rel: 'noopener' }, 'Pointage'), ', puis inscris la date ici.') : null,
+        'Temporaire, tant que Pointage n\'est pas branché à l\'app : planifie la visite dans ', h('a', { href: URL_POINTAGE, target: '_blank', rel: 'noopener' }, 'Pointage'),
+        ', puis inscris la même date ici. Une fois branché, la date arrivera toute seule.') : null,
       type === 'visite_planifiee' ? h('label', {}, 'Date et heure de la visite *', h('input', { type: 'datetime-local', name: 'visite_le', required: true })) : null,
       h('label', {}, type === 'perdu' ? 'Raison de la perte *' : 'Note', h('textarea', { name: 'note', rows: 2, required: type === 'perdu' })),
       h('div', { class: 'bf-actions' },
@@ -137,7 +145,9 @@ if (user) {
         h('button', { class: 'bf-bouton', type: 'button', onclick: () => ouvrir('appel') }, 'Appel'),
         h('button', { class: 'bf-bouton', type: 'button', onclick: () => ouvrir('courriel') }, 'Courriel'),
         h('button', { class: 'bf-bouton', type: 'button', onclick: () => ouvrir('texto') }, 'Texto'),
-        h('button', { class: 'bf-bouton', type: 'button', onclick: () => ouvrir('visite_planifiee') }, 'Visite planifiée'),
+        h('a', { class: 'bf-bouton', href: lienPointage(l), target: '_blank', rel: 'noopener', 'data-pointage': '1' }, l.visite_prevue_le ? '📅 Changer la visite dans Pointage' : '📅 Planifier dans Pointage'),
+        pointage ? null : h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', title: 'Temporaire : tant que Pointage n\'est pas branché',
+          onclick: () => ouvrir('visite_planifiee') }, 'Inscrire la date (temporaire)'),
         h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => ouvrir('note') }, 'Note'),
         h('button', { class: 'bf-bouton bf-bouton--discret', type: 'button', onclick: () => ouvrir('perdu') }, 'Perdu'),
         PLANIF.includes(user.role) ? h('button', { class: 'bf-bouton bf-bouton--signe', type: 'button', onclick: () => ouvrirSigne(l) }, '✓ Soumission signée') : null,
@@ -197,7 +207,8 @@ if (user) {
           h('dt', {}, 'Reçu'), h('dd', {}, heure(l.recu_le)),
           h('dt', {}, 'Vendeur'), h('dd', {}, l.vendeur_nom || 'Non attribué : aucun vendeur qualifié pour ce type'),
           h('dt', {}, 'Rapidité'), h('dd', {}, delaiLead(l) || 'n/d'),
-          l.visite_prevue_le ? h('dt', {}, 'Visite') : null, l.visite_prevue_le ? h('dd', {}, heure(l.visite_prevue_le)) : null),
+          l.visite_prevue_le ? h('dt', {}, 'Visite') : null,
+          l.visite_prevue_le ? h('dd', {}, heure(l.visite_prevue_le), l.visite_pointage_ref ? h('span', { class: 'bf-pastille bf-pastille--pointage', title: `Pointage : ${l.visite_pointage_ref}` }, '📅 reçue de Pointage') : null) : null),
         l.besoin ? h('p', {}, l.besoin) : null),
       msg,
       projet ? h('section', { class: 'bf-carte-section bf-projet-lie' },
@@ -211,7 +222,7 @@ if (user) {
       historiqueComms({ lead_id: l.id }),
       h('h2', {}, 'Journal'),
       h('ol', { class: 'bf-journal' }, [...activites].reverse().map((a) => h('li', {},
-        h('strong', {}, ACTIVITES[a.type] || a.type),
+        h('strong', {}, ACTIVITES[a.type] || a.type), a.source === 'pointage' ? h('span', { class: 'bf-pastille bf-pastille--pointage' }, 'Pointage') : null,
         a.resultat ? ` (${RESULTATS[a.resultat] || a.resultat})` : '',
         h('span', { class: 'bf-muet' }, ` | ${heure(a.fait_le)} | ${duree((new Date(a.fait_le) - new Date(l.recu_le)) / 60000)} après l'arrivée`),
         a.visite_le ? h('div', {}, `Visite : ${heure(a.visite_le)}`) : null,

@@ -11,7 +11,7 @@ export const SOURCES_LEAD = {
 };
 export const ACTIVITES = {
   attribution: 'Attribué', prise_en_charge: 'Pris en charge', appel: 'Appel', courriel: 'Courriel', texto: 'Texto',
-  note: 'Note', visite_planifiee: 'Visite planifiée', perdu: 'Perdu', reouvert: 'Réouvert', vendu: 'Vendu (soumission signée)',
+  note: 'Note', visite_planifiee: 'Visite planifiée', perdu: 'Perdu', reouvert: 'Réouvert', vendu: 'Vendu (soumission signée)', visite_annulee: 'Visite annulée',
 };
 // Types de demande : chaque vendeur est qualifié pour certains types (ADR-058)
 export const TYPES_DEMANDE = { mural_simple: 'Murale simple', mural_multi: 'Murale multi', central: 'Système central', bienergie: 'Biénergie' };

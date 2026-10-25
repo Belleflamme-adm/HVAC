@@ -19,6 +19,19 @@ body { background: var(--bg); color: var(--ink); font: 14px/1.4 "Segoe UI", Robo
 .test .version { margin-left: auto; font-size: 12px; opacity: .8; }
 #adresse { font-size: 12px; opacity: .8; }
 iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; }
+#pointage-sim { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; z-index: 50; padding: 16px; }
+#pointage-sim .ps-fen { background: #fff; color: #14201a; border-radius: 14px; width: min(420px, 100%); overflow: hidden; font-family: system-ui, sans-serif; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+#pointage-sim .ps-barre { background: #1d47c2; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+#pointage-sim .ps-barre span { font-size: 12px; opacity: .85; text-transform: uppercase; letter-spacing: .05em; }
+#pointage-sim .ps-corps { padding: 14px; display: grid; gap: 10px; }
+#pointage-sim .ps-titre { font-weight: 700; margin: 0; }
+#pointage-sim label { display: grid; gap: 4px; font-weight: 600; }
+#pointage-sim input { font: inherit; padding: 8px; border: 1px solid #c9d2cc; border-radius: 8px; }
+#pointage-sim .ps-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+#pointage-sim button { font: inherit; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 1px solid #1d47c2; background: #fff; color: #1d47c2; cursor: pointer; }
+#pointage-sim .ps-ok { background: #1d47c2; color: #fff; }
+#pointage-sim .ps-annuler-visite { border-color: #b4232c; color: #b4232c; }
+#pointage-sim .ps-note { font-size: 13px; color: #56635b; margin: 0; }
 </style>
 
 <div class="test" role="region" aria-label="Contrôles de test">
@@ -106,6 +119,42 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   document.getElementById('plus5').addEventListener('click', () => { S.avancer(5); heure(); recharger(); });
   document.getElementById('plus30').addEventListener('click', () => { S.avancer(30); heure(); recharger(); });
   document.getElementById('arrive').addEventListener('click', () => { const l = S.leadArrive(); heure(); window.__naviguer(`/lead?id=${l.id}`); });
+  // Pointage simulé (ADR-086) : le vrai Pointage est dans l'app de Mike. Ici, une fenêtre imite le formulaire de
+  // pré-installation Ventilation ; à l'enregistrement, la visite part comme le ferait le webhook, et le lead se met à jour seul.
+  window.__pointageSimule = (url) => {
+    const ref = new URL(url).searchParams.get('hvac_lead');
+    const l = S.leadPointage(ref);
+    if (!l) return;
+    document.getElementById('pointage-sim')?.remove();
+    const fond = document.createElement('div');
+    fond.id = 'pointage-sim';
+    fond.innerHTML = `<div class="ps-fen" role="dialog" aria-modal="true" aria-label="Pointage (simulation)">
+      <div class="ps-barre"><strong>Pointage | app de Mike</strong><span>simulation</span></div>
+      <div class="ps-corps">
+        <p class="ps-titre">Formulaire de pré-installation | Ventilation</p>
+        <p>Client : <strong></strong><br><span class="ps-tel"></span></p>
+        <label>Date et heure de la visite<input type="datetime-local" required></label>
+        <div class="ps-actions"><button type="button" class="ps-ok">Enregistrer dans Pointage</button>
+          ${l.ref ? '<button type="button" class="ps-annuler-visite">Annuler la visite</button>' : ''}
+          <button type="button" class="ps-fermer">Fermer</button></div>
+        <p class="ps-note">Dans la vraie app, ceci se fait dans Pointage. La date arrive ensuite toute seule dans le lead.</p>
+      </div></div>`;
+    fond.querySelector('.ps-corps strong').textContent = l.nom || 'Client';
+    fond.querySelector('.ps-tel').textContent = [l.tel, l.ville].filter(Boolean).join(' | ');
+    const champ = fond.querySelector('input');
+    const pad = (n) => String(n).padStart(2, '0');
+    const d = l.visite_le ? new Date(l.visite_le) : new Date(S.heure().getTime() + 2 * 864e5);
+    if (!l.visite_le) d.setHours(10, 0, 0, 0);
+    champ.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const fermer = () => fond.remove();
+    const envoyer = (p) => { try { S.visitePointage(p); } catch (e) { alert(e.message); return; } fermer(); recharger(); };
+    fond.querySelector('.ps-fermer').onclick = fermer;
+    fond.querySelector('.ps-ok').onclick = () => { if (!champ.value) return; envoyer({ lead_ref: l.id, pointage_ref: l.ref || `PI-${Date.now().toString(36)}`, visite_le: new Date(champ.value).toISOString() }); };
+    const ann = fond.querySelector('.ps-annuler-visite');
+    if (ann) ann.onclick = () => envoyer({ pointage_ref: l.ref, annulee: true });
+    document.body.append(fond);
+    champ.focus();
+  };
   // Lien direct par utilisateur : …#simon, #marc, #sophie, #karim, #clim
   const depart = (location.hash || '').slice(1);
   if (S.UTILISATEURS[depart]) { S.changerUtilisateur(depart); qui.value = depart; }
