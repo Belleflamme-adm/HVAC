@@ -18,6 +18,15 @@ body { background: var(--bg); color: var(--ink); font: 14px/1.4 "Segoe UI", Robo
 .test .heure { font-variant-numeric: tabular-nums; font-weight: 700; }
 .test .version { margin-left: auto; font-size: 12px; opacity: .8; }
 #adresse { font-size: 12px; opacity: .8; }
+/* Barre réduite quand on défile dans l'app : une seule ligne (titre, utilisateur, bouton pour déplier) */
+.test { transition: padding .15s; }
+.test .deplier { display: none; }
+.test.reduite { padding-block: 4px; gap: 6px 10px; flex-wrap: nowrap; }
+.test.reduite > :not(.toujours) { display: none; }
+.test.reduite .deplier { display: inline-block; white-space: nowrap; flex: none; padding: 2px 10px; }
+.test.reduite .qui-texte { display: none; }
+.test.reduite select { padding: 2px 8px; max-width: 58vw; text-overflow: ellipsis; }
+.test.reduite strong { font-size: 12px; white-space: nowrap; }
 iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; }
 #pointage-sim { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; z-index: 50; padding: 16px; }
 #pointage-sim .ps-fen { background: #fff; color: #14201a; border-radius: 14px; width: min(420px, 100%); overflow: hidden; font-family: system-ui, sans-serif; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
@@ -35,8 +44,8 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
 </style>
 
 <div class="test" role="region" aria-label="Contrôles de test">
-  <strong>HTML DE TEST</strong>
-  <label for="qui">Connecté comme
+  <strong class="toujours">HTML DE TEST</strong>
+  <label for="qui" class="toujours"><span class="qui-texte">Connecté comme</span>
     <select id="qui">
       <option value="simon">Simon Cardinal | Admin tout (board principal)</option>
       <option value="marc">Marc | Vendeur (murale simple et multi)</option>
@@ -53,6 +62,7 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   <button type="button" id="lien-st" hidden>Ouvrir le lien comme le sous-traitant</button>
   <span id="adresse"></span>
   <span class="version">Version __VERSION__ | données fictives, rien n'est enregistré</span>
+  <button type="button" class="deplier toujours" id="deplier" aria-expanded="false" title="Afficher les contrôles de test">▾ Test</button>
 </div>
 <iframe id="app" title="Application HVAC"></iframe>
 
@@ -72,6 +82,7 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
     }
   } catch (e) { /* sans carte */ }
   window.__demoCourant = { path: '/', search: '', hash: '' };
+  let dernierY = 0;   // dernière position de défilement de la page (barre de test réduite)
   // Historique (flèche Retour d'Android, bouton Précédent) : chaque changement de page s'inscrit dans l'historique
   // du navigateur, sans changer l'adresse ; Retour réaffiche la page d'avant, un pas à la fois.
   // mode : 'ajouter' | 'remplacer' | 'aucun'. Chaque étape garde sa page ET l'utilisateur simulé : si l'afficheur
@@ -108,6 +119,7 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
       <h1>Page en veille</h1><p>« ${u.pathname.replace(/[<>&]/g, '')} » n'est pas dans le HTML de test (module de l'app de Mike).</p>
       <p><a href="#" onclick="parent.__naviguer('/');return false">Retour à l'accueil</a></p></body>`;
     inscrire(`${u.pathname}${u.search}${u.hash}`, mode);
+    dernierY = 0;
     afficher(html);
   };
   const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search + (window.__demoCourant.hash || ''), 'remplacer');
@@ -120,6 +132,19 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   document.getElementById('plus5').addEventListener('click', () => { S.avancer(5); heure(); recharger(); });
   document.getElementById('plus30').addEventListener('click', () => { S.avancer(30); heure(); recharger(); });
   document.getElementById('arrive').addEventListener('click', () => { const l = S.leadArrive(); heure(); window.__naviguer(`/lead?id=${l.id}`); });
+  // Barre de test réduite pendant qu'on défile dans l'app ; dépliée en revenant en haut ou avec « ▾ Test »
+  const barre = document.querySelector('.test');
+  const deplier = document.getElementById('deplier');
+  const reduire = (oui) => { barre.classList.toggle('reduite', oui); deplier.setAttribute('aria-expanded', String(!oui)); };
+  // On réduit seulement quand on DESCEND (le cadre qui change de taille en dépliant ne compte pas comme un défilement)
+  let ignorerJusqua = 0;   // après « ▾ Test », le navigateur réajuste la page : ce n'est pas l'utilisateur qui défile
+  window.__defilement = (y) => {
+    if (Date.now() < ignorerJusqua) { dernierY = y; return; }
+    if (y < 5) reduire(false);
+    else if (y > 40 && y - dernierY > 8) reduire(true);
+    dernierY = y;
+  };
+  deplier.addEventListener('click', () => { ignorerJusqua = Date.now() + 900; reduire(false); });
   // Dépôt simulé (ADR-087) : le plus ancien projet en attente du dépôt passe seul à « À céduler »
   document.getElementById('depot').addEventListener('click', () => {
     const r = S.depotRecu();

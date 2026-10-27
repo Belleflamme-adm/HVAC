@@ -64,6 +64,8 @@ window.__nav = (u) => parent.__naviguer(String(u));
     }
     return vraiFetch(url, init);
   };
+  // Défilement de la page : la barre de test se réduit (coquille)
+  window.addEventListener('scroll', () => { try { parent.__defilement && parent.__defilement(window.scrollY); } catch (e) {} }, { passive: true });
   try { if (navigator.serviceWorker) navigator.serviceWorker.register = () => Promise.resolve(); } catch (e) {}
   document.addEventListener('click', (e) => {
     const a = e.target.closest && e.target.closest('a[href]');

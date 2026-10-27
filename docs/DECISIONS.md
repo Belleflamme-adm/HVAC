@@ -907,3 +907,8 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - le champ AHRI n'apparaît plus chez le sous-traitant. Chez Belleflamme, il porte la mention « à inscrire avant la demande LogisVert » ;
   - la case photo s'appelle « Plaque signalétique (homologation) ».
 - **Question ouverte (à Simon)** : le sous-traitant inscrit encore la marque, le modèle et le numéro de série de chaque appareil. Faut-il les lui retirer aussi, et laisser Belleflamme les lire sur la photo de la plaque ?
+
+## ADR-089 | Barre « HTML DE TEST » réduite quand on défile
+- **Date** : 2026-10-27 | **Statut** : Livrée (HTML de test seulement, l'app n'a pas cette barre)
+- **Demande** (Simon, sur téléphone) : la barre de test prend trop de place ; elle doit se réduire quand on défile.
+- **Fonctionnement** : dès qu'on descend dans la page, la barre jaune passe à une seule ligne (« HTML DE TEST », l'utilisateur simulé, bouton « ▾ Test »). Elle se déplie en revenant en haut de la page, ou avec « ▾ Test ». Seule une vraie descente la réduit : les réajustements du navigateur (cadre qui change de taille) sont ignorés.
