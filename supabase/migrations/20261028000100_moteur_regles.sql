@@ -683,8 +683,8 @@ update public.succursales set lien_avis_google = 'https://share.google/Uxc4mQUVV
 update public.succursales set lien_avis_google = 'https://share.google/gGKH35om5NjXuPDzG' where code = 'ST';
 -- Fiche « Le Groupe Belleflamme Outaouais » (fournie par Simon le 28 oct. 2026) : Gatineau. Lien de partage, même remarque.
 update public.succursales set lien_avis_google = 'https://share.google/fsydVHASs2yHY1rvr' where code = 'GA';
--- Fiche « Le Groupe Belleflamme Centre-du-Québec » (fournie par Simon le 28 oct. 2026) : Drummondville. Lien de partage, même remarque.
-update public.succursales set lien_avis_google = 'https://share.google/e5Zs4fPXfuCQDxcsn' where code = 'DR';
+-- Fiche « Belleflamme Centre du Québec (anciennement La Maison du Foyer) » (fournie par Simon le 28 oct. 2026) : Drummondville. Lien de partage, même remarque.
+update public.succursales set lien_avis_google = 'https://share.google/yOLFNTtIS7zmsoA3h' where code = 'DR';
 
 insert into public.parametres (cle, valeur, description) values
   ('envois_reels', 'false', 'false : textos et courriels automatiques simulés (historique du client). true à la greffe : envoyés par l''app de Mike (ADR-090).')
