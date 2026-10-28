@@ -366,7 +366,7 @@
   ];
   Object.assign(etat, { regles: REGLES_DEMO.map((r) => ({ id: `r-${r.code}`, actif: true, updated_at: iso(etat.maintenant), ...r })),
     executions: [], journal: [], taches: [], notifs: [], consent: [], desab: [], avisDemandes: [], moteurActif: false,
-    heures: {}, liensAvis: { RO: 'https://share.google/Uxc4mQUVVAVHzIjUS', ST: 'https://share.google/gGKH35om5NjXuPDzG', GA: 'https://share.google/fsydVHASs2yHY1rvr' } });
+    heures: {}, liensAvis: { RO: 'https://share.google/Uxc4mQUVVAVHzIjUS', ST: 'https://share.google/gGKH35om5NjXuPDzG', GA: 'https://share.google/fsydVHASs2yHY1rvr', DR: 'https://share.google/e5Zs4fPXfuCQDxcsn' } });
   // Heures de Simon (28 oct. 2026) : lun-mer 9 h-17 h, jeu-ven 9 h-19 h, sam 10 h-16 h
   for (const c of ['HO', 'RO', 'ST', 'GA', 'DR']) etat.heures[c] = { 1: ['09:00', '17:00'], 2: ['09:00', '17:00'], 3: ['09:00', '17:00'], 4: ['09:00', '19:00'], 5: ['09:00', '19:00'], 6: ['10:00', '16:00'] };
   const NOMS_SUCC = { HO: 'Saint-Jérôme', RO: 'Rosemère', ST: 'Saint-Sauveur', GA: 'Gatineau', DR: 'Drummondville' };
