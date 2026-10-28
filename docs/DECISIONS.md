@@ -955,3 +955,4 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - les **liens d'avis Google** ;
   - les **textes** des messages.
 - **Heures confirmées par Simon (28 oct. 2026)**, toutes les succursales : lundi à mercredi 9 h à 17 h, jeudi et vendredi 9 h à 19 h, samedi 10 h à 16 h, dimanche fermé. Une succursale différente se règle dans la page Automatisations.
+- **Lien d'avis Google (28 oct. 2026)** : la fiche « Le Groupe Belleflamme Rive-Nord » est associée à **Rosemère**. C'est un lien de partage de la fiche, pas le lien direct « écrire un avis » : à remplacer dès que possible (Google Business Profile, « Demander des avis »). Les autres succursales n'ont pas encore de lien : le moteur saute alors le texto et le courriel d'avis, et le journal l'indique (jamais de message avec un lien vide).

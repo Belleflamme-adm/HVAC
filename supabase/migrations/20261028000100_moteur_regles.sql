@@ -382,6 +382,8 @@ begin
   elsif e->>'type' in ('sms','courriel') then
     dest := case when e->>'type' = 'sms' then v->>'telephone' else v->>'courriel' end;
     if dest is null then resultat := 'saute'; detail := 'aucune coordonnée pour ' || (e->>'type'); return; end if;
+    if position('{lien_avis}' in e->>'texte') > 0 and coalesce(v->>'lien_avis', '') = '' then
+      resultat := 'saute'; detail := 'lien d''avis Google manquant pour la succursale ' || coalesce(v->>'succursale', ''); return; end if;
     if r.commercial and not app.peut_envoyer_commercial(v->>'telephone', v->>'courriel', case when e->>'type' = 'sms' then 'sms' else 'courriel' end) then
       resultat := 'saute'; detail := 'consentement absent ou retiré (LCAP)'; return; end if;
     t := app.rendre(e->>'texte', v);
@@ -674,6 +676,10 @@ revoke all on public.regles_suivi_v from anon;
 -- ---------------------------------------------------------------------------
 -- 7. Règles de départ (textes modifiables dans la page Automatisations)
 -- ---------------------------------------------------------------------------
+-- Lien de la fiche Google « Le Groupe Belleflamme Rive-Nord » (fourni par Simon le 28 oct. 2026), associé à Rosemère.
+-- Lien de PARTAGE de la fiche : à remplacer par le lien direct « écrire un avis » (Google Business Profile, « Demander des avis »).
+update public.succursales set lien_avis_google = 'https://share.google/Uxc4mQUVVAVHzIjUS' where code = 'RO';
+
 insert into public.parametres (cle, valeur, description) values
   ('envois_reels', 'false', 'false : textos et courriels automatiques simulés (historique du client). true à la greffe : envoyés par l''app de Mike (ADR-090).')
 on conflict (cle) do nothing;

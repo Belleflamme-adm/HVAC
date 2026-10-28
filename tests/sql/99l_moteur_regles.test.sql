@@ -86,6 +86,7 @@ select test.ok((select count(*) = 1 from public.desabonnements where tel_e164 = 
 select test.ok(not app.peut_envoyer_commercial('+14505550101', null, 'sms'), 'plus de texto commercial après STOP');
 select test.ok(app.peut_envoyer_commercial(null, 'line@exemple.invalid', 'courriel'), 'le courriel reste permis (consentement tacite)');
 
+select test.ok((select lien_avis_google = 'https://share.google/Uxc4mQUVVAVHzIjUS' from public.succursales where code = 'RO'), 'lien d''avis de Rosemère (Rive-Nord)');
 -- 6. Projet terminé : demande d'avis 2 jours plus tard, une fois par 12 mois ; consentement tacite d'achat 2 ans
 update public.succursales set lien_avis_google = 'https://g.page/r/belleflamme-rosemere/review' where code = 'RO';
 insert into public.leads (id, succursale_code, source, contact_nom, contact_tel, contact_courriel, type_demande) values
@@ -112,6 +113,23 @@ select test.ok((select count(*) = 2 from public.communications c join public.pro
 select test.ok((select count(*) = 1 from public.communications c join public.projets p on p.client_id = c.client_id
                   where p.id = (select id from t_pr) and c.canal = 'texto' and c.contenu like '%STOP pour vous désabonner.'), 'message commercial : mention de désabonnement');
 select test.ok((select count(*) = 1 from public.avis_demandes where projet_id = (select id from t_pr)), 'demande d''avis notée');
+
+-- Sans lien d'avis pour la succursale : texto et courriel sautés (pas de message avec un lien vide)
+update public.succursales set lien_avis_google = null where code = 'GA';
+insert into public.leads (id, succursale_code, source, contact_nom, contact_tel, contact_courriel) values
+  ('1e000000-0000-0000-0000-000000000104', 'GA', 'google', 'Rita Lalonde', '819-555-0104', 'rita@exemple.invalid');
+set role authenticated;
+select test.comme('00000000-0000-0000-0000-00000000000a');
+create temp table t_ga as select public.hvac_projet_signe('{"lead_id":"1e000000-0000-0000-0000-000000000104","devis_numero_mike":"121502"}') as id;
+reset role;
+update public.projets set statut = 'termine' where id = (select id from t_ga);
+set role service_role; select test.executer(); reset role;
+select test.echu_projet((select id from t_ga), 'avis_google');
+set role service_role; select test.executer(); reset role;
+select test.ok((select count(*) = 0 from public.communications c join public.projets p on p.client_id = c.client_id where p.id = (select id from t_ga) and c.automatique),
+               'Gatineau sans lien d''avis : aucun message');
+select test.ok((select count(*) = 2 from public.execution_journal j join public.executions x on x.id = j.execution_id
+                 where x.projet_id = (select id from t_ga) and j.resultat = 'saute' and j.detail like 'lien d''avis Google manquant%'), 'journal : lien manquant');
 
 -- 7. Subvention : chaque étape envoie un texto
 set role authenticated;
