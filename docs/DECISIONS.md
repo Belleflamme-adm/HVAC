@@ -959,3 +959,4 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Lien d'avis Google** : la fiche « Le Groupe BelleFlamme Laurentides » est associée à **Saint-Sauveur** (confirmé par Simon). Lien de partage aussi, à remplacer par le lien direct « écrire un avis ».
 - **Lien d'avis Google** : la fiche « Le Groupe Belleflamme Outaouais » est associée à **Gatineau**. Lien de partage aussi.
 - **Lien d'avis Google** : la fiche « Belleflamme Centre du Québec (anciennement La Maison du Foyer) » est associée à **Drummondville** (`share.google/yOLFNTtIS7zmsoA3h`). Le lien `e5Zs4fPXfuCQDxcsn`, d'abord collé sous le nom « Outaouais », n'est plus utilisé : à confirmer par Simon (deuxième fiche Outaouais ?). Lien de partage aussi. Reste **Saint-Jérôme**.
+- **Lien d'avis Google** : Saint-Jérôme (`share.google/mKkac5EbPj9Emea6i`). Les 5 succursales ont maintenant un lien (tous des liens de partage de fiche, à remplacer par les liens directs « écrire un avis »).
