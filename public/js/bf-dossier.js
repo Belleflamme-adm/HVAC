@@ -1,5 +1,5 @@
 // Dossier de job LogisVert (ADR-084) : chaque appareil (marque, modèle, numéro de série) avec la photo de sa plaque
-// signalétique et la photo de l'appareil installé. Le numéro AHRI est inscrit par Belleflamme, pas par le
+// signalétique et la photo de l'appareil installé, plus les photos des lignes et du drain de la job (ADR-093). Le numéro AHRI est inscrit par Belleflamme, pas par le
 // sous-traitant (ADR-088). Obligatoire pour TOUTES les jobs, extras ou pas :
 // sans dossier complet, pas de facture finale du sous-traitant et pas d'étape « Terminé ».
 // Ces pièces servent à la demande LogisVert (Hydro-Québec) faite avec le client.
@@ -7,6 +7,7 @@ import { api } from './bf-api.js?v=0.4.0';
 import { h, message } from './bf-dom.js?v=0.4.0';
 import { compresserImage, vignettes } from './bf-photo.js?v=0.4.0';
 
+const PHOTOS_JOB = [['lignes', 'Lignes de réfrigérant'], ['drain', 'Drain de condensat']];
 export const ROLES_APPAREIL = { exterieur: 'Unité extérieure', interieur: 'Unité intérieure (tête, serpentin)', fournaise: 'Fournaise', autre: 'Autre' };
 const COMPTES = ['exterieur', 'interieur', 'fournaise'];
 
@@ -96,6 +97,14 @@ export function sectionDossier(j, { modifiable, belleflamme = false, msg, apres 
               h('span', { class: 'bf-muet' }, `${lib}${l.length ? '' : ' *'}`), l.length ? vignettes(l, { titre: `${eq.modele} | ${lib}`, retirer: retirerPhoto }) : null,
               modifiable ? champPhoto(eq.id, cat, l.length ? 'Ajouter' : lib) : (l.length ? null : h('span', { class: 'bf-jobs__raison' }, 'Manquante')));
           })) : null)),
+      // Lignes et drain : photos de la job entière, obligatoires (ADR-093)
+      h('div', { class: 'bf-dossier__appareil' }, h('div', { class: 'bf-dossier__appareil-tete' }, h('strong', {}, 'Photos de l\'installation')),
+        h('div', { class: 'bf-dossier__photos' }, ...PHOTOS_JOB.map(([cat, lib]) => {
+          const l = d.photos.filter((p) => !p.equipement_id && p.categorie === cat);
+          return h('div', { class: `bf-dossier__case${l.length ? '' : ' bf-dossier__case--manque'}` },
+            h('span', { class: 'bf-muet' }, `${lib}${l.length ? '' : ' *'}`), l.length ? vignettes(l, { titre: lib, retirer: retirerPhoto }) : null,
+            modifiable ? champPhoto(null, cat, l.length ? 'Ajouter' : lib) : (l.length ? null : h('span', { class: 'bf-jobs__raison' }, 'Manquante')));
+        }))),
       d.purgees ? h('p', { class: 'bf-muet' }, `${d.purgees} photo(s) purgée(s) après 5 ans (Loi 25).`) : null,
       modifiable ? h('div', { class: 'bf-actions' }, h('button', { type: 'button', class: 'bf-bouton bf-bouton--discret', onclick: () => { if (!zoneForm.firstChild) zoneForm.append(formAppareil()); } }, '+ Appareil installé')) : null,
       zoneForm].filter(Boolean));   // replaceChildren afficherait « null »

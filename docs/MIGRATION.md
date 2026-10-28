@@ -165,3 +165,7 @@
   4. la mention « Payé », une fois le solde réglé.
 - **Webhook paiement** (`paiement-webhook`, même signature) : `{ "type": "facture_payee", "devis_numero_mike": "120815", "paiement_ref": "...", "facture_numero_mike": "...", "paye_le": "..." }`.
 - **À la greffe, idéalement** : la facture de Mike lit directement ces champs. La confirmation humaine « j'ai vu les 4 mentions » pourra alors devenir automatique, si Mike nous envoie le PDF ou les champs imprimés.
+
+## Photos des lignes et du drain (ADR-093)
+- Migration `20261028000300_photos_lignes_drain.sql` : catégories `lignes` et `drain` dans `projet_photos` (sans appareil), `app.dossier_job` et `hvac_job_photo_preparer` redéfinies.
+- Rien à faire chez Mike, sauf s'il reprend le dossier de job : ces deux photos font partie du dossier obligatoire.

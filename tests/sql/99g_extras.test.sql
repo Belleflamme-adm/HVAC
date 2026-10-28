@@ -23,6 +23,9 @@ begin
   insert into public.projet_photos (projet_id, equipement_id, categorie, chemin, type_mime, taille_octets, statut, ajoute_par_auth)
   select p, e, cat, format('%s/%s.jpg', p, gen_random_uuid()), 'image/jpeg', 1000, 'televersee', '00000000-0000-0000-0000-00000000000a'
     from unnest(array[e1, e2]) e, unnest(array['plaque','installe']) cat;
+  insert into public.projet_photos (projet_id, categorie, chemin, type_mime, taille_octets, statut, ajoute_par_auth)
+  select p, cat, format('%s/%s.jpg', p, gen_random_uuid()), 'image/jpeg', 1000, 'televersee', '00000000-0000-0000-0000-00000000000a'
+    from unnest(array['lignes','drain']) cat;
 end $f$;
 grant execute on function test.completer_dossier(uuid) to authenticated;
 set role authenticated;

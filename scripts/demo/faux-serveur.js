@@ -677,6 +677,9 @@
       if (!a('plaque')) m.push(`photo de la plaque : ${e.modele} ${e.numero_serie}`);
       if (!a('installe')) m.push(`photo de l'appareil installé : ${e.modele} ${e.numero_serie}`);
     }
+    const job = (cat) => etat.photosJob.some((ph) => ph.projet_id === p.id && ph.categorie === cat && ['televersee', 'purgee'].includes(ph.statut));
+    if (!job('lignes')) m.push('photo des lignes de réfrigérant');   // ADR-093
+    if (!job('drain')) m.push('photo du drain de condensat');
     return m;
   }
   function ajouterEquipementDemo(p, { role, marque, modele, numero_serie }) {
@@ -696,6 +699,8 @@
         photoJobDemo(p, e, 'plaque', photoFictive(`Plaque ${a.modele}`, '#3b4a5a'));
         photoJobDemo(p, e, 'installe', photoFictive(`${a.role === 'exterieur' ? 'Condenseur' : 'Tête'} installé${a.role === 'exterieur' ? '' : 'e'}`, '#4a5d4a'));
       }
+      photoJobDemo(p, null, 'lignes', photoFictive('Lignes de réfrigérant', '#5a4a3b'));
+      photoJobDemo(p, null, 'drain', photoFictive('Drain de condensat', '#3b5a5a'));
     };
     complet(parNom('Chantal Lévesque (FICTIF)'), '210345678', [{ role: 'exterieur', marque: 'Fujitsu', modele: 'AOU18RLXFZH', numero_serie: 'F1E004512' },
       { role: 'interieur', marque: 'Fujitsu', modele: 'ASU9RLF1', numero_serie: 'F1I118201' }, { role: 'interieur', marque: 'Fujitsu', modele: 'ASU9RLF1', numero_serie: 'F1I118202' }]);
@@ -1047,9 +1052,9 @@
           return { id: ajouterEquipementDemo(p, { role: b.role, marque, modele, numero_serie }).id };
         }
         exiger(b.action === 'photo', 'Action inconnue');
-        exiger(['plaque', 'installe', 'autre'].includes(b.categorie), 'Catégorie de photo inconnue');
-        const e = b.equipement_id ? equipementsDe(p).find((x) => x.id === b.equipement_id) : null;
-        exiger(b.categorie === 'autre' || e, 'Choisis l\'appareil de la photo');
+        exiger(['plaque', 'installe', 'lignes', 'drain', 'autre'].includes(b.categorie), 'Catégorie de photo inconnue');
+        const e = b.equipement_id && !['lignes', 'drain'].includes(b.categorie) ? equipementsDe(p).find((x) => x.id === b.equipement_id) : null;
+        exiger(!['plaque', 'installe'].includes(b.categorie) || e, 'Choisis l\'appareil de la photo');
         exiger(['image/jpeg', 'image/png', 'image/webp'].includes(b.type), 'Photo : JPEG, PNG ou WebP');
         exiger(b.donnees && b.donnees.length * 0.75 <= 4 * 1024 * 1024, 'Photo trop lourde (4 Mo au plus)');
         exiger(photosJobDe(p).length < 40, '40 photos au plus par job');

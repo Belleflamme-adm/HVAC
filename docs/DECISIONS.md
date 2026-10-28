@@ -995,3 +995,15 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - « facture payée » arrive aussi de l'app de Mike par le webhook des paiements (`type: facture_payee`, ADR-087), une fois par paiement.
 - **Le guide LogisVert part au client à « Facturé »** (facture conforme et payée), et non plus à « Terminé » (ADR-091) : sans cette facture, le client ne peut pas faire sa demande. Le courriel lui dit que sa facture porte les 4 mentions exigées.
 - **Pour Mike** : sa facture HVAC finale doit imprimer les 4 mentions. Le numéro AHRI ou ENERGY STAR et la date d'installation viennent de notre dossier de job (à transmettre à la greffe). Voir `docs/MIGRATION.md`.
+
+## ADR-093 | Photos des lignes et du drain obligatoires
+- **Date** : 2026-10-28 | **Statut** : Livrée (en local et HTML de test).
+- **Décision de Simon** : les photos des lignes de réfrigérant et du drain de condensat sont obligatoires.
+- **Ce qui change** : le dossier LogisVert de chaque job exige maintenant, en plus de la plaque et de l'appareil installé par appareil :
+  - au moins une photo des **lignes de réfrigérant** ;
+  - au moins une photo du **drain de condensat**.
+- Ce sont des photos **de la job**, pas d'un appareil (catégories `lignes` et `drain` de `projet_photos`, sans `equipement_id`).
+- Mêmes conséquences qu'à l'ADR-084 : sans elles, le sous-traitant n'envoie pas sa facture finale et la job ne passe pas à « Terminé ».
+- Même conservation : purge 5 ans après « Terminé ».
+- **Écran** : section « Photos de l'installation » sous les appareils, dans « Mes jobs » (sous-traitant) et dans le Macro.
+- **Limite connue** : exigées pour toutes les jobs. Un remplacement de fournaise seule n'a ni lignes ni drain extérieur ; si ça arrive, on ajoutera une exemption par type de système.

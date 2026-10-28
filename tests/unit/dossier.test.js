@@ -63,3 +63,12 @@ test('accès système : clé requise, seulement les gestes de la purge', async (
   await assert.rejects(sys.supprimerFichiers('hvac-documents', ['x']), /non permis/);
   assert.equal(config({}).purgePhotosActif, false);
 });
+
+test('dossier : photos des lignes et du drain acceptées sans appareil (ADR-093)', async () => {
+  for (const categorie of ['lignes', 'drain']) {
+    const r = fauxRepo();
+    await ajouterAuDossier(r, ID, { action: 'photo', categorie, type: 'image/jpeg', donnees: jpeg });
+    assert.deepEqual(r.appels[0], ['hvac_job_photo_preparer', { p_projet: ID, p_equipement: null, p_categorie: categorie, p_type: 'image/jpeg', p_taille: 6 }]);
+  }
+  await assert.rejects(ajouterAuDossier(fauxRepo(), ID, { action: 'photo', categorie: 'toit', type: 'image/jpeg', donnees: jpeg }), /Catégorie/);
+});

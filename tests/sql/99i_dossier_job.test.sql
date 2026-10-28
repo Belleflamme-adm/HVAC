@@ -19,7 +19,7 @@ select test.comme('00000000-0000-0000-0000-00000000000a');
 update public.projets set statut = 'en_cours' where id = (select id from t_dj);
 
 select test.comme('00000000-0000-0000-0000-0000000000c1');
-select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 2), 'dossier vide : extérieur, intérieur (AHRI non exigé du sous-traitant)');
+select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 4), 'dossier vide : extérieur, intérieur, lignes, drain (AHRI non exigé du sous-traitant)');
 select test.echec($$select public.hvac_job_ahri((select id from t_dj), '210987654')$$, 'le sous-traitant n''inscrit pas l''AHRI', 'inscrit par Belleflamme');
 -- Belleflamme inscrit l'AHRI
 select test.comme('00000000-0000-0000-0000-00000000000a');
@@ -38,17 +38,29 @@ select test.ok((select numero_serie = '31U00123' and ahri = '210987654' from pub
                'série normalisée, AHRI du système copié sur l''appareil');
 set role authenticated;
 select test.comme('00000000-0000-0000-0000-0000000000c1');
-select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 4), 'il manque 4 photos (plaque et installé, par appareil)');
+select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 6), 'il manque 6 photos (plaque et installé par appareil, lignes, drain)');
 
 -- Photos : préparées au chemin de la job, téléversées sous RLS, confirmées
 create temp table t_pj as select e.id as equipement, c as categorie, public.hvac_job_photo_preparer((select id from t_dj), e.id, c, 'image/jpeg', 300000) as p
   from (select id from t_ext union all select id from t_int) e, unnest(array['plaque','installe']) c;
 grant select on t_pj to authenticated;
+select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 6), 'photos préparées, pas encore reçues : 6 manques');
+-- Lignes et drain : photos de la job (sans appareil), obligatoires
+create temp table t_ld as select c as categorie, public.hvac_job_photo_preparer((select id from t_dj), (select id from t_ext), c, 'image/jpeg', 300000) as p
+  from unnest(array['lignes','drain']) c;
+grant select on t_ld to authenticated;
+reset role;
+select test.ok((select bool_and(equipement_id is null) from public.projet_photos where id in (select (p->>'id')::uuid from t_ld)), 'lignes et drain : rattachées à la job, pas à un appareil');
+set role authenticated;
+select test.comme('00000000-0000-0000-0000-0000000000c1');
+select test.echec($$select public.hvac_job_photo_preparer((select id from t_dj), null, 'plaque', 'image/jpeg', 1000)$$, 'plaque sans appareil', 'Choisis l''appareil');
+insert into storage.objects (bucket_id, name) select 'jobs-photos', p->>'chemin' from t_ld;
+select public.hvac_job_photo_confirmer((p->>'id')::uuid) from t_ld;
 select test.echec($$insert into storage.objects (bucket_id, name) values ('jobs-photos', 'ailleurs/x.jpg')$$, 'téléverser ailleurs', 'row-level security');
 insert into storage.objects (bucket_id, name) select 'jobs-photos', p->>'chemin' from t_pj;
 select public.hvac_job_photo_confirmer((p->>'id')::uuid) from t_pj;
 select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 0), 'dossier complet');
-select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'photos') = 4), '4 photos dans le dossier');
+select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'photos') = 6), '6 photos dans le dossier');
 -- Retirer une photo rouvre le manque ; on la remet
 select public.hvac_job_photo_retirer((select (p->>'id')::uuid from t_pj where categorie = 'plaque' limit 1));
 select test.ok((select jsonb_array_length(public.hvac_job_dossier((select id from t_dj))->'manques') = 1), 'photo retirée : 1 manque');
@@ -59,8 +71,8 @@ select public.hvac_job_photo_confirmer((select (p->>'id')::uuid from t_pj2));
 -- Belleflamme : le Macro voit l'état ; « Terminé » passe une fois le dossier complet
 select test.comme('00000000-0000-0000-0000-00000000000a');
 select test.ok((select dossier_manques = 0 and numero_ahri = '210987654' from public.projets_macro_v where id = (select id from t_dj)), 'Macro : dossier complet');
-select test.ok((select count(*) = 4 from storage.objects where bucket_id = 'jobs-photos' and name like (select id from t_dj)::text || '/%'),
-               'Simon peut signer les URL des 4 photos montrées (pas la retirée)');
+select test.ok((select count(*) = 6 from storage.objects where bucket_id = 'jobs-photos' and name like (select id from t_dj)::text || '/%'),
+               'Simon peut signer les URL des 6 photos montrées (pas la retirée)');
 update public.projets set statut = 'termine' where id = (select id from t_dj);
 select test.ok((select installation_terminee_le is not null from public.projets where id = (select id from t_dj)), 'date de fin inscrite au passage à Terminé');
 
@@ -81,8 +93,8 @@ reset role;
 -- Conservation : rien avant 5 ans ; tout (job et extras) après 5 ans
 select test.ok((select count(*) = 0 from public.hvac_photos_a_purger() where chemin like (select id from t_dj)::text || '/%'), 'rien à purger avant 5 ans');
 update public.projets set installation_terminee_le = now() - interval '5 years 1 day' where id = (select id from t_dj);
-select test.ok((select count(*) = 5 from public.hvac_photos_a_purger() where source = 'job' and chemin like (select id from t_dj)::text || '/%'), '5 ans après Terminé : 5 photos à purger (dont la retirée)');
-select test.ok((select public.hvac_photos_purgees(array(select id from public.hvac_photos_a_purger() where source = 'job' and chemin like (select id from t_dj)::text || '/%'), null) = 5),
+select test.ok((select count(*) = 7 from public.hvac_photos_a_purger() where source = 'job' and chemin like (select id from t_dj)::text || '/%'), '5 ans après Terminé : 7 photos à purger (dont la retirée)');
+select test.ok((select public.hvac_photos_purgees(array(select id from public.hvac_photos_a_purger() where source = 'job' and chemin like (select id from t_dj)::text || '/%'), null) = 7),
                'photos marquées purgées');
 select test.ok((select count(*) = 0 from public.hvac_photos_a_purger() where chemin like (select id from t_dj)::text || '/%'), 'plus rien à purger');
 select test.comme('00000000-0000-0000-0000-00000000000a');
