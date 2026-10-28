@@ -24,6 +24,12 @@ select test.ok((select statut = 'planifie' from public.projets where id = (selec
 select test.echec($$update public.projets set statut = 'attente_paiement' where id = (select id from t_p)$$, 'un projet ne recule pas de deux étapes', 'recule');
 update public.projets set statut = 'a_planifier' where id = (select id from t_p);
 select test.ok((select statut = 'a_planifier' from public.projets where id = (select id from t_p)), 'un projet recule d''une étape');
+-- « Facturé » exige une facture finale conforme LogisVert (ADR-092) : voir 99m ; ici on la prépare
+select test.echec($$update public.projets set statut = 'facture' where id = (select id from t_p)$$, 'facturé sans facture conforme', 'non conforme');
+update public.projets set statut = 'termine' where id = (select id from t_p);
+select public.hvac_job_ahri((select id from t_p), '210555111');
+select public.hvac_facture_payee_manuel((select id from t_p), 'F-2026-0001');
+select public.hvac_facture_verifiee((select id from t_p));
 update public.projets set statut = 'facture' where id = (select id from t_p);
 select test.echec($$update public.projets set statut = 'annule' where id = (select id from t_p)$$, 'un projet facturé ne s''annule pas', 'facturé');
 reset role;

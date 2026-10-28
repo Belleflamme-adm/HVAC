@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normaliserDepot } from '../../lib/modules/paiement.js';
+import { normaliserDepot, normaliserFacturePayee } from '../../lib/modules/paiement.js';
 import { signer } from '../../lib/signature.js';
 import { handler } from '../../netlify/functions/paiement-webhook.mjs';
 
@@ -28,4 +28,10 @@ test('webhook paiement : 503 désactivé, 401 non signé, 200 signé', async () 
     assert.equal(r.statusCode, 200);
     assert.deepEqual(appels[0], ['hvac_depot_recu', { p: { devis_numero_mike: '121401', paiement_ref: 'PAY-1' } }]);
   } finally { process.env = env; }
+});
+
+test('facture payée : forme validée', () => {
+  assert.deepEqual(normaliserFacturePayee({ devis_numero_mike: '121601', paiement_ref: 'PAY-F1', facture_numero_mike: 'F-42' }).facture,
+    { devis_numero_mike: '121601', paiement_ref: 'PAY-F1', facture_numero_mike: 'F-42' });
+  assert.match(normaliserFacturePayee({ devis_numero_mike: '121601' }).erreur, /paiement_ref/);
 });

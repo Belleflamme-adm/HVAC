@@ -359,8 +359,7 @@
     { code: 'subvention_suivi', nom: 'Suivi de subvention LogisVert', description: 'À chaque étape de la subvention (déposée, acceptée, versée, refusée), un texto au client.', declencheur: 'subvention_etape',
       conditions: {}, arret: ['projet_annule'], commercial: false, etapes: [
         { type: 'sms', texte: 'Belleflamme {succursale} : bonne nouvelle {prenom}, {subvention}. Des questions? Répondez ici.' }] },
-    {"code": "logisvert_client", "nom": "Guide LogisVert au client", "description": "À la fin des travaux : le guide pour réclamer la subvention, la date limite (9 mois) et le numéro AHRI ou ENERGY STAR. Relance à 45 jours et tâche à la planification à 6 mois si la demande n'est pas encore déposée.", "declencheur": "projet_etape", "conditions": {"statut": "termine"}, "arret": ["projet_annule"], "commercial": false, "etapes": [{"type": "attendre", "minutes": 60}, {"type": "sms", "texte": "{prenom}, votre thermopompe est installée! Réclamez votre subvention LogisVert avec notre guide : {lien_guide_logisvert} Date limite : {date_limite_logisvert}. Belleflamme {succursale}"}, {"type": "courriel", "sujet": "Votre subvention LogisVert : le guide et votre date limite", "texte": "Bonjour {prenom},\n\nVotre thermopompe est installée. Vous pouvez maintenant réclamer votre subvention LogisVert d'Hydro-Québec.\n\nNotre guide, étape par étape : {lien_guide_logisvert}\nVotre numéro à inscrire dans le portail : {numero_logisvert}\nDate limite pour faire la demande : {date_limite_logisvert} (9 mois après l'installation).\n\nUn doute? Répondez à ce courriel, on vous aide.\n\nL'équipe Belleflamme {succursale}"}, {"type": "attendre", "jours": 45}, {"type": "si", "condition": "subvention_non_deposee"}, {"type": "sms", "texte": "{prenom}, petit rappel : votre demande LogisVert est à faire avant le {date_limite_logisvert}. Le guide : {lien_guide_logisvert} Besoin d'aide? Répondez ici."}, {"type": "attendre", "jours": 135}, {"type": "si", "condition": "subvention_non_deposee"}, {"type": "tache", "a": "planification", "titre": "LogisVert pas encore déposé : {prenom} ({code_projet})", "texte": "Date limite : {date_limite_logisvert}. Appeler le client pour l'aider à déposer sa demande.", "echeance_minutes": 2880}]},
-    { code: 'entretien_annuel', nom: 'Entretien annuel de la thermopompe', description: "30 jours avant l'anniversaire de l'installation : texto pour choisir une plage d'entretien, et tâche à la planification.", declencheur: 'entretien_annuel',
+    {"code": "logisvert_client", "nom": "Guide LogisVert au client", "description": "Quand la facture finale est conforme et payée (« Facturé ») : le guide pour réclamer la subvention, la date limite (9 mois après l'installation) et le numéro AHRI ou ENERGY STAR. Relance à 45 jours et tâche à la planification à 6 mois si la demande n'est pas encore déposée.", "declencheur": "projet_etape", "conditions": {"statut": "facture"}, "arret": ["projet_annule"], "commercial": false, "etapes": [{"type": "attendre", "minutes": 60}, {"type": "sms", "texte": "{prenom}, votre facture finale est prête et votre thermopompe installée! Réclamez votre subvention LogisVert avec notre guide : {lien_guide_logisvert} Date limite : {date_limite_logisvert}. Belleflamme {succursale}"}, {"type": "courriel", "sujet": "Votre subvention LogisVert : le guide et votre date limite", "texte": "Bonjour {prenom},\n\nVotre thermopompe est installée et votre facture finale est payée : elle porte le numéro AHRI ou ENERGY STAR, notre licence RBQ, la date d'installation et la mention « Payé », comme l'exige Hydro-Québec. Vous pouvez maintenant réclamer votre subvention LogisVert.\n\nNotre guide, étape par étape : {lien_guide_logisvert}\nVotre numéro à inscrire dans le portail : {numero_logisvert}\nDate limite pour faire la demande : {date_limite_logisvert} (9 mois après l'installation).\n\nUn doute? Répondez à ce courriel, on vous aide.\n\nL'équipe Belleflamme {succursale}"}, {"type": "attendre", "jours": 45}, {"type": "si", "condition": "subvention_non_deposee"}, {"type": "sms", "texte": "{prenom}, petit rappel : votre demande LogisVert est à faire avant le {date_limite_logisvert}. Le guide : {lien_guide_logisvert} Besoin d'aide? Répondez ici."}, {"type": "attendre", "jours": 135}, {"type": "si", "condition": "subvention_non_deposee"}, {"type": "tache", "a": "planification", "titre": "LogisVert pas encore déposé : {prenom} ({code_projet})", "texte": "Date limite : {date_limite_logisvert}. Appeler le client pour l'aider à déposer sa demande.", "echeance_minutes": 2880}]},    { code: 'entretien_annuel', nom: 'Entretien annuel de la thermopompe', description: "30 jours avant l'anniversaire de l'installation : texto pour choisir une plage d'entretien, et tâche à la planification.", declencheur: 'entretien_annuel',
       conditions: {}, arret: [], commercial: true, etapes: [
         { type: 'sms', texte: "Bonjour {prenom}, votre thermopompe Belleflamme aura bientôt un an. C'est le temps de l'entretien annuel pour garder la garantie et l'efficacité. Répondez ici pour choisir votre plage." },
         { type: 'tache', a: 'planification', titre: 'Entretien annuel : {prenom} ({code_projet})', texte: "Le client a reçu l'offre d'entretien.", echeance_minutes: 2880 }] },
@@ -631,8 +630,17 @@
     }
     return p;
   }
+  // Facture finale conforme LogisVert (ADR-092) : mêmes règles que app.facture_logisvert_manques
+  function factureManques(p) {
+    const m = [];
+    if (!p.numero_ahri && !p.numero_energy_star) m.push('numéro AHRI ou ENERGY STAR (dossier de la job)');
+    if (!p.installation_terminee_le) m.push("date d'installation (projet passé à Terminé)");
+    if (!p.facture_payee_le) m.push('facture payée au complet (mention « Payé »)');
+    if (!p.facture_verifiee_le) m.push('vérification de la facture de Mike : les 4 mentions y sont');
+    return m;
+  }
   const vueMacro = (p) => ({ ...p, extras_a_approuver: extrasDe(p, 'soumis').length, extras_approuves_cents: somme(extrasDe(p, 'approuve')) || null,
-    dossier_manques: p.sous_traitant_id ? dossierManques(p).length : null });
+    dossier_manques: p.sous_traitant_id ? dossierManques(p).length : null, facture_manques: factureManques(p).length, facture_liste: factureManques(p) });
   {
     const J = 24 * H;
     const parNom = (n) => etat.projets.find((p) => p.client_nom === n);
@@ -698,6 +706,7 @@
     const ext = ajouterEquipementDemo(roy, { role: 'exterieur', marque: 'Daikin', modele: '3MXL24RMVJU', numero_serie: 'K00412' });
     photoJobDemo(roy, ext, 'plaque', photoFictive('Plaque 3MXL24RMVJU', '#3b4a5a'));
     for (const p of etat.projets) if (['termine', 'facture', 'ferme'].includes(p.statut)) p.installation_terminee_le = p.installation_prevue_le;
+    for (const p of etat.projets) if (['facture', 'ferme'].includes(p.statut)) Object.assign(p, { facture_payee_le: p.installation_terminee_le, facture_numero_mike: `F-2026-${p.devis_numero_mike.slice(-4)}`, facture_verifiee_le: p.installation_terminee_le });
   }
   // Vue du sous-traitant : machines à 0 $, ses prix, coordonnées du client après le dépôt (Loi 25). Jamais le montant client.
   const vueJob = (p) => {
@@ -860,6 +869,18 @@
         exiger(['Admin tout', 'Direction', 'Coordonnateur', 'Gérant de succursale'].includes(user().role), 'Modification refusée');
         const p = etat.projets.find((x) => x.id === q.id);
         if (!p) throw new Erreur(404, 'Projet introuvable');
+        if (b.action === 'facture_payee') {
+          exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à Belleflamme');
+          exiger(String(b.facture_numero_mike || '').trim(), 'Numéro de la facture de Mike requis');
+          Object.assign(p, { facture_payee_le: iso(etat.maintenant), facture_numero_mike: String(b.facture_numero_mike).trim() });
+          return { ok: true };
+        }
+        if (b.action === 'facture_verifiee') {
+          exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à Belleflamme');
+          const m = factureManques(p).filter((x) => !x.startsWith('vérification'));
+          exiger(!m.length, `Impossible de confirmer : il manque ${m.join(' ; ')}`);
+          p.facture_verifiee_le = iso(etat.maintenant); return { ok: true };
+        }
         // Subvention LogisVert (ADR-090) : chaque étape envoie un texto au client
         if (b.subvention_statut !== undefined) {
           exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à Belleflamme');
@@ -882,6 +903,11 @@
           exiger(!m.length, `Dossier LogisVert incomplet : ${m.join(' ; ')}`);
         }
         if (b.statut === 'termine') p.installation_terminee_le ||= iso(etat.maintenant);
+        const iF = ETAPES_MACRO.indexOf('facture');
+        if (ETAPES_MACRO.indexOf(b.statut) >= iF && ETAPES_MACRO.indexOf(p.statut) < iF) {
+          const m = factureManques(p);
+          exiger(!m.length, `Facture finale non conforme LogisVert : ${m.join(' ; ')}`);
+        }
         const avant = { ...p };
         p.statut = b.statut; p.updated_at = iso(etat.maintenant);
         evenementProjet(p, avant);

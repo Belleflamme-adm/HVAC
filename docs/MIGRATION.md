@@ -150,3 +150,18 @@
 - **Envois réels à la greffe** : paramètre `envois_reels=true`. Les messages passent au statut `en_file`, et une fonction de l'app de Mike les envoie par Twilio et courriel, puis met le statut à `envoye` ou `echec`. Contrat à fixer avec Mike.
 - Webhook `appel-manque-webhook` (téléphonie de Mike) : `TELEPHONIE_SYNC_ENABLED=true` et `TELEPHONIE_WEBHOOK_SECRET`. Corps : `{ "telephone": "...", "succursale_code": "RO", "appele_le": "...", "appel_ref": "..." }`. Prérequis : les lignes des 5 succursales passent par Twilio (question du document).
 - Loi 25 : Twilio et Netlify reçoivent des renseignements personnels (numéros, textes). Évaluation des facteurs relatifs à la vie privée et contrats de sous-traitance à vérifier (article 17).
+
+## Facture finale conforme LogisVert (ADR-092) | à faire dans l'app de Mike
+- Migration `20261028000200_facture_logisvert.sql` :
+  - paramètre `licence_rbq_belleflamme` ;
+  - colonnes `projets.facture_payee_le`, `facture_numero_mike`, `facture_paiement_ref`, `facture_verifiee_le` et `facture_verifiee_par` ;
+  - `app.facture_logisvert_manques` et le trigger des étapes (« Facturé » bloqué) ;
+  - les fonctions `hvac_facture_payee` (clé serveur), `hvac_facture_payee_manuel` et `hvac_facture_verifiee` ;
+  - `projets_macro_v`.
+- **La facture HVAC finale de Mike DOIT imprimer** :
+  1. le numéro AHRI ou ENERGY STAR (notre `projets.numero_ahri` ou `numero_energy_star`) ;
+  2. la licence RBQ 5631-7035-01 ;
+  3. la date d'installation (notre `projets.installation_terminee_le`) ;
+  4. la mention « Payé », une fois le solde réglé.
+- **Webhook paiement** (`paiement-webhook`, même signature) : `{ "type": "facture_payee", "devis_numero_mike": "120815", "paiement_ref": "...", "facture_numero_mike": "...", "paye_le": "..." }`.
+- **À la greffe, idéalement** : la facture de Mike lit directement ces champs. La confirmation humaine « j'ai vu les 4 mentions » pourra alors devenir automatique, si Mike nous envoie le PDF ou les champs imprimés.

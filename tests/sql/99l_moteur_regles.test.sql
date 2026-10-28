@@ -141,7 +141,12 @@ set role authenticated;
 select test.comme('00000000-0000-0000-0000-00000000000a');
 select test.echec($$select public.hvac_job_energy_star((select id from t_pr), '12345')$$, 'ENERGY STAR : 7 chiffres', '7 chiffres');
 select public.hvac_job_energy_star((select id from t_pr), '2412345');
+-- Le guide part à « Facturé » : facture finale conforme d'abord (ADR-092)
+select public.hvac_facture_payee_manuel((select id from t_pr), 'F-2026-0007');
+select public.hvac_facture_verifiee((select id from t_pr));
+update public.projets set statut = 'facture' where id = (select id from t_pr);
 reset role;
+set role service_role; select test.executer(); reset role;   -- arme l'attente d'une heure
 select test.ok((select numero_energy_star = '2412345' from public.projets where id = (select id from t_pr)), 'numéro ENERGY STAR inscrit');
 select test.echu_projet((select id from t_pr), 'logisvert_client');
 set role service_role; select test.executer(); reset role;

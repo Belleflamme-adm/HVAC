@@ -33,6 +33,11 @@ test('Macro : étape de subvention validée', async () => {
   await changerEtape(r, ID, { subvention_statut: 'deposee' });
   assert.deepEqual(r.appels[0], ['rpc', 'hvac_subvention_etape', { p_projet: ID, p_statut: 'deposee' }]);
   await assert.rejects(changerEtape(r, ID, { subvention_statut: 'perdue' }), /inconnue/);
+  await changerEtape(r, ID, { action: 'facture_payee', facture_numero_mike: 'F-42' });
+  assert.deepEqual(r.appels.at(-1), ['rpc', 'hvac_facture_payee_manuel', { p_projet: ID, p_numero_facture: 'F-42' }]);
+  await assert.rejects(changerEtape(r, ID, { action: 'facture_payee' }), /requis/);
+  await changerEtape(r, ID, { action: 'facture_verifiee' });
+  assert.deepEqual(r.appels.at(-1), ['rpc', 'hvac_facture_verifiee', { p_projet: ID }]);
 });
 
 test('webhook appel manqué : 503 désactivé, 401 non signé, 200 signé', async () => {

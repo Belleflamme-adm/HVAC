@@ -970,7 +970,7 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - la demande dans les 9 mois ;
   - propriétaire seulement, avec le même nom sur la facture, la preuve de propriété et le profil ;
   - les numéros de client et de compteur d'Hydro-Québec.
-- **Nouvelle règle « Guide LogisVert au client »** (transactionnelle), au passage à « Terminé » :
+- **Nouvelle règle « Guide LogisVert au client »** (transactionnelle), au passage à « Terminé » (déplacé à « Facturé » par l'ADR-092) :
   - **1 h** après : texto et courriel avec le lien du guide, le numéro à inscrire (AHRI ou ENERGY STAR) et la **date limite** (fin des travaux + 9 mois) ;
   - **45 jours** après : relance par texto si la demande n'est pas déposée ;
   - **6 mois** après : tâche à la planification « LogisVert pas encore déposé », pour appeler le client ;
@@ -979,3 +979,19 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Dossier** : un numéro **ENERGY STAR** (7 chiffres) peut remplacer le numéro AHRI (`hvac_job_energy_star`, Belleflamme seulement).
 - **Paramètre** `lien_guide_logisvert` : le lien du guide. À terme, héberger le guide sur le site de Belleflamme et changer seulement ce paramètre.
 - **Pour Mike (facture)** : la facture de Mike doit afficher le numéro AHRI ou ENERGY STAR, la licence RBQ (5631-7035-01), la date d'installation et « Payé ». Sans ça, la demande est refusée (une cause fréquente selon le guide).
+
+## ADR-092 | Facture finale conforme LogisVert : les 4 mentions obligatoires
+- **Date** : 2026-10-28 | **Statut** : Livrée (en local et HTML de test). La facture elle-même se fait dans l'app de Mike.
+- **Exigence de Simon** : la facture finale du client doit **absolument** porter les 4 mentions, sinon Hydro-Québec refuse la demande :
+  1. le numéro **AHRI ou ENERGY STAR** ;
+  2. la **licence RBQ** (5631-7035-01) ;
+  3. la **date d'installation** ;
+  4. la mention **« Payé »**.
+- **Ce que fait notre app** (elle ne fait pas la facture, ADR-055) :
+  - `app.facture_logisvert_manques` vérifie que les données existent : numéro (dossier de la job), licence (paramètre `licence_rbq_belleflamme`), date d'installation (passage à « Terminé »), facture payée au complet ;
+  - elle exige aussi la **confirmation d'une personne de Belleflamme** : « j'ai vu les 4 mentions sur la facture de Mike ». La confirmation est refusée tant que les données manquent ;
+  - le passage à **« Facturé » est bloqué en base** tant que tout n'y est pas, et le message nomme ce qui manque ;
+  - carte du Macro, à « Terminé » : panneau « 🧾 Facture finale » avec les 4 mentions (✓ ou ✗), « Marquer payée » (numéro de la facture de Mike, d'ici la greffe) et « ✓ J'ai vu les 4 mentions sur la facture » ;
+  - « facture payée » arrive aussi de l'app de Mike par le webhook des paiements (`type: facture_payee`, ADR-087), une fois par paiement.
+- **Le guide LogisVert part au client à « Facturé »** (facture conforme et payée), et non plus à « Terminé » (ADR-091) : sans cette facture, le client ne peut pas faire sa demande. Le courriel lui dit que sa facture porte les 4 mentions exigées.
+- **Pour Mike** : sa facture HVAC finale doit imprimer les 4 mentions. Le numéro AHRI ou ENERGY STAR et la date d'installation viennent de notre dossier de job (à transmettre à la greffe). Voir `docs/MIGRATION.md`.

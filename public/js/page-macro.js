@@ -45,6 +45,34 @@ if (user) {
     } catch (e) { message(msg, e.message); }
   }
 
+  // Les 4 mentions obligatoires de la facture finale (Hydro-Québec refuse la demande LogisVert sans elles)
+  function panneauFacture(p) {
+    const ok = (v) => (v ? '✓' : '✗');
+    const zone = h('div', { class: `bf-facture${p.facture_manques ? ' bf-facture--manque' : ''}` },
+      h('strong', {}, p.facture_manques ? `🧾 Facture finale : ${p.facture_manques} élément(s) avant « Facturé »` : '🧾 Facture finale conforme LogisVert'),
+      h('ul', {},
+        h('li', {}, `${ok(p.numero_ahri || p.numero_energy_star)} Numéro ${p.numero_ahri ? `AHRI ${p.numero_ahri}` : p.numero_energy_star ? `ENERGY STAR ${p.numero_energy_star}` : 'AHRI ou ENERGY STAR (dossier de la job)'}`),
+        h('li', {}, '✓ Licence RBQ 5631-7035-01'),
+        h('li', {}, `${ok(p.installation_terminee_le)} Date d'installation${p.installation_terminee_le ? ` : ${jour(p.installation_terminee_le)}` : ''}`),
+        h('li', {}, `${ok(p.facture_payee_le)} Payée${p.facture_numero_mike ? ` (facture ${p.facture_numero_mike})` : ''}`),
+        h('li', {}, `${ok(p.facture_verifiee_le)} Les 4 mentions vues sur la facture de Mike`)));
+    if (peutBouger && !p.facture_payee_le) {
+      const num = h('input', { placeholder: 'N° facture de Mike', 'aria-label': `Numéro de facture de ${p.code_projet}`, maxlength: 40 });
+      zone.append(h('div', { class: 'bf-facture__geste' }, num, h('button', { type: 'button', class: 'bf-lien', onclick: async () => {
+        try { await api.patch('macro', { action: 'facture_payee', facture_numero_mike: num.value }, { id: p.id }); message(msg, `${p.code_projet} : facture payée.`, 'ok'); await charger(); }
+        catch (e) { message(msg, e.message); }
+      } }, 'Marquer payée')));
+    }
+    if (peutBouger && p.facture_payee_le && !p.facture_verifiee_le) {
+      zone.append(h('button', { type: 'button', class: 'bf-lien', onclick: async () => {
+        if (!confirm('Confirmes-tu avoir vu, sur la facture finale de Mike : le numéro AHRI ou ENERGY STAR, la licence RBQ, la date d\'installation et la mention « Payé » ?')) return;
+        try { await api.patch('macro', { action: 'facture_verifiee' }, { id: p.id }); message(msg, `${p.code_projet} : facture conforme. Tu peux passer à « Facturé ».`, 'ok'); await charger(); }
+        catch (e) { message(msg, e.message); }
+      } }, '✓ J\'ai vu les 4 mentions sur la facture'));
+    }
+    return zone;
+  }
+
   function carte(p) {
     const idx = ETAPES.findIndex(([k]) => k === p.statut);
     const prec = ETAPES[idx - 1]; const suiv = ETAPES[idx + 1];
@@ -71,6 +99,8 @@ if (user) {
         const jours = Math.ceil((lim - Date.now()) / 864e5);
         return h('p', { class: `bf-macro__st${jours < 60 ? ' bf-jobs__raison' : ''}` }, `⏳ LogisVert à déposer avant le ${jour(lim)}${jours < 60 ? ` (${Math.max(jours, 0)} j)` : ''}`);
       })() : null,
+      // Facture finale conforme LogisVert (ADR-092) : les 4 mentions sur la facture de Mike, exigées avant « Facturé »
+      p.statut === 'termine' ? panneauFacture(p) : null,
       p.depot_recu_le ? h('p', { class: 'bf-macro__depot' }, `💳 Dépôt reçu le ${jour(p.depot_recu_le)}${p.depot_montant_cents ? ` | ${formatCents(p.depot_montant_cents)}` : ''}`) : null,
       p.sous_traitant_nom ? h('p', { class: 'bf-macro__st' }, `🧰 ${p.sous_traitant_nom}`, p.cout_installation_cents ? ` | install. ${formatCents(p.cout_installation_cents)}` : '') : null,
       p.extras_a_approuver ? h('a', { href: '/extras', class: 'bf-macro__extras' }, `➕ ${p.extras_a_approuver} extra(s) à approuver`) : null,

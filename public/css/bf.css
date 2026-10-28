@@ -640,3 +640,9 @@ a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
 .bf-avis__item--retard { border-color: var(--bad); box-shadow: inset 4px 0 0 var(--bad); }
 .bf-macro__subv { display: flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 700; color: #11734a; }
 .bf-macro__subv select { font: inherit; font-weight: 400; padding: 2px 6px; border-radius: 8px; }
+/* Facture finale conforme LogisVert (ADR-092) */
+.bf-facture { border: 1px solid #b7e1c8; background: #f1faf4; border-radius: 10px; padding: 8px 10px; font-size: 13px; display: grid; gap: 4px; }
+.bf-facture--manque { border-color: #f1c4c4; background: #fdf3f3; }
+.bf-facture ul { margin: 0; padding-left: 16px; list-style: none; }
+.bf-facture__geste { display: flex; gap: 6px; align-items: center; }
+.bf-facture__geste input { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; width: 140px; }
