@@ -65,6 +65,12 @@ if (user) {
           } }, h('option', { value: '', disabled: true, selected: !p.subvention_statut }, 'Étape…'),
           Object.entries(SUBVENTION).map(([k, t]) => h('option', { value: k, selected: k === p.subvention_statut }, t))))
         : h('p', { class: 'bf-macro__st' }, `🌱 LogisVert : ${SUBVENTION[p.subvention_statut] || 'à déposer'}`)) : null,
+      // Date limite LogisVert : 9 mois après la fin des travaux, tant que la demande n'est pas déposée
+      p.installation_terminee_le && !['deposee', 'acceptee', 'versee', 'refusee'].includes(p.subvention_statut) ? (() => {
+        const lim = new Date(p.installation_terminee_le); lim.setMonth(lim.getMonth() + 9);
+        const jours = Math.ceil((lim - Date.now()) / 864e5);
+        return h('p', { class: `bf-macro__st${jours < 60 ? ' bf-jobs__raison' : ''}` }, `⏳ LogisVert à déposer avant le ${jour(lim)}${jours < 60 ? ` (${Math.max(jours, 0)} j)` : ''}`);
+      })() : null,
       p.depot_recu_le ? h('p', { class: 'bf-macro__depot' }, `💳 Dépôt reçu le ${jour(p.depot_recu_le)}${p.depot_montant_cents ? ` | ${formatCents(p.depot_montant_cents)}` : ''}`) : null,
       p.sous_traitant_nom ? h('p', { class: 'bf-macro__st' }, `🧰 ${p.sous_traitant_nom}`, p.cout_installation_cents ? ` | install. ${formatCents(p.cout_installation_cents)}` : '') : null,
       p.extras_a_approuver ? h('a', { href: '/extras', class: 'bf-macro__extras' }, `➕ ${p.extras_a_approuver} extra(s) à approuver`) : null,

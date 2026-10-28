@@ -1,7 +1,7 @@
 // Dossier de job LogisVert (ADR-084)
 // GET ?projet= -> { numero_ahri, equipements, photos [{ id, equipement_id, categorie, url }], manques }
 // POST ?projet= { action: 'equipement', role, marque, modele, numero_serie } | { action: 'photo', equipement_id?, categorie, type, donnees }
-// PATCH { action: 'ahri', projet, numero_ahri } | { action: 'retirer_equipement' | 'retirer_photo', id }
+// PATCH { action: 'ahri', projet, numero_ahri } | { action: 'energy_star', projet, numero_energy_star } | { action: 'retirer_equipement' | 'retirer_photo', id }
 import { avecSession } from '../../lib/handler.js';
 import { lireDossier, ajouterAuDossier, modifierDossier } from '../../lib/modules/dossier.js';
 

@@ -40,6 +40,9 @@ test('dossier : numéro AHRI validé', async () => {
   await modifierDossier(r, { action: 'ahri', projet: ID, numero_ahri: '210 987 654' });
   assert.deepEqual(r.appels[0], ['hvac_job_ahri', { p_projet: ID, p_numero: '210987654' }]);
   await assert.rejects(modifierDossier(r, { action: 'ahri', projet: ID, numero_ahri: 'AB-12' }), /AHRI/);
+  await modifierDossier(r, { action: 'energy_star', projet: ID, numero_energy_star: '241 2345' });
+  assert.deepEqual(r.appels.at(-1), ['hvac_job_energy_star', { p_projet: ID, p_numero: '2412345' }]);
+  await assert.rejects(modifierDossier(r, { action: 'energy_star', projet: ID, numero_energy_star: '12345' }), /7 chiffres/);
 });
 
 test('purge : compte seulement tant que non active ; sinon fichiers effacés puis marqués', async () => {

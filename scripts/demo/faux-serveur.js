@@ -359,6 +359,7 @@
     { code: 'subvention_suivi', nom: 'Suivi de subvention LogisVert', description: 'À chaque étape de la subvention (déposée, acceptée, versée, refusée), un texto au client.', declencheur: 'subvention_etape',
       conditions: {}, arret: ['projet_annule'], commercial: false, etapes: [
         { type: 'sms', texte: 'Belleflamme {succursale} : bonne nouvelle {prenom}, {subvention}. Des questions? Répondez ici.' }] },
+    {"code": "logisvert_client", "nom": "Guide LogisVert au client", "description": "À la fin des travaux : le guide pour réclamer la subvention, la date limite (9 mois) et le numéro AHRI ou ENERGY STAR. Relance à 45 jours et tâche à la planification à 6 mois si la demande n'est pas encore déposée.", "declencheur": "projet_etape", "conditions": {"statut": "termine"}, "arret": ["projet_annule"], "commercial": false, "etapes": [{"type": "attendre", "minutes": 60}, {"type": "sms", "texte": "{prenom}, votre thermopompe est installée! Réclamez votre subvention LogisVert avec notre guide : {lien_guide_logisvert} Date limite : {date_limite_logisvert}. Belleflamme {succursale}"}, {"type": "courriel", "sujet": "Votre subvention LogisVert : le guide et votre date limite", "texte": "Bonjour {prenom},\n\nVotre thermopompe est installée. Vous pouvez maintenant réclamer votre subvention LogisVert d'Hydro-Québec.\n\nNotre guide, étape par étape : {lien_guide_logisvert}\nVotre numéro à inscrire dans le portail : {numero_logisvert}\nDate limite pour faire la demande : {date_limite_logisvert} (9 mois après l'installation).\n\nUn doute? Répondez à ce courriel, on vous aide.\n\nL'équipe Belleflamme {succursale}"}, {"type": "attendre", "jours": 45}, {"type": "si", "condition": "subvention_non_deposee"}, {"type": "sms", "texte": "{prenom}, petit rappel : votre demande LogisVert est à faire avant le {date_limite_logisvert}. Le guide : {lien_guide_logisvert} Besoin d'aide? Répondez ici."}, {"type": "attendre", "jours": 135}, {"type": "si", "condition": "subvention_non_deposee"}, {"type": "tache", "a": "planification", "titre": "LogisVert pas encore déposé : {prenom} ({code_projet})", "texte": "Date limite : {date_limite_logisvert}. Appeler le client pour l'aider à déposer sa demande.", "echeance_minutes": 2880}]},
     { code: 'entretien_annuel', nom: 'Entretien annuel de la thermopompe', description: "30 jours avant l'anniversaire de l'installation : texto pour choisir une plage d'entretien, et tâche à la planification.", declencheur: 'entretien_annuel',
       conditions: {}, arret: [], commercial: true, etapes: [
         { type: 'sms', texte: "Bonjour {prenom}, votre thermopompe Belleflamme aura bientôt un an. C'est le temps de l'entretien annuel pour garder la garantie et l'efficacité. Répondez ici pour choisir votre plage." },
@@ -403,7 +404,10 @@
       vendeur: (nomEmploye(vendeur) || 'votre conseiller').split(' ')[0], vendeur_id: vendeur, type: libType(p?.type_systeme || l?.type_demande),
       date_visite: v ? v.toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' }) : '', heure_visite: v ? v.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ') : '',
       visite_le: visite, code_projet: p?.code_projet || '', client_id: p?.client_id || l?.client_id || p?.id || null,
-      subvention: SUBV[x.contexte.etape] || 'votre dossier LogisVert avance' };
+      subvention: SUBV[x.contexte.etape] || 'votre dossier LogisVert avance',
+      lien_guide_logisvert: 'https://claude.ai/artifact/WRNh66LK6or389XJa166Bg',
+      date_limite_logisvert: p?.installation_terminee_le ? (() => { const d = new Date(p.installation_terminee_le); d.setMonth(d.getMonth() + 9); return d.toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' }); })() : '',
+      numero_logisvert: p?.numero_ahri ? `AHRI ${p.numero_ahri}` : p?.numero_energy_star ? `ENERGY STAR ${p.numero_energy_star}` : 'sur votre facture' };
   }
   const rendre = (t, v) => String(t).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '').replace(/[ \t]+/g, ' ').trim();
   function peutCommercial(tel, courriel, canal) {
@@ -449,6 +453,7 @@
       if (e.condition === 'lead_non_contacte' && (l?.premier_contact_le || ['converti', 'perdu'].includes(l?.statut))) return { r: 'fin', d: 'lead déjà contacté' };
       if (e.condition === 'lead_ouvert' && ['converti', 'perdu'].includes(l?.statut)) return { r: 'fin', d: 'lead fermé' };
       if (e.condition === 'aucun_appel_sortant' && etat.comms.some((c) => c.canal === 'appel' && c.direction === 'sortant' && c.lead_id === x.lead_id && Date.parse(c.debut) >= x.created_at)) return { r: 'fin', d: 'client déjà rappelé' };
+      if (e.condition === 'subvention_non_deposee' && ['deposee', 'acceptee', 'versee', 'refusee'].includes(etat.projets.find((y) => y.id === x.projet_id)?.subvention_statut)) return { r: 'fin', d: 'demande LogisVert déjà déposée' };
       if (e.condition === 'aucun_avis_12_mois' && etat.avisDemandes.some((a) => a.client_id === v.client_id && a.envoye_le > etat.maintenant - 365 * 24 * H)) return { r: 'fin', d: 'avis déjà demandé dans les 12 derniers mois' };
       return { r: 'suivante', d: 'condition vraie' };
     }
@@ -1003,7 +1008,7 @@
       GET: (q) => {
         const p = etat.projets.find((y) => y.id === q.projet);
         if (!p || (user().sousTraitantId ? p.sous_traitant_id !== user().sousTraitantId : false)) throw new Erreur(403, 'Job introuvable');
-        return { numero_ahri: p.numero_ahri || null, equipements: equipementsDe(p).map(({ projet_id, actif, ...e }) => e),
+        return { numero_ahri: p.numero_ahri || null, numero_energy_star: p.numero_energy_star || null, equipements: equipementsDe(p).map(({ projet_id, actif, ...e }) => e),
           photos: photosJobDe(p).map((ph) => ({ id: ph.id, equipement_id: ph.equipement_id, categorie: ph.categorie, url: ph.url })),
           manques: dossierManques(p), purgees: etat.photosJob.filter((ph) => ph.projet_id === p.id && ph.statut === 'purgee').length };
       },
@@ -1031,6 +1036,14 @@
           const n = String(b.numero_ahri || '').replace(/\s/g, '');
           exiger(/^[0-9]{5,12}$/.test(n), 'Numéro AHRI : 5 à 12 chiffres');
           p.numero_ahri = n; return { ok: true };
+        }
+        if (b.action === 'energy_star') {
+          if (user().sousTraitantId || !['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role)) throw new Erreur(403, 'Le numéro ENERGY STAR est inscrit par Belleflamme');
+          const p = etat.projets.find((y) => y.id === b.projet);
+          exiger(p, 'Projet introuvable');
+          const n = String(b.numero_energy_star || '').replace(/\s/g, '');
+          exiger(/^[0-9]{7}$/.test(n), 'Numéro ENERGY STAR : 7 chiffres');
+          p.numero_energy_star = n; return { ok: true };
         }
         if (b.action === 'retirer_equipement') {
           const e = etat.equipements.find((x) => x.id === b.id);

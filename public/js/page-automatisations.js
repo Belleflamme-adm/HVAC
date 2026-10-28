@@ -12,14 +12,15 @@ const DECLENCHEURS = {
   projet_etape: 'Un projet change d\'étape', subvention_etape: 'La subvention LogisVert avance', entretien_annuel: '30 jours avant l\'anniversaire de l\'installation',
 };
 const CONDITIONS = { lead_non_contacte: 'le lead n\'est pas encore contacté', aucun_appel_sortant: 'personne n\'a rappelé le client',
-  aucun_avis_12_mois: 'aucun avis demandé à ce client depuis 12 mois', lead_ouvert: 'le lead est encore ouvert' };
+  aucun_avis_12_mois: 'aucun avis demandé à ce client depuis 12 mois', lead_ouvert: 'le lead est encore ouvert',
+  subvention_non_deposee: 'la demande LogisVert n\'est pas encore déposée' };
 const A = { vendeur: 'le vendeur', directeur: 'le directeur de la succursale', planification: 'la planification' };
 const ARRETS = { client_repond: 'le client répond', lead_contacte: 'le vendeur contacte le client', lead_ferme: 'le lead est vendu ou perdu',
   visite_changee: 'la visite est déplacée ou annulée', visite_planifiee: 'une visite est planifiée', projet_annule: 'le projet est annulé' };
 const JOURS = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-const VARIABLES = '{prenom} {succursale} {vendeur} {type} {date_visite} {heure_visite} {lien_avis} {code_projet} {subvention} {telephone}';
+const VARIABLES = '{prenom} {succursale} {vendeur} {type} {date_visite} {heure_visite} {lien_avis} {code_projet} {subvention} {telephone} {lien_guide_logisvert} {date_limite_logisvert} {numero_logisvert}';
 // Ordre du parcours client (lead, appel manqué, visite, subvention, avis, entretien)
-const ORDRE = ['lead_eclair', 'lead_escalade', 'lead_sequence', 'appel_manque', 'rappel_visite', 'subvention_suivi', 'avis_google', 'entretien_annuel'];
+const ORDRE = ['lead_eclair', 'lead_escalade', 'lead_sequence', 'appel_manque', 'rappel_visite', 'logisvert_client', 'subvention_suivi', 'avis_google', 'entretien_annuel'];
 const rang = (r) => { const i = ORDRE.indexOf(r.code); return i < 0 ? 99 : i; };
 const quand = (d) => (d ? new Date(d).toLocaleString('fr-CA', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
 

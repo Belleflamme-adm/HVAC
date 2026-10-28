@@ -9,7 +9,7 @@ const seeds = sql.slice(sql.indexOf('insert into public.regles (code'));
 // Chaque règle de la base : ('code', 'nom', ..., 'declencheur', '{conditions}', '[étapes]', '{arret}', commercial)
 const lignes = [...seeds.matchAll(/^\('([a-z_]+)', '((?:[^']|'')*)', '((?:[^']|'')*)', '([a-z_]+)',\s*'(\{[^']*\})',\s*'(\[[\s\S]*?\])',\s*'\{([a-z_,]*)\}', (true|false)\)/gm)];
 
-test('les 8 règles de la base sont lues', () => { assert.equal(lignes.length, 8); });
+test('les 9 règles de la base sont lues', () => { assert.equal(lignes.length, 9); });
 
 test('mêmes codes, noms, étapes, arrêts et commercial dans le HTML de test', () => {
   const bloc = demo.slice(demo.indexOf('const REGLES_DEMO = ['), demo.indexOf('];', demo.indexOf('const REGLES_DEMO = [')) + 2);

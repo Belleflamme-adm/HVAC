@@ -69,6 +69,7 @@ export function sectionDossier(j, { modifiable, belleflamme = false, msg, apres 
     const photosDe = (eq, cat) => d.photos.filter((p) => p.equipement_id === eq && p.categorie === cat);
     const retirerPhoto = modifiable ? (p) => agir(() => api.patch('job-dossier', { action: 'retirer_photo', id: p.id }), 'Photo retirée.') : null;
     const zoneForm = h('div');
+    const es = h('input', { name: 'energy_star', inputmode: 'numeric', value: d.numero_energy_star || '', placeholder: 'Ex. 2412345', 'aria-label': 'Numéro ENERGY STAR', maxlength: 9 });
     const ahri = h('input', { name: 'ahri', inputmode: 'numeric', value: d.numero_ahri || '', placeholder: 'Ex. 210987654', 'aria-label': 'Numéro de certificat AHRI', maxlength: 16 });
     zone.replaceChildren(...[
       h('div', { class: 'bf-dossier__tete' }, h('h3', {}, 'Dossier LogisVert'),
@@ -79,7 +80,11 @@ export function sectionDossier(j, { modifiable, belleflamme = false, msg, apres 
       belleflamme ? h('form', { class: 'bf-dossier__ahri', onsubmit: (e) => { e.preventDefault(); agir(() => api.patch('job-dossier', { action: 'ahri', projet: j.id, numero_ahri: ahri.value }), 'Numéro AHRI enregistré.'); } },
         h('label', {}, 'Numéro de certificat AHRI du système (Belleflamme, pour LogisVert)', ahri),
         h('button', { class: 'bf-bouton bf-bouton--discret', type: 'submit' }, 'Enregistrer'),
-        d.numero_ahri ? null : h('span', { class: 'bf-muet' }, 'À inscrire avant la demande LogisVert')) : null,
+        d.numero_ahri || d.numero_energy_star ? null : h('span', { class: 'bf-muet' }, 'AHRI ou ENERGY STAR : l\'un des deux, avant la demande LogisVert')) : null,
+      // ENERGY STAR (7 chiffres) : LogisVert accepte l'un OU l'autre (guide client, liste HQ du 16 oct. 2026)
+      belleflamme ? h('form', { class: 'bf-dossier__ahri', onsubmit: (e) => { e.preventDefault(); agir(() => api.patch('job-dossier', { action: 'energy_star', projet: j.id, numero_energy_star: es.value }), 'Numéro ENERGY STAR enregistré.'); } },
+        h('label', {}, 'Ou numéro ENERGY STAR du modèle (7 chiffres)', es),
+        h('button', { class: 'bf-bouton bf-bouton--discret', type: 'submit' }, 'Enregistrer')) : null,
       ...d.equipements.map((eq) => h('div', { class: 'bf-dossier__appareil' },
         h('div', { class: 'bf-dossier__appareil-tete' },
           h('div', {}, h('strong', {}, ROLES_APPAREIL[eq.role] || eq.role), ` | ${eq.marque} ${eq.modele}`, h('div', { class: 'bf-muet' }, `N° de série : ${eq.numero_serie}`)),

@@ -960,3 +960,22 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Lien d'avis Google** : la fiche « Le Groupe Belleflamme Outaouais » est associée à **Gatineau**. Lien de partage aussi.
 - **Lien d'avis Google** : la fiche « Belleflamme Centre du Québec (anciennement La Maison du Foyer) » est associée à **Drummondville** (`share.google/yOLFNTtIS7zmsoA3h`). Le lien `e5Zs4fPXfuCQDxcsn`, d'abord collé sous le nom « Outaouais », n'est plus utilisé : à confirmer par Simon (deuxième fiche Outaouais ?). Lien de partage aussi. Reste **Saint-Jérôme**.
 - **Lien d'avis Google** : Saint-Jérôme (`share.google/mKkac5EbPj9Emea6i`). Les 5 succursales ont maintenant un lien (tous des liens de partage de fiche, à remplacer par les liens directs « écrire un avis »).
+
+## ADR-091 | Guide LogisVert envoyé au client, date limite de 9 mois et numéro ENERGY STAR
+- **Date** : 2026-10-28 | **Statut** : Livrée (en local et HTML de test)
+- **Source** : le guide LogisVert de Belleflamme pour le client (https://claude.ai/artifact/WRNh66LK6or389XJa166Bg), basé sur la liste d'Hydro-Québec du 16 oct. 2026. Il était déjà dans le dépôt (`docs/reference/logisvert-guide-client.md`).
+- **Correction de l'ADR-084** : l'ADR disait que les exigences LogisVert venaient « de sources secondaires seulement ». C'était faux, ce guide était dans le dépôt et n'a pas été consulté. Il confirme :
+  - la photo de la plaque de l'appareil extérieur (modèle et numéro de série lisibles) ;
+  - le numéro AHRI **ou** ENERGY STAR sur la facture, avec la licence RBQ, la date d'installation et « Payé » ;
+  - la demande dans les 9 mois ;
+  - propriétaire seulement, avec le même nom sur la facture, la preuve de propriété et le profil ;
+  - les numéros de client et de compteur d'Hydro-Québec.
+- **Nouvelle règle « Guide LogisVert au client »** (transactionnelle), au passage à « Terminé » :
+  - **1 h** après : texto et courriel avec le lien du guide, le numéro à inscrire (AHRI ou ENERGY STAR) et la **date limite** (fin des travaux + 9 mois) ;
+  - **45 jours** après : relance par texto si la demande n'est pas déposée ;
+  - **6 mois** après : tâche à la planification « LogisVert pas encore déposé », pour appeler le client ;
+  - tout s'arrête dès que l'étape de subvention passe à « Déposée » (ou plus loin).
+- **Macro** : « ⏳ LogisVert à déposer avant le ... », en rouge sous 60 jours.
+- **Dossier** : un numéro **ENERGY STAR** (7 chiffres) peut remplacer le numéro AHRI (`hvac_job_energy_star`, Belleflamme seulement).
+- **Paramètre** `lien_guide_logisvert` : le lien du guide. À terme, héberger le guide sur le site de Belleflamme et changer seulement ce paramètre.
+- **Pour Mike (facture)** : la facture de Mike doit afficher le numéro AHRI ou ENERGY STAR, la licence RBQ (5631-7035-01), la date d'installation et « Payé ». Sans ça, la demande est refusée (une cause fréquente selon le guide).

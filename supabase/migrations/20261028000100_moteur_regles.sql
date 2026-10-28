@@ -149,6 +149,8 @@ select c.id, coalesce(c.client_id, l.client_id) as client_id, c.lead_id, c.canal
 -- ---------------------------------------------------------------------------
 -- 4. Subvention LogisVert (étapes) et avis Google
 -- ---------------------------------------------------------------------------
+-- Numéro ENERGY STAR (7 chiffres) : LogisVert accepte le numéro AHRI OU le numéro ENERGY STAR (guide client, liste HQ du 16 oct. 2026)
+alter table public.projets add column numero_energy_star text check (numero_energy_star is null or numero_energy_star ~ '^[0-9]{7}$');
 alter table public.projets add column subvention_statut text check (subvention_statut in ('a_deposer','deposee','acceptee','versee','refusee')),
   add column subvention_maj_le timestamptz;
 alter table public.succursales add column lien_avis_google text check (lien_avis_google is null or lien_avis_google ~ '^https://');
@@ -169,13 +171,13 @@ create policy lecture on public.avis_demandes for select to authenticated using 
 -- Étapes (jsonb, dans l'ordre) :
 --   { "type": "attendre", "minutes": 15, "ouvrables": true } | { "type": "attendre", "jours": 1 }  (envoi pendant les heures d'ouverture)
 --   { "type": "attendre_avant_visite", "heures": 24 }
---   { "type": "si", "condition": "lead_non_contacte" | "aucun_appel_sortant" | "aucun_avis_12_mois" | "lead_ouvert" }
+--   { "type": "si", "condition": "lead_non_contacte" | "aucun_appel_sortant" | "aucun_avis_12_mois" | "lead_ouvert" | "subvention_non_deposee" }
 --   { "type": "sms", "texte": "..." } | { "type": "courriel", "sujet": "...", "texte": "..." }
 --   { "type": "tache", "a": "vendeur|directeur|planification", "titre": "...", "echeance_minutes": 60 }
 --   { "type": "notifier", "a": "vendeur|directeur|planification", "titre": "...", "texte": "..." }
 --   { "type": "noter_avis" }
 -- Variables des textes : {prenom} {succursale} {vendeur} {type} {date_visite} {heure_visite} {lien_avis} {code_projet}
---   {subvention} {telephone}
+--   {subvention} {telephone} {lien_guide_logisvert} {date_limite_logisvert} {numero_logisvert}
 create table public.regles (
   id          uuid primary key default gen_random_uuid(),
   code        text not null unique,
@@ -210,7 +212,7 @@ begin
     if e->>'type' = 'sms' and length(e->>'texte') > 320 then raise exception 'Texto trop long (320 caractères au plus)' using errcode = 'P0001'; end if;
     if e->>'type' = 'attendre' and coalesce((e->>'minutes')::numeric, 0) + coalesce((e->>'jours')::numeric, 0) * 1440 <= 0 then
       raise exception 'Délai d''attente requis' using errcode = 'P0001'; end if;
-    if e->>'type' = 'si' and e->>'condition' not in ('lead_non_contacte','aucun_appel_sortant','aucun_avis_12_mois','lead_ouvert') then
+    if e->>'type' = 'si' and e->>'condition' not in ('lead_non_contacte','aucun_appel_sortant','aucun_avis_12_mois','lead_ouvert','subvention_non_deposee') then
       raise exception 'Condition inconnue : %', e->>'condition' using errcode = 'P0001'; end if;
     if e->>'type' in ('tache','notifier') and e->>'a' not in ('vendeur','directeur','planification') then
       raise exception 'Destinataire inconnu : %', e->>'a' using errcode = 'P0001'; end if;
@@ -318,6 +320,13 @@ begin
     'date_visite', case when v_visite is null then null else jours[extract(dow from v_loc)::int + 1] || ' ' || extract(day from v_loc)::int || ' ' || mois[extract(month from v_loc)::int] end,
     'heure_visite', case when v_visite is null then null else to_char(v_loc, 'FMHH24 "h" MI') end,
     'visite_le', v_visite, 'code_projet', p.code_projet, 'client_id', c.id,
+    -- LogisVert (guide du client) : lien du guide, date limite (9 mois après la fin des travaux), numéro AHRI ou ENERGY STAR
+    'lien_guide_logisvert', (select valeur #>> '{}' from public.parametres where cle = 'lien_guide_logisvert'),
+    'date_limite_logisvert', case when p.installation_terminee_le is null then null else
+      extract(day from (p.installation_terminee_le + interval '9 months') at time zone 'America/Toronto')::int || ' '
+      || mois[extract(month from (p.installation_terminee_le + interval '9 months') at time zone 'America/Toronto')::int] || ' '
+      || extract(year from (p.installation_terminee_le + interval '9 months') at time zone 'America/Toronto')::int end,
+    'numero_logisvert', coalesce('AHRI ' || p.numero_ahri, 'ENERGY STAR ' || p.numero_energy_star, 'sur votre facture'),
     'subvention', case x.contexte->>'etape' when 'deposee' then 'votre demande LogisVert est déposée auprès d''Hydro-Québec'
       when 'acceptee' then 'votre demande LogisVert est acceptée' when 'versee' then 'Hydro-Québec a versé votre subvention LogisVert'
       when 'refusee' then 'votre demande LogisVert a été refusée, on vous appelle pour la suite' else 'votre dossier LogisVert avance' end);
@@ -375,6 +384,9 @@ begin
       if exists (select 1 from public.communications where canal = 'appel' and direction = 'sortant' and debut >= x.created_at
                    and (lead_id = x.lead_id or app.e164(coordonnee_client) = v->>'telephone')) then
         resultat := 'fin'; detail := 'client déjà rappelé'; end if;
+    elsif e->>'condition' = 'subvention_non_deposee' then
+      if exists (select 1 from public.projets where id = x.projet_id and subvention_statut in ('deposee','acceptee','versee','refusee')) then
+        resultat := 'fin'; detail := 'demande LogisVert déjà déposée'; end if;
     elsif e->>'condition' = 'aucun_avis_12_mois' then
       if exists (select 1 from public.avis_demandes where client_id = (v->>'client_id')::uuid and envoye_le > now() - interval '12 months') then
         resultat := 'fin'; detail := 'avis déjà demandé dans les 12 derniers mois'; end if;
@@ -582,7 +594,7 @@ select p.id, p.code_projet, p.statut, p.succursale_code, p.client_id, trim(coale
        (select sum(round(x.quantite * x.cout_cents))::bigint from public.projet_extras x where x.projet_id = p.id and x.statut = 'approuve') as extras_approuves_cents,
        p.facture_st_soumise_le, p.facture_st_total_cents,
        p.numero_ahri, case when p.sous_traitant_id is null then null else cardinality(app.dossier_job(p.id)) end as dossier_manques,
-       p.depot_recu_le, p.depot_montant_cents, p.subvention_statut, p.subvention_maj_le
+       p.depot_recu_le, p.depot_montant_cents, p.subvention_statut, p.subvention_maj_le, p.installation_terminee_le, p.numero_energy_star
   from public.projets p
   join public.clients c on c.id = p.client_id
   left join public.sites s on s.id = p.site_id
@@ -660,6 +672,39 @@ end $$;
 revoke all on function public.hvac_tache_faite(uuid), public.hvac_lien_avis(text, text), public.hvac_heures(text, jsonb) from public, anon;
 grant execute on function public.hvac_tache_faite(uuid), public.hvac_lien_avis(text, text), public.hvac_heures(text, jsonb) to authenticated;
 
+-- Numéro ENERGY STAR du système (Belleflamme), alternative au numéro AHRI pour LogisVert
+create or replace function public.hvac_job_energy_star(p_projet uuid, p_numero text) returns void
+language plpgsql security definer set search_path = public as $$
+declare v text := nullif(regexp_replace(coalesce(p_numero, ''), '\s', '', 'g'), '');
+begin
+  if not (app.est_admin() or app.est_planification()) then raise exception 'Le numéro ENERGY STAR est inscrit par Belleflamme' using errcode = '42501'; end if;
+  if v is null or v !~ '^[0-9]{7}$' then raise exception 'Numéro ENERGY STAR : 7 chiffres' using errcode = 'P0001'; end if;
+  update public.projets set numero_energy_star = v where id = p_projet;
+  if not found then raise exception 'Projet introuvable' using errcode = 'P0002'; end if;
+  update public.equipements_installes set energy_star = v where projet_id = p_projet and actif;
+end $$;
+-- Dossier : le numéro ENERGY STAR s'ajoute au numéro AHRI
+create or replace function public.hvac_job_dossier(p_projet uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare p public.projets%rowtype;
+begin
+  select * into p from public.projets where id = p_projet;
+  if p.id is null or not coalesce((app.est_interne() and app.voit_projet(p.id)) or p.sous_traitant_id = app.mon_fournisseur(), false) then
+    raise exception 'Job introuvable' using errcode = '42501';
+  end if;
+  return jsonb_build_object(
+    'numero_ahri', p.numero_ahri, 'numero_energy_star', p.numero_energy_star,
+    'equipements', coalesce((select jsonb_agg(jsonb_build_object('id', e.id, 'role', e.role, 'marque', e.marque, 'modele', e.modele, 'numero_serie', e.numero_serie) order by e.created_at)
+                               from public.equipements_installes e where e.projet_id = p.id and e.actif), '[]'::jsonb),
+    'photos', coalesce((select jsonb_agg(jsonb_build_object('id', ph.id, 'equipement_id', ph.equipement_id, 'categorie', ph.categorie, 'chemin', ph.chemin) order by ph.created_at)
+                          from public.projet_photos ph where ph.projet_id = p.id and ph.statut = 'televersee'), '[]'::jsonb),
+    'manques', to_jsonb(app.dossier_job(p.id)),
+    'purgees', (select count(*) from public.projet_photos ph where ph.projet_id = p.id and ph.statut = 'purgee'));
+end $$;
+
+revoke all on function public.hvac_job_energy_star(uuid, text) from public, anon;
+grant execute on function public.hvac_job_energy_star(uuid, text) to authenticated;
+
 -- Suivi des règles (page Automatisations)
 create or replace view public.regles_suivi_v with (security_invoker = true) as
 select r.id, r.code, r.nom, r.description, r.declencheur, r.actif, r.commercial, r.etapes, r.arret, r.updated_at,
@@ -688,6 +733,9 @@ update public.succursales set lien_avis_google = 'https://share.google/yOLFNTtIS
 -- Saint-Jérôme (fourni par Simon le 28 oct. 2026, dernière succursale sans lien). Lien de partage, même remarque.
 update public.succursales set lien_avis_google = 'https://share.google/mKkac5EbPj9Emea6i' where code = 'HO';
 
+insert into public.parametres (cle, valeur, description) values
+  ('lien_guide_logisvert', '"https://claude.ai/artifact/WRNh66LK6or389XJa166Bg"', 'Guide LogisVert pour le client (Belleflamme), envoyé à la fin des travaux. À héberger sur le site de Belleflamme à terme.')
+on conflict (cle) do nothing;
 insert into public.parametres (cle, valeur, description) values
   ('envois_reels', 'false', 'false : textos et courriels automatiques simulés (historique du client). true à la greffe : envoyés par l''app de Mike (ADR-090).')
 on conflict (cle) do nothing;
@@ -734,6 +782,16 @@ insert into public.regles (code, nom, description, declencheur, conditions, etap
 ('subvention_suivi', 'Suivi de subvention LogisVert', 'À chaque étape de la subvention (déposée, acceptée, versée, refusée), un texto au client.', 'subvention_etape',
  '{}',
  '[{"type":"sms","texte":"Belleflamme {succursale} : bonne nouvelle {prenom}, {subvention}. Des questions? Répondez ici."}]',
+ '{projet_annule}', false),
+('logisvert_client', 'Guide LogisVert au client', 'À la fin des travaux : le guide pour réclamer la subvention, la date limite (9 mois) et le numéro AHRI ou ENERGY STAR. Relance à 45 jours et tâche à la planification à 6 mois si la demande n''est pas encore déposée.', 'projet_etape',
+ '{"statut":"termine"}',
+ '[{"type":"attendre","minutes":60},
+   {"type":"sms","texte":"{prenom}, votre thermopompe est installée! Réclamez votre subvention LogisVert avec notre guide : {lien_guide_logisvert} Date limite : {date_limite_logisvert}. Belleflamme {succursale}"},
+   {"type":"courriel","sujet":"Votre subvention LogisVert : le guide et votre date limite","texte":"Bonjour {prenom},\n\nVotre thermopompe est installée. Vous pouvez maintenant réclamer votre subvention LogisVert d''Hydro-Québec.\n\nNotre guide, étape par étape : {lien_guide_logisvert}\nVotre numéro à inscrire dans le portail : {numero_logisvert}\nDate limite pour faire la demande : {date_limite_logisvert} (9 mois après l''installation).\n\nUn doute? Répondez à ce courriel, on vous aide.\n\nL''équipe Belleflamme {succursale}"},
+   {"type":"attendre","jours":45},{"type":"si","condition":"subvention_non_deposee"},
+   {"type":"sms","texte":"{prenom}, petit rappel : votre demande LogisVert est à faire avant le {date_limite_logisvert}. Le guide : {lien_guide_logisvert} Besoin d''aide? Répondez ici."},
+   {"type":"attendre","jours":135},{"type":"si","condition":"subvention_non_deposee"},
+   {"type":"tache","a":"planification","titre":"LogisVert pas encore déposé : {prenom} ({code_projet})","texte":"Date limite : {date_limite_logisvert}. Appeler le client pour l''aider à déposer sa demande.","echeance_minutes":2880}]',
  '{projet_annule}', false),
 ('entretien_annuel', 'Entretien annuel de la thermopompe', '30 jours avant l''anniversaire de l''installation : texto pour choisir une plage d''entretien, et tâche à la planification.', 'entretien_annuel',
  '{}',

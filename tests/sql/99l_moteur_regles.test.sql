@@ -136,6 +136,23 @@ select test.ok((select count(*) = 0 from public.communications c join public.pro
 select test.ok((select count(*) = 2 from public.execution_journal j join public.executions x on x.id = j.execution_id
                  where x.projet_id = (select id from t_ga) and j.resultat = 'saute' and j.detail like 'lien d''avis Google manquant%'), 'journal : lien manquant');
 
+-- Guide LogisVert au client : 1 h après « Terminé », texto et courriel avec le lien du guide, la date limite (9 mois) et le numéro
+set role authenticated;
+select test.comme('00000000-0000-0000-0000-00000000000a');
+select test.echec($$select public.hvac_job_energy_star((select id from t_pr), '12345')$$, 'ENERGY STAR : 7 chiffres', '7 chiffres');
+select public.hvac_job_energy_star((select id from t_pr), '2412345');
+reset role;
+select test.ok((select numero_energy_star = '2412345' from public.projets where id = (select id from t_pr)), 'numéro ENERGY STAR inscrit');
+select test.echu_projet((select id from t_pr), 'logisvert_client');
+set role service_role; select test.executer(); reset role;
+select test.ok((select count(*) = 2 from public.communications c join public.projets p on p.client_id = c.client_id
+                  where p.id = (select id from t_pr) and c.contenu like '%https://claude.ai/artifact/WRNh66LK6or389XJa166Bg%'), 'guide LogisVert : texto et courriel avec le lien');
+select test.ok((select count(*) = 1 from public.communications c join public.projets p on p.client_id = c.client_id
+                  where p.id = (select id from t_pr) and c.canal = 'courriel' and c.contenu like '%ENERGY STAR 2412345%'
+                    and c.contenu like '%Date limite pour faire la demande : %' ), 'courriel : numéro ENERGY STAR et date limite');
+select test.ok((select prochaine_le > now() + interval '44 days' from public.executions x join public.regles r on r.id = x.regle_id
+                  where r.code = 'logisvert_client' and x.projet_id = (select id from t_pr) and x.statut = 'active'), 'relance prévue à 45 jours');
+
 -- 7. Subvention : chaque étape envoie un texto
 set role authenticated;
 select test.comme('00000000-0000-0000-0000-00000000000a');
@@ -146,6 +163,11 @@ select test.executer();
 reset role;
 select test.ok((select count(*) = 1 from public.communications c join public.projets p on p.client_id = c.client_id
                   where p.id = (select id from t_pr) and c.contenu like '%votre demande LogisVert est déposée%'), 'subvention déposée : texto au client');
+-- Demande déposée : la relance LogisVert s'arrête (condition fausse au prochain passage)
+select test.echu_projet((select id from t_pr), 'logisvert_client');
+set role service_role; select test.executer(); reset role;
+select test.ok((select x.statut = 'terminee' and x.arret_motif = 'demande LogisVert déjà déposée' from public.executions x join public.regles r on r.id = x.regle_id
+                  where r.code = 'logisvert_client' and x.projet_id = (select id from t_pr)), 'demande déposée : plus de relance LogisVert');
 
 -- 8. Appel manqué : nouveau lead, texto 1 minute plus tard, une seule fois par numéro par jour ; pas de réponse éclair en double
 set role service_role;
