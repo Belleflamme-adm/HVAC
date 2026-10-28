@@ -15,9 +15,11 @@ grant execute on all functions in schema test to service_role;
 create or replace function test.statut(p_lead uuid, p_code text) returns text language sql as $$
   select x.statut from public.executions x join public.regles r on r.id = x.regle_id where r.code = p_code and x.lead_id = p_lead $$;
 
--- Heures ouvrables : un lead reçu dimanche compte à partir de lundi 8 h 30 (heure de Montréal)
-select test.ok(app.plus_minutes_ouvrables('RO', '2026-11-01 14:00-05', 15) = '2026-11-02 08:45-05', 'dimanche 14 h + 15 min ouvrables = lundi 8 h 45');
-select test.ok(app.plus_minutes_ouvrables('RO', '2026-11-02 16:50-05', 15) = '2026-11-03 08:35-05', 'lundi 16 h 50 + 15 min = mardi 8 h 35');
+-- Heures ouvrables : lun-mer 9 h-17 h, jeu-ven 9 h-19 h, sam 10 h-16 h (heure de Montréal)
+select test.ok(app.plus_minutes_ouvrables('RO', '2026-11-01 14:00-05', 15) = '2026-11-02 09:15-05', 'dimanche 14 h + 15 min ouvrables = lundi 9 h 15');
+select test.ok(app.plus_minutes_ouvrables('RO', '2026-11-02 16:50-05', 15) = '2026-11-03 09:05-05', 'lundi 16 h 50 + 15 min = mardi 9 h 05');
+select test.ok(app.plus_minutes_ouvrables('RO', '2026-11-05 18:50-05', 15) = '2026-11-06 09:05-05', 'jeudi 18 h 50 + 15 min = vendredi 9 h 05 (ouvert jusqu''à 19 h)');
+select test.ok(app.plus_minutes_ouvrables('RO', '2026-11-06 20:00-05', 15) = '2026-11-07 10:15-05', 'vendredi 20 h + 15 min = samedi 10 h 15');
 select test.ok(app.plus_minutes_ouvrables('RO', '2026-11-02 10:00-05', 15) = '2026-11-02 10:15-05', 'pendant les heures : minutes réelles');
 select test.ok(app.e164('(450) 555-0199') = '+14505550199' and app.e164('1-450-555-0199') = '+14505550199' and app.e164('5550199') is null, 'téléphone E.164');
 

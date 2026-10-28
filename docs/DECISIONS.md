@@ -952,6 +952,6 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - **Réceptionniste IA vocale** : plus tard, en débordement de soir seulement, comme le recommande le document.
   - **Messages Facebook** dans le fil : à brancher avec la messagerie de Mike.
 - **À confirmer par Simon** :
-  - les **heures** des succursales (provisoires : lun-ven 8 h 30 à 17 h, sam 9 h à 16 h) ;
   - les **liens d'avis Google** ;
   - les **textes** des messages.
+- **Heures confirmées par Simon (28 oct. 2026)**, toutes les succursales : lundi à mercredi 9 h à 17 h, jeudi et vendredi 9 h à 19 h, samedi 10 h à 16 h, dimanche fermé. Une succursale différente se règle dans la page Automatisations.

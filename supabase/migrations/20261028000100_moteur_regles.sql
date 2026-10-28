@@ -30,9 +30,10 @@ create table public.heures_succursales (
 alter table public.heures_succursales enable row level security;
 create policy lecture on public.heures_succursales for select to authenticated using (app.est_interne());
 create policy gestion on public.heures_succursales for all to authenticated using (app.est_admin()) with check (app.est_admin());
--- PROVISOIRE, à confirmer par Simon : lun-ven 8 h 30 à 17 h, sam 9 h à 16 h, dim fermé
+-- Heures de Simon (28 oct. 2026), toutes les succursales : lun-mer 9 h à 17 h, jeu-ven 9 h à 19 h, sam 10 h à 16 h, dim fermé
 insert into public.heures_succursales (succursale_code, jour, ouvre, ferme)
-select s.code, j, case when j = 6 then '09:00' else '08:30' end::time, case when j = 6 then '16:00' else '17:00' end::time
+select s.code, j, case when j = 6 then '10:00' else '09:00' end::time,
+       case when j = 6 then '16:00' when j in (4, 5) then '19:00' else '17:00' end::time
   from public.succursales s cross join generate_series(1, 6) j
 on conflict do nothing;
 

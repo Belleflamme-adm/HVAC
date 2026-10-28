@@ -367,7 +367,8 @@
   Object.assign(etat, { regles: REGLES_DEMO.map((r) => ({ id: `r-${r.code}`, actif: true, updated_at: iso(etat.maintenant), ...r })),
     executions: [], journal: [], taches: [], notifs: [], consent: [], desab: [], avisDemandes: [], moteurActif: false,
     heures: {}, liensAvis: { RO: 'https://g.page/r/belleflamme-rosemere-fictif/review', HO: 'https://g.page/r/belleflamme-saint-jerome-fictif/review' } });
-  for (const c of ['HO', 'RO', 'ST', 'GA', 'DR']) etat.heures[c] = { 1: ['08:30', '17:00'], 2: ['08:30', '17:00'], 3: ['08:30', '17:00'], 4: ['08:30', '17:00'], 5: ['08:30', '17:00'], 6: ['09:00', '16:00'] };
+  // Heures de Simon (28 oct. 2026) : lun-mer 9 h-17 h, jeu-ven 9 h-19 h, sam 10 h-16 h
+  for (const c of ['HO', 'RO', 'ST', 'GA', 'DR']) etat.heures[c] = { 1: ['09:00', '17:00'], 2: ['09:00', '17:00'], 3: ['09:00', '17:00'], 4: ['09:00', '19:00'], 5: ['09:00', '19:00'], 6: ['10:00', '16:00'] };
   const NOMS_SUCC = { HO: 'Saint-Jérôme', RO: 'Rosemère', ST: 'Saint-Sauveur', GA: 'Gatineau', DR: 'Drummondville' };
   const e164 = (t) => { const d = String(t || '').replace(/\D/g, ''); return d.length === 10 ? `+1${d}` : d.length === 11 && d[0] === '1' ? `+${d}` : null; };
   const aHeure = (jour, hm) => { const [hh, mm] = hm.split(':').map(Number); const d = new Date(jour); d.setHours(hh, mm, 0, 0); return d.getTime(); };
