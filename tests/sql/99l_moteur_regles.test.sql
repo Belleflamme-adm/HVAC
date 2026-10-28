@@ -87,6 +87,7 @@ select test.ok(not app.peut_envoyer_commercial('+14505550101', null, 'sms'), 'pl
 select test.ok(app.peut_envoyer_commercial(null, 'line@exemple.invalid', 'courriel'), 'le courriel reste permis (consentement tacite)');
 
 select test.ok((select lien_avis_google = 'https://share.google/Uxc4mQUVVAVHzIjUS' from public.succursales where code = 'RO'), 'lien d''avis de Rosemère (Rive-Nord)');
+select test.ok((select lien_avis_google = 'https://share.google/gGKH35om5NjXuPDzG' from public.succursales where code = 'ST'), 'lien d''avis de Saint-Sauveur (Laurentides)');
 -- 6. Projet terminé : demande d'avis 2 jours plus tard, une fois par 12 mois ; consentement tacite d'achat 2 ans
 update public.succursales set lien_avis_google = 'https://g.page/r/belleflamme-rosemere/review' where code = 'RO';
 insert into public.leads (id, succursale_code, source, contact_nom, contact_tel, contact_courriel, type_demande) values

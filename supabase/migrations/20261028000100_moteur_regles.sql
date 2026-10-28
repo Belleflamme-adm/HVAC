@@ -679,6 +679,8 @@ revoke all on public.regles_suivi_v from anon;
 -- Lien de la fiche Google « Le Groupe Belleflamme Rive-Nord » (fourni par Simon le 28 oct. 2026), associé à Rosemère.
 -- Lien de PARTAGE de la fiche : à remplacer par le lien direct « écrire un avis » (Google Business Profile, « Demander des avis »).
 update public.succursales set lien_avis_google = 'https://share.google/Uxc4mQUVVAVHzIjUS' where code = 'RO';
+-- Fiche « Le Groupe BelleFlamme Laurentides » (fournie par Simon le 28 oct. 2026) : Saint-Sauveur. Lien de partage, même remarque.
+update public.succursales set lien_avis_google = 'https://share.google/gGKH35om5NjXuPDzG' where code = 'ST';
 
 insert into public.parametres (cle, valeur, description) values
   ('envois_reels', 'false', 'false : textos et courriels automatiques simulés (historique du client). true à la greffe : envoyés par l''app de Mike (ADR-090).')
