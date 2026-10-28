@@ -74,9 +74,11 @@
       contact_courriel: null, ville: VILLES[n % VILLES.length], besoin: BESOINS[n % BESOINS.length], succursale_code: 'RO',
       type_demande: ['mural_simple', 'mural_multi', 'central', 'bienergie', null][n % 5],
       assigne_a: null, attribue_le: null, pris_en_charge_le: null, premier_contact_le: null, premier_contact_canal: null, visite_prevue_le: null, raison_perte: null, ...champs };
+    if (etat.moteurActif && !l.contact_courriel && l.source !== 'appel_manque') l.contact_courriel = `${l.contact_nom.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')}@exemple.invalid`;
     l.assigne_a = prochainVendeur(l.type_demande);
     if (l.assigne_a) { l.attribue_le = recu; activite(l, { type: 'attribution', note: 'Attribué automatiquement (tour de rôle)' }, recu, l.assigne_a); }
     etat.leads.unshift(l);
+    evenementLead(l);
     return l;
   }
   function activite(l, a, t = etat.maintenant, par = user().id) {
@@ -92,6 +94,7 @@
     else if (a.type === 'visite_annulee') { l.visite_prevue_le = null; l.visite_pointage_ref = null; if (l.statut === 'inspection_planifiee') l.statut = l.premier_contact_le ? 'contacte' : 'pris_en_charge'; }
     else if (['appel', 'courriel', 'texto'].includes(a.type) && ['nouveau', 'pris_en_charge'].includes(l.statut)) l.statut = 'contacte';
     else if (a.type === 'prise_en_charge' && l.statut === 'nouveau') l.statut = 'pris_en_charge';
+    evenementActivite(l, a);   // moteur de règles, après la mise à jour du lead (comme le trigger « after insert »)
   }
   const iso = (t) => (t ? new Date(t).toISOString() : null);
   const minutes = (a, b) => (a && b ? (b - a) / M : null);
@@ -186,6 +189,7 @@
       enregistrement_duree_s: null, a_enregistrement: false, enregistrement_efface_le: null, client_id: null, lead_id: null, source: 'hvac', ...c };
     comm.employe_nom = nomEmploye(comm.employe_id);
     etat.comms.push(comm);
+    evenementComm(comm);
     return comm;
   }
   function appelSimule(cible, { quand, employe, resultat = 'joint', n = etat.comms.length }) {
@@ -236,6 +240,7 @@
       sous_traitant_id, sous_traitant_nom: null, cout_installation_cents: null, adresse: null, client_telephone: null, lignes };
     if (sous_traitant_id || lignes.length) attitrer(p, sous_traitant_id, lignes);
     etat.projets.push(p);
+    evenementProjet(p, null);   // moteur de règles (consentement d'achat), actif seulement après le chargement
     return p;
   }
   {
@@ -314,6 +319,230 @@
     eng('122458', 'Prévost', 'Sophie Vente (FICTIF)', 'INST-MURAL-1T-12', 'Murale 1 tête, jusqu\'à 12 000 BTU', 120000, 27),
     eng('122470', 'Sainte-Adèle', 'Sophie Vente (FICTIF)', 'INST-MULTI-2T', 'Multizone 2 têtes', 210000, 19),
     eng('122395', 'Mirabel', 'Marc Vendeur (FICTIF)', 'INST-MULTI-2T', 'Multizone 2 têtes', 210000, 0, 'accepte'));
+
+  // ---------- Moteur de règles (ADR-090) : mêmes règles et mêmes étapes que la base (migration 20261028000100) ----------
+  // Envois SIMULÉS : les textos et courriels s'inscrivent dans l'historique du client. Le moteur tourne à chaque geste
+  // et quand l'heure simulée avance. Il ne s'arme qu'après le chargement des données fictives (pas de rafale au départ).
+  const REGLES_DEMO = [
+    { code: 'lead_eclair', nom: 'Réponse éclair au lead', description: 'Texto et courriel au client dès que sa demande arrive.', declencheur: 'lead_recu',
+      conditions: { sources_exclues: ['appel_manque'] }, arret: ['lead_ferme'], commercial: false, etapes: [
+        { type: 'sms', texte: 'Bonjour {prenom}, ici Belleflamme {succursale}. Votre demande de {type} est bien reçue. {vendeur} vous appelle très vite. Vous pouvez aussi répondre ici.' },
+        { type: 'courriel', sujet: 'Votre demande à Belleflamme {succursale}', texte: "Bonjour {prenom},\n\nMerci pour votre demande de {type}. {vendeur}, de notre succursale {succursale}, vous contactera très bientôt pour planifier une visite d'évaluation gratuite.\n\nÀ bientôt,\nL'équipe Belleflamme" }] },
+    { code: 'lead_escalade', nom: 'Escalade : lead sans contact', description: 'Après 15 minutes ouvrables sans contact du vendeur, le directeur est avisé et reçoit une tâche.', declencheur: 'lead_recu',
+      conditions: {}, arret: ['lead_contacte', 'lead_ferme'], commercial: false, etapes: [
+        { type: 'attendre', minutes: 15, ouvrables: true }, { type: 'si', condition: 'lead_non_contacte' },
+        { type: 'notifier', a: 'directeur', titre: 'Lead sans contact depuis 15 min', texte: '{prenom} ({type}) attend toujours un contact de {vendeur}.' },
+        { type: 'tache', a: 'directeur', titre: 'Appeler {prenom} : lead sans contact', texte: "Le vendeur {vendeur} n'a pas encore contacté ce client.", echeance_minutes: 30 }] },
+    { code: 'lead_sequence', nom: 'Séquence si le client ne répond pas', description: "J+1 texto, J+3 courriel, J+7 tâche d'appel au vendeur. S'arrête dès que le client répond, que la visite est planifiée ou que le lead est fermé.", declencheur: 'lead_recu',
+      conditions: {}, arret: ['client_repond', 'lead_ferme', 'visite_planifiee'], commercial: false, etapes: [
+        { type: 'attendre', jours: 1 }, { type: 'si', condition: 'lead_ouvert' },
+        { type: 'sms', texte: "Bonjour {prenom}, c'est {vendeur} de Belleflamme {succursale}. Avez-vous un moment pour planifier votre visite d'évaluation gratuite? Répondez ici avec vos disponibilités." },
+        { type: 'attendre', jours: 2 }, { type: 'si', condition: 'lead_ouvert' },
+        { type: 'courriel', sujet: 'Votre projet de {type}', texte: "Bonjour {prenom},\n\nJe n'ai pas réussi à vous joindre. Si votre projet de {type} tient toujours, répondez à ce courriel ou appelez-nous : nous planifierons une visite d'évaluation gratuite, à votre convenance.\n\n{vendeur}, Belleflamme {succursale}" },
+        { type: 'attendre', jours: 4 }, { type: 'si', condition: 'lead_ouvert' },
+        { type: 'tache', a: 'vendeur', titre: 'Rappeler {prenom} (7 jours sans réponse)', texte: 'Dernière relance prévue par la séquence.', echeance_minutes: 240 }] },
+    { code: 'appel_manque', nom: 'Texto après appel manqué', description: "Une minute après un appel manqué, si personne n'a rappelé : texto au client et avis au vendeur de garde. Une fois par numéro par jour.", declencheur: 'appel_manque',
+      conditions: {}, arret: ['client_repond'], commercial: false, etapes: [
+        { type: 'attendre', minutes: 1 }, { type: 'si', condition: 'aucun_appel_sortant' },
+        { type: 'sms', texte: "Belleflamme {succursale}, désolés pour l'appel manqué. On vous rappelle ou répondez ici." },
+        { type: 'notifier', a: 'vendeur', titre: 'Appel manqué : {telephone}', texte: 'Un texto automatique est parti. Rappelle le client.' }] },
+    { code: 'rappel_visite', nom: 'Rappels de visite', description: "Texto 24 h et 2 h avant la visite d'évaluation (date reçue de Pointage).", declencheur: 'visite_planifiee',
+      conditions: {}, arret: ['visite_changee', 'lead_ferme'], commercial: false, etapes: [
+        { type: 'attendre_avant_visite', heures: 24 }, { type: 'sms', texte: 'Rappel : {vendeur} de Belleflamme {succursale} vous visite {date_visite} à {heure_visite}. Un empêchement? Répondez ici.' },
+        { type: 'attendre_avant_visite', heures: 2 }, { type: 'sms', texte: 'Belleflamme : {vendeur} sera chez vous à {heure_visite}, dans environ 2 heures. À tantôt!' }] },
+    { code: 'avis_google', nom: "Demande d'avis Google", description: "2 jours après la fin des travaux : texto et courriel avec le lien d'avis de la succursale. Même lien pour tous les clients, sans filtre (règle de Google). Une fois par client par 12 mois.", declencheur: 'projet_etape',
+      conditions: { statut: 'termine' }, arret: ['projet_annule'], commercial: true, etapes: [
+        { type: 'attendre', jours: 2 }, { type: 'si', condition: 'aucun_avis_12_mois' },
+        { type: 'sms', texte: "Merci {prenom} d'avoir choisi Belleflamme {succursale}! Votre avis nous aide beaucoup : {lien_avis}" },
+        { type: 'courriel', sujet: "Comment s'est passée votre installation?", texte: "Bonjour {prenom},\n\nMerci d'avoir fait confiance à Belleflamme {succursale} pour votre {type}. Prendriez-vous une minute pour nous laisser un avis? {lien_avis}\n\nL'équipe Belleflamme" },
+        { type: 'noter_avis' }] },
+    { code: 'subvention_suivi', nom: 'Suivi de subvention LogisVert', description: 'À chaque étape de la subvention (déposée, acceptée, versée, refusée), un texto au client.', declencheur: 'subvention_etape',
+      conditions: {}, arret: ['projet_annule'], commercial: false, etapes: [
+        { type: 'sms', texte: 'Belleflamme {succursale} : bonne nouvelle {prenom}, {subvention}. Des questions? Répondez ici.' }] },
+    { code: 'entretien_annuel', nom: 'Entretien annuel de la thermopompe', description: "30 jours avant l'anniversaire de l'installation : texto pour choisir une plage d'entretien, et tâche à la planification.", declencheur: 'entretien_annuel',
+      conditions: {}, arret: [], commercial: true, etapes: [
+        { type: 'sms', texte: "Bonjour {prenom}, votre thermopompe Belleflamme aura bientôt un an. C'est le temps de l'entretien annuel pour garder la garantie et l'efficacité. Répondez ici pour choisir votre plage." },
+        { type: 'tache', a: 'planification', titre: 'Entretien annuel : {prenom} ({code_projet})', texte: "Le client a reçu l'offre d'entretien.", echeance_minutes: 2880 }] },
+  ];
+  Object.assign(etat, { regles: REGLES_DEMO.map((r) => ({ id: `r-${r.code}`, actif: true, updated_at: iso(etat.maintenant), ...r })),
+    executions: [], journal: [], taches: [], notifs: [], consent: [], desab: [], avisDemandes: [], moteurActif: false,
+    heures: {}, liensAvis: { RO: 'https://g.page/r/belleflamme-rosemere-fictif/review', HO: 'https://g.page/r/belleflamme-saint-jerome-fictif/review' } });
+  for (const c of ['HO', 'RO', 'ST', 'GA', 'DR']) etat.heures[c] = { 1: ['08:30', '17:00'], 2: ['08:30', '17:00'], 3: ['08:30', '17:00'], 4: ['08:30', '17:00'], 5: ['08:30', '17:00'], 6: ['09:00', '16:00'] };
+  const NOMS_SUCC = { HO: 'Saint-Jérôme', RO: 'Rosemère', ST: 'Saint-Sauveur', GA: 'Gatineau', DR: 'Drummondville' };
+  const e164 = (t) => { const d = String(t || '').replace(/\D/g, ''); return d.length === 10 ? `+1${d}` : d.length === 11 && d[0] === '1' ? `+${d}` : null; };
+  const aHeure = (jour, hm) => { const [hh, mm] = hm.split(':').map(Number); const d = new Date(jour); d.setHours(hh, mm, 0, 0); return d.getTime(); };
+  function plusOuvrables(succ, depart, minutes) {
+    const hs = etat.heures[succ];
+    if (!hs || !Object.keys(hs).length) return depart + minutes * M;
+    let t = depart; let reste = minutes;
+    for (let n = 0; n < 60; n++) {
+      const plage = hs[new Date(t).getDay()];
+      if (plage) {
+        const debut = aHeure(t, plage[0]); const fin = aHeure(t, plage[1]);
+        if (t < debut) t = debut;
+        if (t < fin) { if (t + reste * M <= fin) return t + reste * M; reste -= (fin - t) / M; }
+      }
+      const d = new Date(t); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + 1); t = d.getTime();
+    }
+    return depart + minutes * M;
+  }
+  const libType = (t) => ({ mural_simple: 'thermopompe murale', mural_multi: 'thermopompe multizone', central: 'système central', bienergie: 'système biénergie' }[t] || 'climatisation et chauffage');
+  const SUBV = { deposee: "votre demande LogisVert est déposée auprès d'Hydro-Québec", acceptee: 'votre demande LogisVert est acceptée',
+    versee: 'Hydro-Québec a versé votre subvention LogisVert', refusee: 'votre demande LogisVert a été refusée, on vous appelle pour la suite' };
+  function contexte(x) {
+    const l = x.lead_id ? etat.leads.find((y) => y.id === x.lead_id) : null;
+    const p = x.projet_id ? etat.projets.find((y) => y.id === x.projet_id) : null;
+    const succ = p?.succursale_code || l?.succursale_code || 'RO';
+    const vendeur = l?.assigne_a || p?.vendeur_id || null;
+    const visite = x.contexte.visite_le || l?.visite_prevue_le || null;
+    const v = visite ? new Date(visite) : null;
+    const nom = (p?.client_nom || l?.contact_nom || '').replace(' (FICTIF)', '').split(' ')[0];
+    return { prenom: nom || 'bonjour', telephone: e164(p?.client_telephone || l?.contact_tel), courriel: l?.contact_courriel || (p ? `${nom.toLowerCase() || 'client'}@exemple.invalid` : null),
+      succursale: NOMS_SUCC[succ] || 'Belleflamme', succursale_code: succ, lien_avis: etat.liensAvis[succ] || '',
+      vendeur: (nomEmploye(vendeur) || 'votre conseiller').split(' ')[0], vendeur_id: vendeur, type: libType(p?.type_systeme || l?.type_demande),
+      date_visite: v ? v.toLocaleDateString('fr-CA', { weekday: 'long', day: 'numeric', month: 'long' }) : '', heure_visite: v ? v.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }).replace(':', ' h ') : '',
+      visite_le: visite, code_projet: p?.code_projet || '', client_id: p?.client_id || l?.client_id || p?.id || null,
+      subvention: SUBV[x.contexte.etape] || 'votre dossier LogisVert avance' };
+  }
+  const rendre = (t, v) => String(t).replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '').replace(/[ \t]+/g, ' ').trim();
+  function peutCommercial(tel, courriel, canal) {
+    if (etat.desab.some((d) => (d.canal === canal || d.canal === 'tous') && ((tel && d.tel === tel) || (courriel && d.courriel === courriel)))) return false;
+    return etat.consent.some((c) => (c.expire_le === null || c.expire_le > etat.maintenant) && ((tel && c.tel === tel) || (courriel && c.courriel === courriel)));
+  }
+  function destinataires(a, v) {
+    if (a === 'vendeur') return v.vendeur_id ? [v.vendeur_id] : [];
+    return Object.values(UTILISATEURS).filter((u) => ['Admin tout', 'Direction'].includes(u.role) || (a === 'planification' && u.role === 'Coordonnateur')).map((u) => u.id);
+  }
+  function declencher(declencheur, cle, { lead = null, projet = null, ctx = {} } = {}) {
+    if (!etat.moteurActif) return;
+    const l = lead && etat.leads.find((y) => y.id === lead);
+    for (const r of etat.regles.filter((y) => y.actif && y.declencheur === declencheur)) {
+      if (r.conditions.statut && r.conditions.statut !== ctx.statut) continue;
+      if (r.conditions.sources_exclues && l && r.conditions.sources_exclues.includes(l.source)) continue;
+      if (etat.executions.some((x) => x.regle_id === r.id && x.cle === cle)) continue;
+      etat.executions.push({ id: `x-${etat.executions.length + 1}`, regle_id: r.id, cle, lead_id: lead, projet_id: projet, contexte: ctx, etape: 0,
+        statut: 'active', prochaine_le: etat.maintenant, created_at: etat.maintenant, updated_at: etat.maintenant, derniere_erreur: null, arret_motif: null });
+    }
+  }
+  function arreter(motif, { lead = null, projet = null }) {
+    for (const x of etat.executions.filter((y) => y.statut === 'active' && ((lead && y.lead_id === lead) || (projet && y.projet_id === projet)))) {
+      const r = etat.regles.find((y) => y.id === x.regle_id);
+      if (!r.arret.includes(motif)) continue;
+      Object.assign(x, { statut: 'arretee', arret_motif: motif, updated_at: etat.maintenant });
+      etat.journal.push({ id: etat.journal.length + 1, execution_id: x.id, etape: x.etape, action: 'arrêt', resultat: 'arrete', detail: motif, le: etat.maintenant });
+    }
+  }
+  function etape(x, e, r, v) {
+    const l = x.lead_id ? etat.leads.find((y) => y.id === x.lead_id) : null;
+    if (e.type === 'attendre') {
+      const t = e.minutes && e.ouvrables ? plusOuvrables(v.succursale_code, etat.maintenant, e.minutes)
+        : plusOuvrables(v.succursale_code, etat.maintenant + (e.minutes || 0) * M + (e.jours || 0) * 24 * H, 0);
+      return { r: 'attente', t, d: `jusqu'au ${new Date(t).toLocaleString('fr-CA')}` };
+    }
+    if (e.type === 'attendre_avant_visite') {
+      if (!v.visite_le) return { r: 'fin', d: 'aucune visite' };
+      const t = new Date(v.visite_le).getTime() - e.heures * H;
+      return t <= etat.maintenant ? { r: 'saute', d: 'moment passé : étape suivante' } : { r: 'attente', t, d: `jusqu'au ${new Date(t).toLocaleString('fr-CA')}` };
+    }
+    if (e.type === 'si') {
+      if (e.condition === 'lead_non_contacte' && (l?.premier_contact_le || ['converti', 'perdu'].includes(l?.statut))) return { r: 'fin', d: 'lead déjà contacté' };
+      if (e.condition === 'lead_ouvert' && ['converti', 'perdu'].includes(l?.statut)) return { r: 'fin', d: 'lead fermé' };
+      if (e.condition === 'aucun_appel_sortant' && etat.comms.some((c) => c.canal === 'appel' && c.direction === 'sortant' && c.lead_id === x.lead_id && Date.parse(c.debut) >= x.created_at)) return { r: 'fin', d: 'client déjà rappelé' };
+      if (e.condition === 'aucun_avis_12_mois' && etat.avisDemandes.some((a) => a.client_id === v.client_id && a.envoye_le > etat.maintenant - 365 * 24 * H)) return { r: 'fin', d: 'avis déjà demandé dans les 12 derniers mois' };
+      return { r: 'suivante', d: 'condition vraie' };
+    }
+    if (e.type === 'sms' || e.type === 'courriel') {
+      const dest = e.type === 'sms' ? v.telephone : v.courriel;
+      if (!dest) return { r: 'saute', d: `aucune coordonnée pour ${e.type}` };
+      if (r.commercial && !peutCommercial(v.telephone, v.courriel, e.type === 'sms' ? 'sms' : 'courriel')) return { r: 'saute', d: 'consentement absent ou retiré (LCAP)' };
+      let t = rendre(e.texte, v);
+      if (r.commercial) t += e.type === 'sms' ? ` Belleflamme ${v.succursale}. STOP pour vous désabonner.` : `\n\n--\nGroupe Belleflamme, ${v.succursale}. Pour ne plus recevoir nos courriels, répondez « désabonner ».`;
+      ajouterComm({ lead_id: x.lead_id, client_id: v.client_id, canal: e.type === 'sms' ? 'texto' : 'courriel', direction: 'sortant', statut: 'simule', automatique: true,
+        coordonnee_client: dest, debut: iso(etat.maintenant), sujet: e.type === 'courriel' ? rendre(e.sujet || 'Belleflamme', v) : null, contenu: t, employe_id: null });
+      return { r: 'suivante', d: `simulé : ${t.slice(0, 120)}` };
+    }
+    if (e.type === 'tache' || e.type === 'notifier') {
+      const qui = destinataires(e.a, v);
+      for (const u of qui) {
+        if (e.type === 'tache') etat.taches.push({ id: `t-${etat.taches.length + 1}`, titre: rendre(e.titre, v), details: rendre(e.texte || '', v), lead_id: x.lead_id, projet_id: x.projet_id,
+          assigne: u, echeance: iso(etat.maintenant + (e.echeance_minutes || 60) * M), faite_le: null, created_at: iso(etat.maintenant) });
+        else etat.notifs.push({ id: `n-${etat.notifs.length + 1}`, dest: u, type: 'regle', titre: rendre(e.titre, v), message: rendre(e.texte || '', v),
+          lien: x.lead_id ? `/lead?id=${x.lead_id}` : '/macro', lu_le: null, created_at: iso(etat.maintenant) });
+      }
+      return qui.length ? { r: 'suivante', d: `${qui.length} destinataire(s)` } : { r: 'saute', d: `aucun destinataire (${e.a})` };
+    }
+    if (e.type === 'noter_avis') { etat.avisDemandes.push({ client_id: v.client_id, envoye_le: etat.maintenant }); return { r: 'suivante', d: "demande d'avis notée" }; }
+    return { r: 'suivante', d: '' };
+  }
+  function executerRegles() {
+    if (!etat.moteurActif) return;
+    for (const p of etat.projets) {   // entretien annuel : 30 jours avant l'anniversaire de la fin des travaux
+      if (!p.installation_terminee_le || !['termine', 'facture', 'ferme'].includes(p.statut)) continue;
+      const fin = new Date(p.installation_terminee_le); const anniv = new Date(fin); anniv.setFullYear(new Date(etat.maintenant).getFullYear());
+      if (anniv.getTime() <= fin.getTime()) anniv.setFullYear(anniv.getFullYear() + 1);
+      if (etat.maintenant >= anniv.getTime() - 30 * 24 * H && etat.maintenant <= anniv.getTime()) declencher('entretien_annuel', `${p.id}:${anniv.getFullYear()}`, { projet: p.id });
+    }
+    for (let tour = 0; tour < 3; tour++) {
+      for (const x of etat.executions.filter((y) => y.statut === 'active' && y.prochaine_le <= etat.maintenant)) {
+        const r = etat.regles.find((y) => y.id === x.regle_id);
+        if (!r.actif) { Object.assign(x, { statut: 'arretee', arret_motif: 'règle désactivée' }); continue; }
+        try {
+          const v = contexte(x);
+          for (let g = 0; g < 20; g++) {
+            if (x.etape >= r.etapes.length) { x.statut = 'terminee'; break; }
+            const e = r.etapes[x.etape];
+            const res = etape(x, e, r, v);
+            etat.journal.push({ id: etat.journal.length + 1, execution_id: x.id, etape: x.etape, action: e.type,
+              resultat: { suivante: 'ok', fin: 'arrete' }[res.r] || res.r, detail: res.d, le: etat.maintenant });
+            if (res.r === 'fin') { Object.assign(x, { statut: 'terminee', arret_motif: res.d }); break; }
+            x.etape += 1;
+            if (res.r === 'attente') { x.prochaine_le = res.t; break; }
+          }
+        } catch (err) {
+          Object.assign(x, { statut: 'echec', derniere_erreur: err.message });
+          etat.journal.push({ id: etat.journal.length + 1, execution_id: x.id, etape: x.etape, action: 'erreur', resultat: 'echec', detail: err.message, le: etat.maintenant });
+          for (const u of destinataires('directeur', {})) etat.notifs.push({ id: `n-${etat.notifs.length + 1}`, dest: u, type: 'regle_echec', titre: `Automatisation en échec : ${r.nom}`, message: err.message, lien: '/automatisations', lu_le: null, created_at: iso(etat.maintenant) });
+        }
+        x.updated_at = etat.maintenant;
+      }
+    }
+  }
+  // Branchements (comme les triggers de la base)
+  function evenementLead(l) {
+    if (!etat.moteurActif) return;
+    const tel = e164(l.contact_tel);
+    if (tel || l.contact_courriel) etat.consent.push({ tel, courriel: l.contact_courriel, type: 'tacite_demande', expire_le: l.recu_le + 182 * 24 * H });
+    declencher('lead_recu', l.id, { lead: l.id });
+  }
+  function evenementActivite(l, a) {
+    if (!etat.moteurActif) return;
+    if (['appel', 'courriel', 'texto'].includes(a.type)) arreter('lead_contacte', { lead: l.id });
+    if (['perdu', 'vendu'].includes(a.type)) arreter('lead_ferme', { lead: l.id });
+    if (['visite_planifiee', 'visite_annulee'].includes(a.type)) { arreter('visite_changee', { lead: l.id }); arreter('visite_planifiee', { lead: l.id }); }
+    if (a.type === 'visite_planifiee' && a.visite_le) declencher('visite_planifiee', `${l.id}:${a.visite_le}`, { lead: l.id, ctx: { visite_le: a.visite_le } });
+  }
+  function evenementComm(c) {
+    if (!etat.moteurActif || c.direction !== 'entrant' || c.statut === 'manque') return;
+    if (c.lead_id) arreter('client_repond', { lead: c.lead_id });
+    const tel = e164(c.coordonnee_client);
+    if (c.canal === 'texto' && tel && /^(stop|arr[eê]t|arreter|arrêter|d[ée]sabonner|unsubscribe)\.?$/i.test(String(c.contenu || '').trim())) etat.desab.push({ tel, canal: 'sms', le: etat.maintenant });
+  }
+  function evenementProjet(p, avant) {
+    if (!etat.moteurActif) return;
+    if (avant === null) {   // nouveau projet signé : consentement tacite d'achat, 2 ans
+      etat.consent.push({ tel: e164(p.client_telephone), courriel: `${p.client_nom.replace(' (FICTIF)', '').split(' ')[0].toLowerCase()}@exemple.invalid`, type: 'tacite_achat', expire_le: etat.maintenant + 730 * 24 * H });
+      return;
+    }
+    if (p.statut !== avant.statut) {
+      if (p.statut === 'annule') arreter('projet_annule', { projet: p.id });
+      declencher('projet_etape', `${p.id}:${p.statut}`, { projet: p.id, ctx: { statut: p.statut } });
+    }
+    if (p.subvention_statut && p.subvention_statut !== avant.subvention_statut) declencher('subvention_etape', `${p.id}:${p.subvention_statut}`, { projet: p.id, ctx: { etape: p.subvention_statut } });
+  }
+  // Consentement d'achat pour les projets déjà signés (données fictives) ; puis le moteur s'arme
+  etat.projets.forEach((p, i) => { p.client_telephone ||= `450-555-03${String(10 + i).slice(-2)}`; });   // téléphones fictifs
+  for (const p of etat.projets) etat.consent.push({ tel: e164(p.client_telephone), courriel: `${p.client_nom.replace(' (FICTIF)', '').split(' ')[0].toLowerCase()}@exemple.invalid`, type: 'tacite_achat', expire_le: etat.maintenant + 730 * 24 * H });
+  etat.moteurActif = true;
 
   // ---------- Routeur des fonctions ----------
   class Erreur extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -624,6 +853,15 @@
         exiger(['Admin tout', 'Direction', 'Coordonnateur', 'Gérant de succursale'].includes(user().role), 'Modification refusée');
         const p = etat.projets.find((x) => x.id === q.id);
         if (!p) throw new Erreur(404, 'Projet introuvable');
+        // Subvention LogisVert (ADR-090) : chaque étape envoie un texto au client
+        if (b.subvention_statut !== undefined) {
+          exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à Belleflamme');
+          exiger(['a_deposer', 'deposee', 'acceptee', 'versee', 'refusee'].includes(b.subvention_statut), 'Étape de subvention inconnue');
+          const avant = { ...p };
+          Object.assign(p, { subvention_statut: b.subvention_statut, subvention_maj_le: iso(etat.maintenant) });
+          evenementProjet(p, avant);
+          return { ok: true };
+        }
         if (b.statut === 'annule') { exiger(!['facture', 'ferme'].includes(p.statut), 'Un projet facturé ne s\'annule pas'); }
         else {
           exiger(p.statut !== 'annule', 'Un projet annulé ne revient pas');
@@ -637,7 +875,9 @@
           exiger(!m.length, `Dossier LogisVert incomplet : ${m.join(' ; ')}`);
         }
         if (b.statut === 'termine') p.installation_terminee_le ||= iso(etat.maintenant);
+        const avant = { ...p };
         p.statut = b.statut; p.updated_at = iso(etat.maintenant);
+        evenementProjet(p, avant);
         return p;
       },
     },
@@ -800,6 +1040,61 @@
           const ph = etat.photosJob.find((x) => x.id === b.id);
           dossierOuvert(etat.projets.find((y) => y.id === ph?.projet_id));
           ph.statut = 'retiree'; return { ok: true };
+        }
+        throw new Erreur(400, 'Action inconnue');
+      },
+    },
+    // Moteur de règles (ADR-090)
+    automatisations: {
+      GET: () => {
+        exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à Belleflamme');
+        const trente = etat.maintenant - 30 * 24 * H;
+        const regles = etat.regles.map((r) => {
+          const xs = etat.executions.filter((x) => x.regle_id === r.id);
+          return { ...r, en_cours: xs.filter((x) => x.statut === 'active').length, terminees_30j: xs.filter((x) => x.statut === 'terminee' && x.updated_at > trente).length,
+            arretees_30j: xs.filter((x) => x.statut === 'arretee' && x.updated_at > trente).length, echecs: xs.filter((x) => x.statut === 'echec').length };
+        }).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+        const heures = Object.entries(etat.heures).flatMap(([succursale_code, js]) => Object.entries(js).map(([jour, [ouvre, ferme]]) => ({ succursale_code, jour: Number(jour), ouvre, ferme })));
+        return { regles, echecs: etat.executions.filter((x) => x.statut === 'echec').map((x) => ({ ...x, updated_at: iso(x.updated_at) })),
+          journal: etat.journal.slice(-60).reverse().map((j) => ({ ...j, le: iso(j.le) })),
+          messages: etat.comms.filter((c) => c.automatique).slice(-40).reverse(), heures,
+          succursales: Object.entries(NOMS_SUCC).map(([code, nom]) => ({ code, nom, lien_avis_google: etat.liensAvis[code] || null })) };
+      },
+      PATCH: (_q, b) => {
+        exiger(['Admin tout', 'Direction'].includes(user().role), 'Réservé à Simon et Mike');
+        if (b.action === 'regle') {
+          const r = etat.regles.find((x) => x.id === b.id);
+          exiger(r, 'Règle introuvable');
+          if (typeof b.actif === 'boolean') r.actif = b.actif;
+          if (b.etapes) {
+            for (const e of b.etapes) {
+              exiger(['attendre', 'attendre_avant_visite', 'si', 'sms', 'courriel', 'tache', 'notifier', 'noter_avis'].includes(e.type), `Étape inconnue : ${e.type}`);
+              exiger(!['sms', 'courriel'].includes(e.type) || String(e.texte || '').trim(), 'Texte du message requis');
+              exiger(e.type !== 'sms' || String(e.texte).length <= 320, 'Texto trop long (320 caractères au plus)');
+              exiger(e.type !== 'attendre' || (e.minutes || 0) + (e.jours || 0) > 0, "Délai d'attente requis");
+            }
+            r.etapes = b.etapes;
+          }
+          r.updated_at = iso(etat.maintenant);
+          return r;
+        }
+        if (b.action === 'relancer') { const x = etat.executions.find((y) => y.id === b.id && y.statut === 'echec'); exiger(x, 'Exécution introuvable ou pas en échec'); Object.assign(x, { statut: 'active', prochaine_le: etat.maintenant, derniere_erreur: null }); return { ok: true }; }
+        if (b.action === 'heures') { etat.heures[b.succursale_code] = Object.fromEntries((b.heures || []).map((x) => { exiger(x.ferme > x.ouvre, "Fermeture avant l'ouverture"); return [x.jour, [x.ouvre, x.ferme]]; })); return { ok: true }; }
+        if (b.action === 'lien_avis') { exiger(!b.lien || /^https:\/\//.test(b.lien), 'Lien : doit commencer par https://'); etat.liensAvis[b.succursale_code] = b.lien || null; return { ok: true }; }
+        throw new Erreur(400, 'Action inconnue');
+      },
+    },
+    avis: {
+      GET: () => {
+        const moi = user().id; const st = user().sousTraitantId;
+        const notifications = etat.notifs.filter((n) => n.dest === moi || (st && n.dest === st)).slice().reverse();
+        return { notifications, taches: st ? [] : etat.taches.filter((t) => t.assigne === moi && !t.faite_le).sort((a, b) => a.echeance.localeCompare(b.echeance)) };
+      },
+      PATCH: (_q, b) => {
+        if (b.action === 'lu') { const n = etat.notifs.find((x) => x.id === b.id); if (n) n.lu_le = iso(etat.maintenant); return { ok: true }; }
+        if (b.action === 'tache_faite') {
+          const t = etat.taches.find((x) => x.id === b.id && !x.faite_le && (x.assigne === user().id || ['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role)));
+          exiger(t, 'Tâche introuvable ou déjà faite'); t.faite_le = iso(etat.maintenant); return { ok: true };
         }
         throw new Erreur(400, 'Action inconnue');
       },
@@ -1073,11 +1368,29 @@
       const montant = p.montant_cents ?? (Math.round((pr.montant_avant_taxes_cents || 0) * 0.4) || null);   // dépôt de 40 % (ADR-009)
       Object.assign(pr, { depot_recu_le: iso(etat.maintenant), depot_montant_cents: montant, depot_ref: p.paiement_ref || `PAY-${Date.now().toString(36)}` });
       if (pr.statut !== 'attente_paiement') return { projet: pr, change: false };
+      const avant = { ...pr };
       pr.statut = 'a_planifier'; pr.updated_at = iso(etat.maintenant);
+      evenementProjet(pr, avant);
       return { projet: pr, change: true };
     },
     leadPointage: (id) => { const l = etat.leads.find((x) => x.id === id); return l && { id: l.id, nom: l.contact_nom, tel: l.contact_tel, ville: l.ville, visite_le: l.visite_prevue_le, ref: l.visite_pointage_ref }; },
-    avancer: (min) => { etat.maintenant += min * M; },
+    avancer: (min) => { etat.maintenant += min * M; executerRegles(); },
+    // Le client répond par texto (arrête les relances) ; un appel manqué arrive (règle « Texto après appel manqué »)
+    clientRepond(leadId, texte = 'Oui, je suis disponible jeudi') {
+      const l = etat.leads.find((x) => x.id === leadId);
+      if (!l) return null;
+      ajouterComm({ lead_id: l.id, canal: 'texto', direction: 'entrant', statut: 'recu', coordonnee_client: l.contact_tel, debut: iso(etat.maintenant), contenu: texte });
+      executerRegles();
+      return l;
+    },
+    appelManque(tel = `450-555-02${String(etat.compteur % 90 + 10)}`) {
+      let l = etat.leads.find((x) => e164(x.contact_tel) === e164(tel) && !['converti', 'perdu'].includes(x.statut));
+      if (!l) l = creerLead({ source: 'appel_manque', contact_nom: `Appel manqué ${tel}`, contact_tel: tel, ville: null, besoin: null, type_demande: null, campagne: null });
+      ajouterComm({ lead_id: l.id, canal: 'appel', direction: 'entrant', statut: 'manque', coordonnee_client: tel, debut: iso(etat.maintenant), duree_s: 0 });
+      declencher('appel_manque', `${e164(tel)}:${new Date(etat.maintenant).toDateString()}`, { lead: l.id, ctx: { telephone: e164(tel) } });
+      executerRegles();
+      return l;
+    },
     leadArrive: () => creerLead({}),
     heure: () => new Date(etat.maintenant),
     // Point d'entrée : (fonction, méthode, query, corps) -> { status, body }
@@ -1089,6 +1402,7 @@
         const h = typeof r === 'function' ? r : r[methode];
         if (!h) return { status: 405, body: { error: { code: 'methode', message: `Méthode ${methode} non permise` } } };
         const body = h(query, corps || {}, entetes);
+        try { executerRegles(); } catch (e) { console.error('moteur de règles', e); }   // comme regles-cron, à chaque geste
         const fin = (b) => ({ status: methode === 'POST' && ['leads', 'lead-activite', 'clients-create', 'sous-traitants', 'prix-demandes'].includes(fn) ? 201 : 200, body: JSON.parse(JSON.stringify(b ?? {})) });
         // Une route peut être asynchrone (ex. vérification d'un code avec WebCrypto)
         if (body && typeof body.then === 'function') return body.then(fin, (e) => ({ status: e.status || 500, body: { error: { code: 'erreur', message: e.message } } }));

@@ -9,6 +9,10 @@
   node_bundler = "esbuild"
 
 # Purge des photos 5 ans après « Terminé » (Loi 25, ADR-084) : chaque jour à 7 h 17 UTC
+# Moteur de règles (ADR-090) : étapes dues, chaque minute
+[functions."regles-cron"]
+  schedule = "* * * * *"
+
 [functions."photos-purge-cron"]
   schedule = "17 7 * * *"
 

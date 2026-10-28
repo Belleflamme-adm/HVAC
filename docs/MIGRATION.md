@@ -137,3 +137,16 @@
   - Corps : `{ "type": "depot", "devis_numero_mike": "120815", "paiement_ref": "<id du paiement chez Mike>", "montant_cents": 394000, "paye_le": "2026-11-02T15:04:00-05:00" }`.
 - Variables Netlify : `PAIEMENT_SYNC_ENABLED=true`, `PAIEMENT_WEBHOOK_SECRET` (même valeur chez Mike) et `SUPABASE_SERVICE_ROLE_KEY`.
 - Migration `20261025000300_ahri_belleflamme.sql` (ADR-088) : `app.dossier_job` sans l'AHRI et `hvac_job_ahri` réservé à Belleflamme.
+
+## Moteur de règles et automatisations (ADR-090)
+- Migration `20261028000100_moteur_regles.sql` :
+  - `app.e164`, `heures_succursales`, `consentements` et `desabonnements` ;
+  - `taches`, `communications.automatique` (statuts `simule` et `en_file`) ;
+  - `projets.subvention_statut`, `succursales.lien_avis_google`, `avis_demandes` ;
+  - `regles`, `executions` et `execution_journal`, avec les 8 règles de départ ;
+  - les fonctions `hvac_regles_executer` et `hvac_appel_manque` (clé serveur), et `hvac_tache_faite`, `hvac_lien_avis`, `hvac_heures`, `hvac_subvention_etape`, `hvac_execution_relancer` ;
+  - la vue `regles_suivi_v`.
+- Tâche planifiée `regles-cron` (chaque minute, `netlify.toml`) : clé `SUPABASE_SERVICE_ROLE_KEY`. Vérifier qu'elle tourne (journaux Netlify) et brancher une alerte si elle tombe en panne.
+- **Envois réels à la greffe** : paramètre `envois_reels=true`. Les messages passent au statut `en_file`, et une fonction de l'app de Mike les envoie par Twilio et courriel, puis met le statut à `envoye` ou `echec`. Contrat à fixer avec Mike.
+- Webhook `appel-manque-webhook` (téléphonie de Mike) : `TELEPHONIE_SYNC_ENABLED=true` et `TELEPHONIE_WEBHOOK_SECRET`. Corps : `{ "telephone": "...", "succursale_code": "RO", "appele_le": "...", "appel_ref": "..." }`. Prérequis : les lignes des 5 succursales passent par Twilio (question du document).
+- Loi 25 : Twilio et Netlify reçoivent des renseignements personnels (numéros, textes). Évaluation des facteurs relatifs à la vie privée et contrats de sous-traitance à vérifier (article 17).

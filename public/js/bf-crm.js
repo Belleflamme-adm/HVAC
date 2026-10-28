@@ -7,7 +7,7 @@ export const STATUTS_LEAD = {
 };
 export const SOURCES_LEAD = {
   google: 'Google', facebook: 'Facebook', instagram: 'Instagram', site_web: 'Site web', telephone: 'Téléphone',
-  magasin: 'Magasin', reference: 'Référence', salon: 'Salon', autre: 'Autre',
+  magasin: 'Magasin', reference: 'Référence', salon: 'Salon', autre: 'Autre', appel_manque: 'Appel manqué',
 };
 export const ACTIVITES = {
   attribution: 'Attribué', prise_en_charge: 'Pris en charge', appel: 'Appel', courriel: 'Courriel', texto: 'Texto',

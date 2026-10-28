@@ -72,6 +72,12 @@ Tables **avec** ces colonnes : `succursales`, `divisions`, `employes`, `fourniss
 - `equipements_installes` (rôle, marque, modèle, numéro de série) : section « équipements HVAC » du détail Macro de Mike (numéros de série des unités intérieures, extérieures, thermopompes) : noms de champs à confirmer.
 - `projet_photos` : fichiers dans Supabase Storage chez Mike (Friday) : convention à confirmer.
 
+## Automatisations (ADR-090)
+- `communications` (messages automatiques, statut `en_file`) : file d'envoi de l'app de Mike (Twilio, courriel) : format à confirmer.
+- `consentements` et `desabonnements` : aucun équivalent connu chez Mike. À confirmer : où Mike garde les « STOP » de Twilio.
+- `succursales.lien_avis_google` : liens des fiches Google des succursales (à fournir).
+- `regles` : les automatisations codées une par une chez Mike (63 crons) pourront devenir des règles.
+
 ## Comment compléter ce document
 
 Une fois que Claude aura un accès en lecture seule à Monday (exception dans `CLAUDE.md` §2) :

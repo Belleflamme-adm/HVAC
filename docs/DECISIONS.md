@@ -912,3 +912,46 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Date** : 2026-10-27 | **Statut** : Livrée (HTML de test seulement, l'app n'a pas cette barre)
 - **Demande** (Simon, sur téléphone) : la barre de test prend trop de place ; elle doit se réduire quand on défile.
 - **Fonctionnement** : dès qu'on descend dans la page, la barre jaune passe à une seule ligne (« HTML DE TEST », l'utilisateur simulé, bouton « ▾ Test »). Elle se déplie en revenant en haut de la page, ou avec « ▾ Test ». Seule une vraie descente la réduit : les réajustements du navigateur (cadre qui change de taille) sont ignorés.
+
+## ADR-090 | Moteur de règles : automatisations sans code (analyse GoHighLevel)
+- **Date** : 2026-10-28 | **Statut** : Livrée (en local et HTML de test). Envois simulés d'ici la greffe.
+- **Source** : le document de Simon « GoHighLevel : analyse et intégration Belleflamme + HVAC », sections « Intégration dans l'app HVAC », « Pièges » et « Plan d'action ».
+- **Choix de Simon** :
+  - envois **simulés** d'ici la greffe ; ils passeront ensuite par l'app de Mike (Twilio, courriels) ;
+  - **heures ouvrables par succursale**, modifiables.
+- **Le moteur** (tables `regles`, `executions`, `execution_journal`) :
+  - une règle = un déclencheur, des conditions, des étapes (attendre, attendre avant la visite, si, texto, courriel, tâche, avis, noter la demande d'avis) et des motifs d'arrêt ;
+  - une seule tâche planifiée (`regles-cron`, chaque minute) exécute les étapes dues ;
+  - chaque étape est **journalisée**. Un **échec** alerte Simon et Mike (cloche) et reste visible jusqu'à la relance. C'est le piège « pannes silencieuses » du document ;
+  - une seule exécution par règle et par clé : par exemple, un texto par numéro par jour, ou un avis par client par 12 mois.
+- **Règles de départ** (page « Automatisations » : interrupteur, textes et délais modifiables sans code, variables `{prenom}`, `{vendeur}`, etc.) :
+  1. **Réponse éclair au lead** : texto et courriel dès l'arrivée (sauf pour les appels manqués, qui ont leur texto).
+  2. **Escalade** : 15 minutes **ouvrables** sans contact, le directeur de la succursale reçoit un avis et une tâche. Sans gérant, ce sont Simon et Mike.
+  3. **Séquence** : J+1 texto, J+3 courriel, J+7 tâche d'appel au vendeur. S'arrête dès que le client répond, qu'une visite est planifiée ou que le lead est fermé.
+  4. **Texto après appel manqué** : une minute plus tard, si personne n'a rappelé, puis un avis au vendeur de garde (tour de rôle). Une fois par numéro par jour. Webhook `appel-manque-webhook`, signé, inactif tant que `TELEPHONIE_SYNC_ENABLED=false`.
+  5. **Rappels de visite** : 24 h et 2 h avant, à partir de la date reçue de Pointage. Refaits si la visite est déplacée ou annulée.
+  6. **Suivi de subvention LogisVert** : un texto à chaque étape (déposée, acceptée, versée, refusée). L'étape se choisit sur la carte du Macro.
+  7. **Demande d'avis Google** : 2 jours après « Terminé », même lien pour tous les clients, **sans filtre** (règle de Google). Une fois par client par 12 mois. Le lien de chaque succursale est réglé dans la page.
+  8. **Entretien annuel de la thermopompe** : 30 jours avant l'anniversaire de l'installation, un texto et une tâche à la planification.
+- **LCAP** (à valider par un professionnel) :
+  - table `consentements` : tacite de **6 mois** à l'arrivée d'un lead (demande d'information), tacite de **2 ans** à la signature (achat), et exprès ;
+  - table `desabonnements` : un texto « STOP » désabonne aussitôt ;
+  - les règles **commerciales** (avis, entretien) vérifient le consentement et ajoutent l'identification et la mention de désabonnement ;
+  - les messages transactionnels (réponse à une demande, rappels, suivi de subvention) n'en dépendent pas.
+- **Avis et tâches** : la cloche compte les avis non lus, les tâches ouvertes et les leads en retard, et ouvre la page « Avis et tâches ». Le sous-traitant a aussi sa cloche, pour ses avis. C'est la fin du trou « avis créés mais jamais lus ».
+- **Messages automatiques** : ils s'inscrivent dans l'historique du client (fil unique), marqués « ⚙ automatique » et « simulé ».
+- **Téléphone** : une normalisation E.164 sert à jumeler les appels manqués et les désabonnements.
+- **HTML de test** :
+  - le même moteur et les mêmes règles (un test vérifie qu'elles restent identiques à la base) ;
+  - boutons « +1 jour », « Un appel manqué arrive » et « Le client répond par texto ».
+- **Du document, volontairement pas fait ici** :
+  - **Réservation de visite en ligne** et table `rendez_vous` : les visites vivent dans Pointage (app de Mike, ADR-086). Les doubler créerait deux calendriers. À proposer à Mike dans Pointage.
+  - **Table `contacts` unique** : on garde `leads` et `clients`, jumelés par le téléphone E.164. Une table de plus doublerait la fiche client de Mike à la greffe.
+  - **Relance de devis** et réparation de `devis-followup-72h-expiry-cron` : les devis et ce cron sont chez Mike (garde-fou 2). La règle est prête à ajouter dès qu'un webhook « devis envoyé » existera.
+  - **Lecture des avis Google** (API Google Business Profile, alerte à 3 étoiles ou moins) : demande l'accès de Belleflamme à l'API. Plus tard.
+  - **Réceptionniste IA vocale** : plus tard, en débordement de soir seulement, comme le recommande le document.
+  - **Messages Facebook** dans le fil : à brancher avec la messagerie de Mike.
+- **À confirmer par Simon** :
+  - les **heures** des succursales (provisoires : lun-ven 8 h 30 à 17 h, sam 9 h à 16 h) ;
+  - les **liens d'avis Google** ;
+  - les **textes** des messages.

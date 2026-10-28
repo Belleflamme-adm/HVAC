@@ -54,7 +54,7 @@ export const duree = (s) => {
   const m = Math.floor(s / 60); const r = s % 60;
   return m ? `${m} min ${String(r).padStart(2, '0')} s` : `${r} s`;
 };
-const STATUTS = { manque: 'manqué', messagerie: 'message laissé', echec: 'échec' };
+const STATUTS = { manque: 'manqué', messagerie: 'message laissé', echec: 'échec', simule: 'simulé (pas envoyé)', en_file: 'en file d\'envoi' };
 const TITRES = { appel: 'Appel', texto: 'Texto', courriel: 'Courriel' };
 
 // { client_id } ou { lead_id } -> section « Communications » avec filtres et recherche
@@ -84,8 +84,9 @@ export function historiqueComms(cible) {
       h('strong', {}, `${TITRES[c.canal]} ${c.direction === 'sortant' ? 'sortant' : 'entrant'}`),
       h('span', {}, quand(c.debut)),
       c.canal === 'appel' && c.duree_s ? h('span', { class: 'bf-pastille' }, duree(c.duree_s)) : null,
+      c.automatique ? h('span', { class: 'bf-pastille bf-pastille--auto', title: 'Envoyé par une automatisation (page Automatisations)' }, '⚙ automatique') : null,
       STATUTS[c.statut] ? h('span', { class: 'bf-pastille bf-pastille--attente' }, STATUTS[c.statut]) : null,
-      h('span', { class: 'bf-muet' }, c.employe_nom || (c.direction === 'entrant' ? 'client' : '')));
+      h('span', { class: 'bf-muet' }, c.employe_nom || (c.direction === 'entrant' ? 'client' : c.automatique ? 'Belleflamme' : '')));
     const corps = [];
     if (c.resume) corps.push(h('p', { class: 'bf-comms__resume' }, h('strong', {}, 'Résumé : '), c.resume));
     if (c.canal === 'texto' && c.contenu) corps.push(h('p', { class: `bf-comms__bulle bf-comms__bulle--${c.direction}` }, c.contenu));

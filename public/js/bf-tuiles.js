@@ -38,6 +38,8 @@ const TUILES_PLANIFICATION = [
   { cle: 'extras', titre: 'Extras à approuver', href: '/extras', etat: 'actif', icone: '➕', desc: 'Feuilles d\'extra des sous-traitants · approuver ou refuser' },
 ];
 
+const AUTOMATISATIONS = { cle: 'automatisations', titre: 'Automatisations', href: '/automatisations', etat: 'actif', icone: '⚙️', desc: 'Textos et courriels automatiques · relances · avis Google · échecs' };
+
 const MACHINES = { cle: 'machines', titre: 'Tableau des machines', href: '/tableau-machines', etat: 'actif', icone: '📊', desc: 'Vue exécutive · provenance · ventes par territoire · modèles (données fictives)' };
 const MARKETING = { cle: 'marketing', titre: 'Tableau marketing', href: '/tableau-marketing', etat: 'actif', icone: '📣', desc: 'Sources des leads · coût par lead · rendement · secteurs · auditoire (données fictives)' };
 const PAIE = { cle: 'vendeurs', titre: 'Vendeurs : performance et rémunération', href: '/tableau-vendeurs', etat: 'actif', icone: '💼', desc: '🔒 Code requis · ventes rentrées · commission ajustable · salaire vs travail · closing (simulation)' };
@@ -62,6 +64,7 @@ export function accueilPour(user) {
     { cle: 'ventes', titre: 'Ventes HVAC', icone: '📈', desc: voitBoard(user) ? 'Leads · clients · rapidité des vendeurs' : 'Mes leads · clients', groupe: ventes },
   ];
   liste.push(TUILES_HVAC.find((t) => t.cle === 'projets'));   // tuile directe : tout le monde voit les projets de ses succursales
+  if (estPlanif(user)) liste.push(AUTOMATISATIONS);   // tuile directe (ADR-090)
   if (estPlanif(user)) liste.push({ cle: 'operations', titre: 'Sous-traitants', icone: '🛠️', desc: 'Sous-traitants · accès · territoires · listes de prix · disponibilités', groupe: TUILES_PLANIFICATION });
   liste.push({ cle: 'veille', titre: 'Dans l\'app de Mike', icone: '💤', desc: 'Devis, pré-installation, facturation... : en veille ici, on utilise ceux de Mike', groupe: veille, veille: true });
   return liste;

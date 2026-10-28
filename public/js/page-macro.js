@@ -14,6 +14,8 @@ const ETAPES = [
 const LIBELLE = Object.fromEntries([...ETAPES, ['ferme', 'Fermé'], ['annule', 'Annulé']]);
 const SUCCURSALES = { HO: 'Saint-Jérôme', RO: 'Rosemère', ST: 'Saint-Sauveur', GA: 'Gatineau', DR: 'Drummondville' };
 const PLANIF = ['Admin tout', 'Direction', 'Coordonnateur', 'Gérant de succursale'];
+// Subvention LogisVert (ADR-090) : chaque étape envoie un texto au client (règle « Suivi de subvention »)
+const SUBVENTION = { a_deposer: 'À déposer', deposee: 'Déposée', acceptee: 'Acceptée', versee: 'Versée', refusee: 'Refusée' };
 const jour = (d) => (d ? new Date(d).toLocaleDateString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 const recent = (d) => d && Date.now() - new Date(d).getTime() < 48 * 3600e3;
 
@@ -55,6 +57,14 @@ if (user) {
         p.montant_avant_taxes_cents ? h('strong', {}, formatCents(p.montant_avant_taxes_cents)) : null),
       h('p', { class: 'bf-muet' }, [p.vendeur_nom, p.devis_numero_mike ? `soumission #${p.devis_numero_mike}` : null, p.signe_le ? `signé le ${jour(p.signe_le)}` : null].filter(Boolean).join(' | ')),
       p.installation_prevue_le ? h('p', {}, `Installation : ${jour(p.installation_prevue_le)}`) : null,
+      ['termine', 'facture', 'en_cours'].includes(p.statut) || p.subvention_statut ? (peutBouger
+        ? h('label', { class: 'bf-macro__subv' }, '🌱 LogisVert',
+          h('select', { 'aria-label': `Subvention LogisVert de ${p.code_projet}`, onchange: async (ev) => {
+            try { await api.patch('macro', { subvention_statut: ev.target.value }, { id: p.id }); message(msg, `${p.code_projet} : subvention « ${SUBVENTION[ev.target.value]} ». Le client reçoit un texto.`, 'ok'); await charger(); }
+            catch (e) { message(msg, e.message); }
+          } }, h('option', { value: '', disabled: true, selected: !p.subvention_statut }, 'Étape…'),
+          Object.entries(SUBVENTION).map(([k, t]) => h('option', { value: k, selected: k === p.subvention_statut }, t))))
+        : h('p', { class: 'bf-macro__st' }, `🌱 LogisVert : ${SUBVENTION[p.subvention_statut] || 'à déposer'}`)) : null,
       p.depot_recu_le ? h('p', { class: 'bf-macro__depot' }, `💳 Dépôt reçu le ${jour(p.depot_recu_le)}${p.depot_montant_cents ? ` | ${formatCents(p.depot_montant_cents)}` : ''}`) : null,
       p.sous_traitant_nom ? h('p', { class: 'bf-macro__st' }, `🧰 ${p.sous_traitant_nom}`, p.cout_installation_cents ? ` | install. ${formatCents(p.cout_installation_cents)}` : '') : null,
       p.extras_a_approuver ? h('a', { href: '/extras', class: 'bf-macro__extras' }, `➕ ${p.extras_a_approuver} extra(s) à approuver`) : null,

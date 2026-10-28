@@ -57,8 +57,11 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   <span>Heure simulée <span class="heure" id="heure"></span></span>
   <button type="button" id="plus5">+5 min</button>
   <button type="button" id="plus30">+30 min</button>
+  <button type="button" id="plus1j">+1 jour</button>
   <button type="button" class="vert" id="arrive">Un lead arrive de Monday</button>
   <button type="button" class="vert" id="depot">Un dépôt arrive de l'app de Mike</button>
+  <button type="button" class="vert" id="manque">Un appel manqué arrive</button>
+  <button type="button" id="repond" hidden>Le client répond par texto</button>
   <button type="button" id="lien-st" hidden>Ouvrir le lien comme le sous-traitant</button>
   <span id="adresse"></span>
   <span class="version">Version __VERSION__ | données fictives, rien n'est enregistré</span>
@@ -127,10 +130,16 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
   const boutonLien = document.getElementById('lien-st');
   setInterval(() => { boutonLien.hidden = !S.dernierLien(); }, 700);
   boutonLien.addEventListener('click', () => window.__naviguer(S.dernierLien()));
-  const heure = () => { document.getElementById('heure').textContent = S.heure().toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }); };
+  const heure = () => { const d = S.heure(); document.getElementById('heure').textContent = `${d.toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}`; };
   qui.addEventListener('change', (e) => { S.changerUtilisateur(e.target.value); window.__naviguer('/'); });
   document.getElementById('plus5').addEventListener('click', () => { S.avancer(5); heure(); recharger(); });
   document.getElementById('plus30').addEventListener('click', () => { S.avancer(30); heure(); recharger(); });
+  document.getElementById('plus1j').addEventListener('click', () => { S.avancer(24 * 60); heure(); recharger(); });
+  // Moteur de règles (ADR-090) : appel manqué, réponse du client (sur la fiche d'un lead)
+  document.getElementById('manque').addEventListener('click', () => { const l = S.appelManque(); heure(); window.__naviguer(`/lead?id=${l.id}`); });
+  const repond = document.getElementById('repond');
+  setInterval(() => { repond.hidden = !(window.__demoCourant.path === '/lead' && /[?&]id=/.test(window.__demoCourant.search)); }, 500);
+  repond.addEventListener('click', () => { const id = new URLSearchParams(window.__demoCourant.search).get('id'); if (S.clientRepond(id)) recharger(); });
   document.getElementById('arrive').addEventListener('click', () => { const l = S.leadArrive(); heure(); window.__naviguer(`/lead?id=${l.id}`); });
   // Barre de test réduite pendant qu'on défile dans l'app ; dépliée en revenant en haut ou avec « ▾ Test »
   const barre = document.querySelector('.test');
