@@ -1007,3 +1007,11 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - Même conservation : purge 5 ans après « Terminé ».
 - **Écran** : section « Photos de l'installation » sous les appareils, dans « Mes jobs » (sous-traitant) et dans le Macro.
 - **Limite connue** : exigées pour toutes les jobs. Un remplacement de fournaise seule n'a ni lignes ni drain extérieur ; si ça arrive, on ajoutera une exemption par type de système.
+
+## ADR-094 | Projet annulé : on ne garde aucune photo
+- **Date** : 2026-10-28 | **Statut** : Livrée (en local). Rien de visible dans le HTML de test, qui ne simule pas la purge.
+- **Décision de Simon** : « Si le projet est annulé, on garde rien. »
+- **Cas visé** : un projet annulé pendant les travaux, après que le sous-traitant a déjà mis des photos (dossier de job ou extras). Comme il n'arrivera jamais à « Terminé », la règle des 5 ans ne s'y appliquait pas, et ses photos auraient été gardées pour toujours.
+- **Règle** : les photos de la job et des extras d'un projet annulé sont effacées par la tâche planifiée `photos-purge-cron` (chaque jour), dès sa prochaine passe. Une annulation est définitive : le projet ne revient pas.
+- La purge réelle reste désactivée tant que `PURGE_PHOTOS_ACTIF` n'est pas à `true` en production.
+- Les fiches (appareils, extras, montants) restent : ce sont des données comptables, pas des photos.

@@ -169,3 +169,6 @@
 ## Photos des lignes et du drain (ADR-093)
 - Migration `20261028000300_photos_lignes_drain.sql` : catégories `lignes` et `drain` dans `projet_photos` (sans appareil), `app.dossier_job` et `hvac_job_photo_preparer` redéfinies.
 - Rien à faire chez Mike, sauf s'il reprend le dossier de job : ces deux photos font partie du dossier obligatoire.
+
+## Purge des projets annulés (ADR-094)
+- Migration `20261028000400_purge_annules.sql` : `hvac_photos_a_purger` inclut les photos des projets annulés, sans délai.
