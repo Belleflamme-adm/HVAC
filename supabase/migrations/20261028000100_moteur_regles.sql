@@ -683,7 +683,7 @@ update public.succursales set lien_avis_google = 'https://share.google/Uxc4mQUVV
 update public.succursales set lien_avis_google = 'https://share.google/gGKH35om5NjXuPDzG' where code = 'ST';
 -- Fiche « Le Groupe Belleflamme Outaouais » (fournie par Simon le 28 oct. 2026) : Gatineau. Lien de partage, même remarque.
 update public.succursales set lien_avis_google = 'https://share.google/fsydVHASs2yHY1rvr' where code = 'GA';
--- Lien de Drummondville (fourni par Simon le 28 oct. 2026, collé sous le nom « Outaouais », confirmé Drummondville). Lien de partage.
+-- Fiche « Le Groupe Belleflamme Centre-du-Québec » (fournie par Simon le 28 oct. 2026) : Drummondville. Lien de partage, même remarque.
 update public.succursales set lien_avis_google = 'https://share.google/e5Zs4fPXfuCQDxcsn' where code = 'DR';
 
 insert into public.parametres (cle, valeur, description) values
