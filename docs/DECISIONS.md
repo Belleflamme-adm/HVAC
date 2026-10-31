@@ -1015,3 +1015,24 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
 - **Règle** : les photos de la job et des extras d'un projet annulé sont effacées par la tâche planifiée `photos-purge-cron` (chaque jour), dès sa prochaine passe. Une annulation est définitive : le projet ne revient pas.
 - La purge réelle reste désactivée tant que `PURGE_PHOTOS_ACTIF` n'est pas à `true` en production.
 - Les fiches (appareils, extras, montants) restent : ce sont des données comptables, pas des photos.
+
+## ADR-095 | Accès des sous-traitants : un compte, courriel et code à 6 chiffres
+- **Date** : 2026-10-31 | **Statut** : Livrée (en local et HTML de test).
+- **Décision de Simon** : connexion par courriel et code, **un seul compte par sous-traitant** (le responsable).
+- **Connexion** : la page de connexion propose d'abord « Recevoir un code par courriel ». Le mot de passe reste offert aux employés.
+  - Nouvelle fonction `session-code`, qui rend le même contrat que `session-login` (`token` + `user`, cookies HttpOnly).
+  - Elle repose sur l'OTP par courriel de Supabase Auth (`signInWithOtp` puis `verifyOtp`, type `email`), vérifié dans la doc officielle le 31 oct. 2026.
+  - La demande de code ne crée jamais de compte. La réponse est la même que le courriel ait un accès ou non, pour ne pas révéler qui en a un.
+- **Fiche du sous-traitant, section « Accès à l'app »** (planification seulement) :
+  - « Envoyer l'accès » ou « Renvoyer un code » : le serveur vérifie en base, puis envoie le code et crée le compte Auth au premier envoi. Refusé si le sous-traitant est inactif, si l'accès est coupé ou si le courriel est fictif ;
+  - « Couper l'accès » : effet immédiat, parce que la session, `app.employe_id()` et `app.role()` exigent un compte actif ;
+  - « Rétablir l'accès ».
+- **Automatique** :
+  - un sous-traitant désactivé a son accès coupé ;
+  - un nouveau courriel de responsable déplace le compte vers ce courriel, et l'ancienne personne n'entre plus ;
+  - l'index `employes_un_compte_st` impose un seul compte par sous-traitant.
+- **Prérequis Supabase** (au déploiement) :
+  - le modèle de courriel « Magic Link » doit contenir `{{ .Token }}`, sinon un lien part au lieu du code ;
+  - durée du code : 10 minutes recommandées ;
+  - pour la production, un SMTP à nous, parce que l'envoi intégré de Supabase est limité en nombre de courriels par heure.
+- **À la greffe** : à décider avec Mike, soit son app accepte ces comptes externes, soit ils restent gérés ici.

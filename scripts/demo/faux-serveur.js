@@ -9,7 +9,11 @@
     marc:   { id: 'e-marc',   itemId: null, email: 'marc@exemple.invalid', name: 'Marc Vendeur (FICTIF)', role: 'Vendeur', succursale: 'RO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: null },
     sophie: { id: 'e-sophie', itemId: null, email: 'sophie@exemple.invalid', name: 'Sophie Vente (FICTIF)', role: 'Vendeur', succursale: 'ST', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: null },
     karim:  { id: 'e-karim',  itemId: null, email: 'karim@exemple.invalid', name: 'Karim Ventes (FICTIF)', role: 'Vendeur', succursale: 'GA', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: null },
-    clim:   { id: 'e-clim',   itemId: null, email: 'clim@exemple.invalid', name: 'Clim Laurentides (FICTIF)', role: 'Sous-traitant', succursale: 'HO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: 'f-clim' },
+    clim:   { id: 'e-clim',   itemId: null, email: 'martin@exemple.invalid', name: 'Clim Laurentides (FICTIF)', role: 'Sous-traitant', succursale: 'HO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: 'f-clim' },
+    // Comptes des autres sous-traitants (ADR-095) : un par sous-traitant, au courriel du responsable
+    rive:   { id: 'e-rive',   itemId: null, email: 'julie@exemple.invalid', name: 'Climatisation Rive-Nord (FICTIF)', role: 'Sous-traitant', succursale: 'HO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: 'f-rive' },
+    mauri:  { id: 'e-mauri',  itemId: null, email: 'eric@exemple.invalid', name: 'Froid Centre-du-Québec (FICTIF)', role: 'Sous-traitant', succursale: 'HO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: 'f-mauri' },
+    outa:   { id: 'e-outa',   itemId: null, email: 'kevin@exemple.invalid', name: 'Thermo Outaouais (FICTIF)', role: 'Sous-traitant', succursale: 'HO', peutApprouverRabais: false, masterImpersonation: null, sousTraitantId: 'f-outa' },
   };
   const EMPLOYES = Object.values(UTILISATEURS).filter((u) => !u.sousTraitantId).map((u) => {
     const [prenom, ...reste] = u.name.split(' ');
@@ -19,7 +23,10 @@
   const BOARD = ['Admin tout', 'Direction', 'Gérant de succursale', 'Coordonnateur'];
 
   const etat = {
-    qui: 'simon',
+    qui: 'simon', deconnecte: false, codes: {},
+    // Accès des sous-traitants (ADR-095) : Clim Laurentides est déjà connecté ; les autres n'ont jamais reçu de code
+    acces: { 'f-clim': { actif: true, connecte: true, acces_envoye_le: null, acces_coupe_le: null }, 'f-rive': { actif: true, connecte: false, acces_envoye_le: null, acces_coupe_le: null },
+      'f-mauri': { actif: true, connecte: false, acces_envoye_le: null, acces_coupe_le: null }, 'f-outa': { actif: true, connecte: false, acces_envoye_le: null, acces_coupe_le: null } },
     maintenant: (() => { const d = new Date(); d.setHours(11, 0, 0, 0); return d.getTime(); })(),
     leads: [], activites: [], compteur: 0, pointeurs: {},
     vendeurs: [{ employe_id: 'e-marc', ordre: 1, actif: true, types: ['mural_simple', 'mural_multi'] }, { employe_id: 'e-sophie', ordre: 2, actif: true, types: ['mural_simple', 'mural_multi', 'central', 'bienergie'] }, { employe_id: 'e-karim', ordre: 3, actif: false, types: ['mural_simple'] }],
@@ -755,11 +762,57 @@
     }
   }
 
+  // Connexion (ADR-095)
+  const quiParCourriel = (email) => Object.keys(UTILISATEURS).find((k) => UTILISATEURS[k].email === String(email || '').trim().toLowerCase());
+  const compteActif = (qui) => { const st = UTILISATEURS[qui]?.sousTraitantId; return Boolean(qui) && (!st || (etat.acces[st].actif && etat.fournisseurs.find((f) => f.id === st)?.actif !== false)); };
+  const entrer = (qui) => { etat.qui = qui; etat.deconnecte = false; if (window.__demoConnecte) window.__demoConnecte(qui); return { token: 'demo', user: user() }; };
+  function envoyerCodeDemo(email) {
+    const code = String(100000 + Math.floor(Math.random() * 900000));
+    etat.codes[email] = { code, expire: etat.maintenant + 10 * M };
+    if (window.__demoCourriel) window.__demoCourriel(email, code);
+  }
+  const vueAcces = (fid) => ({ email: UTILISATEURS[Object.keys(UTILISATEURS).find((k) => UTILISATEURS[k].sousTraitantId === fid)]?.email, ...etat.acces[fid] });
+
   const routes = {
-    'session-me': () => ({ token: 'demo', user: user() }),
+    // Session (ADR-095) : déconnexion, connexion par code reçu par courriel (simulé) ou par mot de passe (tout mot de passe)
+    'session-me': () => {
+      const u = user();
+      if (u.sousTraitantId && !etat.acces[u.sousTraitantId]?.actif) etat.deconnecte = true;   // accès coupé : dehors
+      if (etat.deconnecte) throw new Erreur(401, 'Non connecté');
+      return { token: 'demo', user: u };
+    },
+    'session-login': {
+      POST: (_q, b) => {
+        const qui = quiParCourriel(b.email);
+        if (!qui || !compteActif(qui)) throw new Erreur(401, 'Courriel ou mot de passe invalide');
+        return entrer(qui);
+      },
+    },
+    'session-code': {
+      POST: (_q, b) => {
+        const email = String(b.email || '').trim().toLowerCase();
+        exiger(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email), 'Courriel requis');
+        const qui = quiParCourriel(email);
+        const code = String(b.code || '').replace(/\s/g, '');
+        if (!code) {
+          // Comme le serveur : même réponse si le courriel n'a pas de compte (rien n'est envoyé)
+          // Un sous-traitant a un compte Auth seulement après le premier « Envoyer l'accès »
+          const st = qui && UTILISATEURS[qui].sousTraitantId;
+          if (qui && (!st || etat.acces[st].connecte || etat.acces[st].acces_envoye_le)) envoyerCodeDemo(email);
+          return { envoye: true };
+        }
+        const c = etat.codes[email];
+        if (!c || c.code !== code || c.expire < etat.maintenant) throw new Erreur(401, 'Code invalide ou expiré');
+        delete etat.codes[email];
+        if (!compteActif(qui)) throw new Erreur(403, 'Accès désactivé : communique avec Belleflamme');
+        const st = UTILISATEURS[qui].sousTraitantId;
+        if (st) etat.acces[st].connecte = true;
+        return entrer(qui);
+      },
+    },
     // HTML de test : Pointage simulé comme branché (ADR-086)
     integrations: { GET: () => ({ pointage: true }) },
-    'session-logout': () => ({ ok: true }),
+    'session-logout': () => { etat.deconnecte = true; return { ok: true }; },
     leads: {
       GET: (q) => {
         let ls = q.vue === 'mes' ? etat.leads.filter((l) => l.assigne_a === user().id) : visibles();
@@ -1199,7 +1252,24 @@
       GET: (q) => {
         const f = etat.fournisseurs.find((x) => x.id === q.id);
         if (!f || (user().sousTraitantId && user().sousTraitantId !== f.id)) throw new Erreur(404, 'Sous-traitant introuvable');
+        if (q.vue === 'acces') { exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à la planification'); return vueAcces(f.id); }
         return f;
+      },
+      // Accès (ADR-095) : mêmes règles que hvac_st_acces_envoyer, _couper et _retablir
+      POST: (q, b) => {
+        exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Réservé à la planification');
+        const f = etat.fournisseurs.find((x) => x.id === q.id);
+        const a = f && etat.acces[f.id];
+        if (!a) throw new Erreur(404, 'Aucun compte pour ce sous-traitant');
+        if (b.action === 'envoyer') {
+          exiger(f.actif !== false, 'Sous-traitant inactif : réactive-le d\'abord');
+          exiger(a.actif, 'Accès coupé : rétablis-le d\'abord');
+          a.acces_envoye_le = iso(etat.maintenant);
+          envoyerCodeDemo(vueAcces(f.id).email);
+        } else if (b.action === 'couper') { Object.assign(a, { actif: false, acces_coupe_le: iso(etat.maintenant) }); }
+        else if (b.action === 'retablir') { exiger(f.actif !== false, 'Sous-traitant inactif : réactive-le d\'abord'); Object.assign(a, { actif: true, acces_coupe_le: null }); }
+        else throw new Erreur(400, 'Action inconnue');
+        return vueAcces(f.id);
       },
       PATCH: (q, b) => {
         const f = etat.fournisseurs.find((x) => x.id === q.id);
@@ -1214,6 +1284,14 @@
           c.licence_rbq = `${d.slice(0, 4)}-${d.slice(4, 8)}-${d.slice(8)}`;
         }
         for (const k of ['courriel', 'responsable_courriel']) if (c[k]) exiger(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c[k]), 'Courriel invalide');
+        // Accès (ADR-095) : désactivé -> accès coupé ; nouveau courriel du responsable -> le compte le suit
+        if (c.actif === false && f.actif !== false && etat.acces[f.id]?.actif) Object.assign(etat.acces[f.id], { actif: false, acces_coupe_le: iso(etat.maintenant) });
+        const compte = Object.values(UTILISATEURS).find((u) => u.sousTraitantId === f.id);
+        if (c.responsable_courriel && compte && compte.email === (f.responsable_courriel || '').toLowerCase()) {
+          exiger(!quiParCourriel(c.responsable_courriel), 'Ce courriel est déjà utilisé par un autre compte');
+          compte.email = c.responsable_courriel.toLowerCase();
+          Object.assign(etat.acces[f.id], { connecte: false, acces_envoye_le: null });
+        }
         Object.assign(f, c);
         return f;
       },
@@ -1390,7 +1468,9 @@
 
   window.__demoServeur = {
     etat, UTILISATEURS,
-    changerUtilisateur: (qui) => { etat.qui = qui; },
+    changerUtilisateur: (qui) => { etat.qui = qui; etat.deconnecte = false; },
+    deconnecte: () => etat.deconnecte,
+    qui: () => etat.qui,
     // Pointage simulé (ADR-086) : mêmes règles que hvac_visite_pointage (webhook signé de l'app de Mike)
     visitePointage(p) {
       const l = p.lead_ref ? etat.leads.find((x) => x.id === p.lead_ref) : etat.leads.find((x) => x.visite_pointage_ref === p.pointage_ref);

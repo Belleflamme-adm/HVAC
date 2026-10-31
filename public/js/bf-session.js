@@ -21,6 +21,16 @@ export async function login(email, password) {
   return courant.user;
 }
 
+// Connexion par code reçu par courriel (ADR-095)
+export async function demanderCode(email) {
+  await appel('session-code', { method: 'POST', body: { email } });
+}
+
+export async function connecterCode(email, code) {
+  courant = await appel('session-code', { method: 'POST', body: { email, code } });
+  return courant.user;
+}
+
 export async function me() {
   try {
     courant = await appel('session-me');

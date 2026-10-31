@@ -15,11 +15,16 @@
   <main class="bf-carte">
     <h1>Division HVAC</h1>
     <p class="bf-note">Groupe Belleflamme</p>
+    <!-- Par code reçu par courriel (sous-traitants, ADR-095) ou par mot de passe (employés) -->
     <form id="form-login" autocomplete="on">
       <label>Courriel <input name="email" type="email" required autocomplete="username"></label>
-      <label>Mot de passe <input name="password" type="password" required autocomplete="current-password"></label>
-      <button class="bf-bouton" type="submit">Se connecter</button>
+      <label id="zone-code" hidden>Code reçu par courriel
+        <input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,12}" maxlength="12" placeholder="123456"></label>
+      <label id="zone-mdp" hidden>Mot de passe <input name="password" type="password" autocomplete="current-password"></label>
+      <button class="bf-bouton" type="submit" id="bouton">Recevoir un code par courriel</button>
+      <p id="info" class="bf-note" role="status"></p>
       <p id="message" class="bf-erreur" role="alert"></p>
+      <p><button type="button" class="bf-lien" id="bascule">Se connecter avec un mot de passe</button></p>
     </form>
   </main>
 </body>

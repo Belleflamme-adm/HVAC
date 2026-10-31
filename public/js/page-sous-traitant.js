@@ -1,4 +1,5 @@
 // Fiche du sous-traitant (ADR-064) : la compagnie, le propriétaire et le responsable. Modifiable par la planification.
+// Accès (ADR-095) : un compte, au courriel du responsable, connexion par code reçu par courriel ; envoyer, couper, rétablir.
 import { initPage } from './bf-page.js?v=0.4.0';
 import { api } from './bf-api.js?v=0.4.0';
 import { remplir, h, message, param } from './bf-dom.js?v=0.4.0';
@@ -25,6 +26,38 @@ if (user) {
     ['responsable_telephone', 'Téléphone du responsable', { type: 'tel' }],
     ['responsable_courriel', 'Courriel du responsable', { type: 'email' }],
   ];
+
+  const quand = (d) => new Date(d).toLocaleString('fr-CA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  // Section Accès : seulement pour la planification
+  async function sectionAcces(f) {
+    let a;
+    try { a = await api.get('sous-traitant', { id, vue: 'acces' }); }
+    catch (e) { return h('section', { class: 'bf-carte-section' }, h('h2', {}, 'Accès à l\'app'), h('p', { class: 'bf-muet' }, e.message)); }
+    const geste = async (action, question, ok) => {
+      if (question && !confirm(question)) return;
+      try { await api.post('sous-traitant', { action }, { id }); await charger(); message(msg, ok, 'ok'); } catch (e) { message(msg, e.message); }
+    };
+    const etat = !a.actif ? h('span', { class: 'bf-pastille bf-extra--refuse' }, 'Accès coupé')
+      : a.connecte ? h('span', { class: 'bf-pastille bf-extra--approuve' }, 'Accès actif')
+      : a.acces_envoye_le ? h('span', { class: 'bf-pastille' }, 'Code envoyé, pas encore connecté')
+      : h('span', { class: 'bf-pastille' }, 'Accès jamais envoyé');
+    return h('section', { class: 'bf-carte-section bf-acces' },
+      h('div', { class: 'bf-dossier__tete' }, h('h2', {}, 'Accès à l\'app'), etat),
+      h('p', {}, 'Un seul compte, au courriel du responsable : ', h('strong', {}, a.email), '. Il se connecte avec ce courriel et un code à 6 chiffres reçu par courriel, puis voit seulement ses jobs, sa liste de prix et ses extras.'),
+      h('ul', { class: 'bf-simple bf-muet' },
+        a.acces_envoye_le ? h('li', {}, `Dernier envoi : ${quand(a.acces_envoye_le)}`) : null,
+        a.acces_coupe_le ? h('li', {}, `Coupé le ${quand(a.acces_coupe_le)}`) : null,
+        h('li', {}, 'Pour changer de responsable : modifie « Courriel du responsable » plus haut. Le compte suit le nouveau courriel et l\'ancienne personne n\'entre plus.')),
+      h('div', { class: 'bf-actions' },
+        a.actif ? h('button', { type: 'button', class: 'bf-bouton', disabled: f.actif === false,
+          onclick: () => geste('envoyer', null, `Code envoyé à ${a.email}.`) }, a.acces_envoye_le ? 'Renvoyer un code' : 'Envoyer l\'accès') : null,
+        a.actif ? h('button', { type: 'button', class: 'bf-bouton bf-bouton--danger',
+          onclick: () => geste('couper', `Couper l'accès de ${f.nom} ? Il ne pourra plus rien voir, tout de suite.`, 'Accès coupé.') }, 'Couper l\'accès')
+          : h('button', { type: 'button', class: 'bf-bouton', disabled: f.actif === false,
+            onclick: () => geste('retablir', null, 'Accès rétabli. Envoie-lui un code pour qu\'il se reconnecte.') }, 'Rétablir l\'accès')),
+      f.actif === false ? h('p', { class: 'bf-muet' }, 'Sous-traitant inactif : son accès est coupé. Réactive-le pour rétablir l\'accès.') : null);
+  }
 
   async function charger() {
     let f;
@@ -72,7 +105,7 @@ if (user) {
         h('a', { class: 'bf-bouton bf-bouton--discret', href: `/territoire?fournisseur=${f.id}` }, 'Territoire'),
         h('a', { class: 'bf-bouton bf-bouton--discret', href: `/disponibilites?fournisseur=${f.id}` }, 'Disponibilités'),
         h('a', { class: 'bf-bouton bf-bouton--discret', href: `/mes-prix?fournisseur=${f.id}` }, 'Liste de prix et soumissions actives')),
-      msg, form);
+      msg, form, planif ? await sectionAcces(f) : null);
   }
   if (!id) remplir(zone, h('p', { class: 'bf-message bf-message--alerte' }, 'Sous-traitant non précisé.'));
   else charger();

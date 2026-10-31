@@ -41,6 +41,10 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
 #pointage-sim .ps-ok { background: #1d47c2; color: #fff; }
 #pointage-sim .ps-annuler-visite { border-color: #b4232c; color: #b4232c; }
 #pointage-sim .ps-note { font-size: 13px; color: #56635b; margin: 0; }
+.courriel-simule { position: fixed; right: 12px; bottom: 76px; z-index: 50; max-width: 300px; background: #fff8e1; border: 1px solid #c9a227;
+  border-radius: 10px; padding: 10px 34px 10px 12px; font: 14px/1.4 system-ui, sans-serif; box-shadow: 0 4px 16px rgba(0,0,0,.18); color: #222; }
+.courriel-simule .code { font-size: 22px; letter-spacing: 3px; }
+.courriel-simule button { position: absolute; top: 4px; right: 6px; border: 0; background: none; font-size: 20px; cursor: pointer; color: #555; }
 </style>
 
 <div class="test" role="region" aria-label="Contrôles de test">
@@ -52,6 +56,9 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
       <option value="sophie">Sophie | Vendeuse (tous les types)</option>
       <option value="karim">Karim | Vendeur (inactif au board)</option>
       <option value="clim">Clim Laurentides | Sous-traitant</option>
+      <option value="rive">Climatisation Rive-Nord | Sous-traitant</option>
+      <option value="mauri">Froid Centre-du-Québec | Sous-traitant</option>
+      <option value="outa">Thermo Outaouais | Sous-traitant</option>
     </select>
   </label>
   <span>Heure simulée <span class="heure" id="heure"></span></span>
@@ -115,8 +122,10 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
     const courant = window.__demoCourant.path + window.__demoCourant.search;
     if (mode === 'ajouter' && `${u.pathname}${u.search}` === courant) mode = 'remplacer';   // même page : pas de doublon
     let page = u.pathname.replace(/^\/|\.html$/g, '') || 'index';
-    if (page === 'login') page = 'index';
-    window.__demoCourant = { path: u.pathname === '/login' ? '/' : u.pathname, search: u.search, hash: u.hash };
+    // Page de connexion : seulement après « Déconnexion » (ADR-095) ; sinon on est déjà connecté
+    if (page === 'login' && !S.deconnecte()) page = 'index';
+    if (qui.value !== S.qui()) qui.value = S.qui();
+    window.__demoCourant = { path: page === 'index' && u.pathname === '/login' ? '/' : u.pathname, search: u.search, hash: u.hash };
     document.getElementById('adresse').textContent = `Page : ${u.pathname}${u.search}${u.hash ? '#…' : ''}`;
     const html = window.__demoPages[page] || `<!doctype html><meta charset="utf-8"><body style="font-family:system-ui;padding:24px">
       <h1>Page en veille</h1><p>« ${u.pathname.replace(/[<>&]/g, '')} » n'est pas dans le HTML de test (module de l'app de Mike).</p>
@@ -124,6 +133,15 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
     inscrire(`${u.pathname}${u.search}${u.hash}`, mode);
     dernierY = 0;
     afficher(html);
+  };
+  // Courriel simulé (ADR-095) : le code de connexion s'affiche ici au lieu de partir par courriel
+  window.__demoCourriel = (email, code) => {
+    document.querySelector('.courriel-simule')?.remove();
+    const b = document.createElement('div');
+    b.className = 'courriel-simule'; b.setAttribute('role', 'status');
+    b.innerHTML = `<strong>Courriel simulé</strong> à ${email.replace(/[<>&]/g, '')}<br>Votre code Belleflamme : <b class="code">${code}</b><button type="button" aria-label="Fermer">×</button>`;
+    b.querySelector('button').onclick = () => b.remove();
+    document.body.append(b);
   };
   const recharger = () => window.__naviguer(window.__demoCourant.path + window.__demoCourant.search + (window.__demoCourant.hash || ''), 'remplacer');
   // Dernier lien de demande de prix créé : l'ouvrir comme le sous-traitant (sans compte)
@@ -196,7 +214,7 @@ iframe { flex: 1; width: 100%; border: 0; background: var(--bg); min-height: 0; 
     document.body.append(fond);
     champ.focus();
   };
-  // Lien direct par utilisateur : …#simon, #marc, #sophie, #karim, #clim
+  // Lien direct par utilisateur : …#simon, #marc, #sophie, #karim, #clim, #rive, #mauri, #outa
   const depart = (location.hash || '').slice(1);
   if (S.UTILISATEURS[depart]) { S.changerUtilisateur(depart); qui.value = depart; }
   heure();

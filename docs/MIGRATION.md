@@ -172,3 +172,12 @@
 
 ## Purge des projets annulés (ADR-094)
 - Migration `20261028000400_purge_annules.sql` : `hvac_photos_a_purger` inclut les photos des projets annulés, sans délai.
+
+## Accès des sous-traitants (ADR-095)
+- Migration `20261031000100_acces_sous_traitants.sql` :
+  - `employes.acces_envoye_le` et `acces_coupe_le`, index `employes_un_compte_st` ;
+  - fonctions `hvac_st_acces`, `hvac_st_acces_envoyer`, `hvac_st_acces_couper` et `hvac_st_acces_retablir` ;
+  - trigger `trg_st_fiche_acces` sur `fournisseurs`.
+- Fonction `session-code`, au même contrat que `session-login`.
+- **Supabase Auth** : modèle « Magic Link » avec `{{ .Token }}`, expiration de l'OTP à 600 secondes, SMTP personnalisé pour la production. Le fournisseur de courriel est un sous-traitant de données au sens de la Loi 25.
+- **À la greffe** : si l'app de Mike gère les connexions, lui demander s'il accepte des comptes externes « Sous-traitant » limités à leurs jobs, ou garder `session-code` pour eux.
