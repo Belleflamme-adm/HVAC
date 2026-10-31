@@ -181,3 +181,7 @@
 - Fonction `session-code`, au même contrat que `session-login`.
 - **Supabase Auth** : modèle « Magic Link » avec `{{ .Token }}`, expiration de l'OTP à 600 secondes, SMTP personnalisé pour la production. Le fournisseur de courriel est un sous-traitant de données au sens de la Loi 25.
 - **À la greffe** : si l'app de Mike gère les connexions, lui demander s'il accepte des comptes externes « Sous-traitant » limités à leurs jobs, ou garder `session-code` pour eux.
+
+## Partenariat du sous-traitant (ADR-096)
+- Migration `20261031000200_partenariat.sql` : `fournisseurs.partenaire_depuis`, `employes.compte_cree_le`, `hvac_session` (inscrit `compte_cree_le` à la première connexion) et `hvac_partenariat`.
+- Fonction `partenariat`. Avant la mise en ligne, inscrire la vraie date de début de chaque sous-traitant.

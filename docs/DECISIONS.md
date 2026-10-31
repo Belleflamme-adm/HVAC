@@ -1036,3 +1036,16 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - durée du code : 10 minutes recommandées ;
   - pour la production, un SMTP à nous, parce que l'envoi intégré de Supabase est limité en nombre de courriels par heure.
 - **À la greffe** : à décider avec Mike, soit son app accepte ces comptes externes, soit ils restent gérés ici.
+
+## ADR-096 | Accueil du sous-traitant : partenariat et liste de prix active
+- **Date** : 2026-10-31 | **Statut** : Livrée (en local et HTML de test).
+- **Demande de Simon** : sur l'accueil du sous-traitant, entre le titre et les tuiles, afficher :
+  - depuis quand il est partenaire de Belleflamme ;
+  - depuis quand son compte existe ;
+  - la **liste de prix active (V1, V2…)**, en évidence et mise à jour à chaque nouvelle version.
+- **Données** :
+  - `fournisseurs.partenaire_depuis` (date) : par défaut la date de création de la fiche, modifiable sur la fiche (champ « Partenaire Belleflamme depuis ») pour inscrire la vraie date de début ;
+  - `employes.compte_cree_le` : inscrit à la première connexion (lien du compte Auth). Un nouveau responsable (ADR-095) repart à sa propre date ;
+  - version active = la plus récente du registre des listes de prix (ADR-065). Chaque changement de prix, ajout ou retrait crée une version, donc l'accueil suit sans rien faire de plus.
+- **Fonction** `hvac_partenariat` (le sous-traitant reçoit toujours le sien, la planification passe le fournisseur), servie par `partenariat`.
+- La pastille de la liste active ouvre « Ma liste de prix ».

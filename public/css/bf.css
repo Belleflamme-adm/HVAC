@@ -56,6 +56,13 @@ h1 { font-size: 34px; line-height: 1.05; margin: 0 0 6px; }
 .bf-accueil__titre h1 span { opacity: .45; }
 .bf-accueil__date { margin: 2px 0 0; font-weight: 500; }
 .bf-accueil__qui { margin: 0; color: var(--muted); font-size: 14px; }
+/* Partenariat du sous-traitant (ADR-096) : entre le titre et les tuiles */
+.bf-partenariat { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 18px; padding: 12px 16px 14px;
+  background: var(--surface); border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); text-align: center; }
+.bf-partenariat strong { color: var(--ink); }
+.bf-partenariat__liste { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--vert);
+  color: var(--vert-ink); font-weight: 700; text-decoration: none; box-shadow: 0 0 0 3px var(--menthe); }
+.bf-partenariat__liste small { font-weight: 400; opacity: .9; }
 .bf-ruban { background: var(--vert); color: #ffffff; overflow: hidden; white-space: nowrap; font-weight: 700; font-size: 14px; padding: 7px 0; }
 .bf-ruban__piste { display: inline-flex; gap: 18px; padding-left: 16px; animation: bf-defile 45s linear infinite; }
 .bf-ruban:hover .bf-ruban__piste { animation-play-state: paused; }

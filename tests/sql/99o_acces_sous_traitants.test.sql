@@ -47,4 +47,23 @@ select test.ok((select a->>'email' = 'nouveau@test.ca' and not (a->>'connecte'):
                   from public.hvac_st_acces('f2000000-0000-0000-0000-000000000002') a), 'nouveau courriel : compte déplacé, lien défait');
 select test.comme('00000000-0000-0000-0000-0000000000c2');
 select test.ok((select public.hvac_session() is null), 'l''ancien responsable n''entre plus');
+
+-- Partenariat (ADR-096) : depuis quand, compte créé, version active de la liste de prix
+reset role;
+update public.fournisseurs set partenaire_depuis = '2023-04-01' where id = 'f2000000-0000-0000-0000-000000000001';
+set role authenticated;
+select test.comme('00000000-0000-0000-0000-0000000000c1');
+select test.ok((select p->>'partenaire_depuis' = '2023-04-01' and (p->>'version')::int = (select max(numero) from public.listes_prix_versions where fournisseur_id = 'f2000000-0000-0000-0000-000000000001')
+                  from public.hvac_partenariat('f2000000-0000-0000-0000-000000000002') p), 'le sous-traitant voit SON partenariat (pas un autre) et sa version active');
+select test.comme('00000000-0000-0000-0000-00000000000c');
+select test.echec($$select public.hvac_partenariat('f2000000-0000-0000-0000-000000000001')$$, 'un vendeur ne voit pas le partenariat', 'introuvable');
+select test.comme('00000000-0000-0000-0000-00000000000a');
+select test.ok((select (p->>'version')::int >= 1 from public.hvac_partenariat('f2000000-0000-0000-0000-000000000001') p), 'Simon voit la version active');
+-- Compte créé : inscrit à la première connexion du nouveau responsable
+reset role;
+insert into auth.users(id, email) values ('00000000-0000-0000-0000-0000000000c3', 'nouveau@test.ca');
+set role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', '00000000-0000-0000-0000-0000000000c3', 'role', 'authenticated', 'email', 'nouveau@test.ca')::text, false);
+select test.ok((select public.hvac_session()->>'fournisseur_id' = 'f2000000-0000-0000-0000-000000000002'), 'nouveau responsable : première connexion');
+select test.ok((select (p->>'compte_cree_le')::timestamptz > now() - interval '1 minute' from public.hvac_partenariat() p), 'compte créé : date de la première connexion');
 \echo 'TESTS ACCÈS DES SOUS-TRAITANTS PASSÉS'

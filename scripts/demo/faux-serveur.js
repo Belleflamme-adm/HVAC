@@ -25,7 +25,7 @@
   const etat = {
     qui: 'simon', deconnecte: false, codes: {},
     // Accès des sous-traitants (ADR-095) : Clim Laurentides est déjà connecté ; les autres n'ont jamais reçu de code
-    acces: { 'f-clim': { actif: true, connecte: true, acces_envoye_le: null, acces_coupe_le: null }, 'f-rive': { actif: true, connecte: false, acces_envoye_le: null, acces_coupe_le: null },
+    acces: { 'f-clim': { actif: true, connecte: true, acces_envoye_le: null, acces_coupe_le: null, compte_cree_le: '2026-02-10T14:20:00.000Z' }, 'f-rive': { actif: true, connecte: false, acces_envoye_le: null, acces_coupe_le: null },
       'f-mauri': { actif: true, connecte: false, acces_envoye_le: null, acces_coupe_le: null }, 'f-outa': { actif: true, connecte: false, acces_envoye_le: null, acces_coupe_le: null } },
     maintenant: (() => { const d = new Date(); d.setHours(11, 0, 0, 0); return d.getTime(); })(),
     leads: [], activites: [], compteur: 0, pointeurs: {},
@@ -39,10 +39,10 @@
     ],
     clients: [], sites: [],
     fournisseurs: [
-      { id: 'f-clim', nom: 'Clim Laurentides (FICTIF)', type: 'sous-traitant', telephone: '450-555-0190', courriel: 'clim@exemple.invalid', licence_rbq: '0000-0000-00', responsable_nom: 'Martin Lavoie (FICTIF)', responsable_telephone: '450-555-0191', responsable_courriel: 'martin@exemple.invalid', proprietaire_nom: 'Paul Lavoie (FICTIF)', actif: true },
-      { id: 'f-rive', nom: 'Climatisation Rive-Nord (FICTIF)', type: 'sous-traitant', telephone: '450-555-0177', courriel: 'rivenord@exemple.invalid', licence_rbq: '0000-0000-02', responsable_nom: 'Julie Roy (FICTIF)', responsable_telephone: '450-555-0178', responsable_courriel: 'julie@exemple.invalid', proprietaire_nom: 'Julie Roy (FICTIF)', actif: true },
-      { id: 'f-mauri', nom: 'Froid Centre-du-Québec (FICTIF)', type: 'sous-traitant', telephone: '819-555-0123', courriel: 'froid@exemple.invalid', licence_rbq: '0000-0000-03', responsable_nom: 'Éric Bélanger (FICTIF)', responsable_telephone: '819-555-0124', responsable_courriel: 'eric@exemple.invalid', proprietaire_nom: 'Nadia Côté (FICTIF)', actif: true },
-      { id: 'f-outa', nom: 'Thermo Outaouais (FICTIF)', type: 'sous-traitant', telephone: '819-555-0144', courriel: 'thermo@exemple.invalid', licence_rbq: null, responsable_nom: 'Kevin Hall (FICTIF)', responsable_telephone: '819-555-0145', responsable_courriel: 'kevin@exemple.invalid', proprietaire_nom: null, actif: true },
+      { id: 'f-clim', partenaire_depuis: '2021-05-03', nom: 'Clim Laurentides (FICTIF)', type: 'sous-traitant', telephone: '450-555-0190', courriel: 'clim@exemple.invalid', licence_rbq: '0000-0000-00', responsable_nom: 'Martin Lavoie (FICTIF)', responsable_telephone: '450-555-0191', responsable_courriel: 'martin@exemple.invalid', proprietaire_nom: 'Paul Lavoie (FICTIF)', actif: true },
+      { id: 'f-rive', partenaire_depuis: '2023-03-15', nom: 'Climatisation Rive-Nord (FICTIF)', type: 'sous-traitant', telephone: '450-555-0177', courriel: 'rivenord@exemple.invalid', licence_rbq: '0000-0000-02', responsable_nom: 'Julie Roy (FICTIF)', responsable_telephone: '450-555-0178', responsable_courriel: 'julie@exemple.invalid', proprietaire_nom: 'Julie Roy (FICTIF)', actif: true },
+      { id: 'f-mauri', partenaire_depuis: '2024-09-01', nom: 'Froid Centre-du-Québec (FICTIF)', type: 'sous-traitant', telephone: '819-555-0123', courriel: 'froid@exemple.invalid', licence_rbq: '0000-0000-03', responsable_nom: 'Éric Bélanger (FICTIF)', responsable_telephone: '819-555-0124', responsable_courriel: 'eric@exemple.invalid', proprietaire_nom: 'Nadia Côté (FICTIF)', actif: true },
+      { id: 'f-outa', partenaire_depuis: '2025-06-10', nom: 'Thermo Outaouais (FICTIF)', type: 'sous-traitant', telephone: '819-555-0144', courriel: 'thermo@exemple.invalid', licence_rbq: null, responsable_nom: 'Kevin Hall (FICTIF)', responsable_telephone: '819-555-0145', responsable_courriel: 'kevin@exemple.invalid', proprietaire_nom: null, actif: true },
     ],
     territoire: [], principaux: [], dispos: [],
     types: (window.__demoTypesTravaux || []).map((x, i) => ({ id: `t-${x.code}`, code: x.code, nom: x.nom, description: x.inclus, categorie: x.categorie, unite: x.unite, ordre: i })),
@@ -806,7 +806,7 @@
         delete etat.codes[email];
         if (!compteActif(qui)) throw new Erreur(403, 'Accès désactivé : communique avec Belleflamme');
         const st = UTILISATEURS[qui].sousTraitantId;
-        if (st) etat.acces[st].connecte = true;
+        if (st) { if (!etat.acces[st].connecte) etat.acces[st].compte_cree_le = iso(etat.maintenant); etat.acces[st].connecte = true; }
         return entrer(qui);
       },
     },
@@ -1278,6 +1278,7 @@
         const c = { ...b };
         for (const k of Object.keys(c)) if (typeof c[k] === 'string') c[k] = c[k].trim() || null;
         if ('nom' in c) exiger(c.nom && c.nom.length >= 2, 'Nom de la compagnie requis');
+        if ('partenaire_depuis' in c) exiger(/^\d{4}-\d{2}-\d{2}$/.test(c.partenaire_depuis || '') && c.partenaire_depuis <= iso(etat.maintenant).slice(0, 10), 'Partenaire depuis : une date passée (AAAA-MM-JJ)');
         if (c.licence_rbq) {
           const d = c.licence_rbq.replace(/\D/g, '');
           exiger(d.length === 10 && !/[^\d\s-]/.test(c.licence_rbq), 'Numéro RBQ : 10 chiffres (ex. 1234-5678-90)');
@@ -1290,7 +1291,7 @@
         if (c.responsable_courriel && compte && compte.email === (f.responsable_courriel || '').toLowerCase()) {
           exiger(!quiParCourriel(c.responsable_courriel), 'Ce courriel est déjà utilisé par un autre compte');
           compte.email = c.responsable_courriel.toLowerCase();
-          Object.assign(etat.acces[f.id], { connecte: false, acces_envoye_le: null });
+          Object.assign(etat.acces[f.id], { connecte: false, acces_envoye_le: null, compte_cree_le: null });
         }
         Object.assign(f, c);
         return f;
@@ -1376,6 +1377,15 @@
       etat.confies = etat.confies.filter((c) => !(c.fournisseur_id === b.fournisseur_id && (b.retirer || []).includes(c.type_travail_id)));
       for (const t of b.ajouter || []) if (!etat.confies.some((c) => c.fournisseur_id === b.fournisseur_id && c.type_travail_id === t)) etat.confies.push({ fournisseur_id: b.fournisseur_id, type_travail_id: t });
       return { ajoutes: (b.ajouter || []).length, retires: (b.retirer || []).length, version: versionner(b.fournisseur_id, 'Travaux confiés modifiés par Belleflamme') };
+    } },
+    // Partenariat (ADR-096) : mêmes règles que hvac_partenariat
+    partenariat: { GET: (q) => {
+      const fid = user().sousTraitantId || q.fournisseur;
+      if (!user().sousTraitantId) exiger(['Admin tout', 'Direction', 'Coordonnateur'].includes(user().role), 'Sous-traitant introuvable');
+      const f = etat.fournisseurs.find((x) => x.id === fid);
+      if (!f) throw new Erreur(404, 'Sous-traitant introuvable');
+      const v = etat.versions.filter((x) => x.fournisseur_id === fid).sort((a, b) => b.numero - a.numero)[0];
+      return { nom: f.nom, partenaire_depuis: f.partenaire_depuis || null, compte_cree_le: etat.acces[fid]?.compte_cree_le || null, version: v?.numero || null, version_le: v?.cree_le || null };
     } },
     'listes-prix-versions': { GET: (q) => {
       const f = user().sousTraitantId || q.fournisseur;

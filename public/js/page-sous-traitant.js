@@ -19,6 +19,7 @@ if (user) {
     ['telephone', 'Téléphone de la compagnie', { type: 'tel' }],
     ['courriel', 'Courriel de la compagnie', { type: 'email' }],
     ['adresse', 'Adresse', {}],
+    ['partenaire_depuis', 'Partenaire Belleflamme depuis', { type: 'date' }],
   ];
   const PERSONNES = [
     ['proprietaire_nom', 'Nom du propriétaire', {}],

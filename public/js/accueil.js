@@ -22,6 +22,19 @@ if (user) {
     libelle, ' ', h('span', { class: 'bf-ruban__chiffre' }, valeur), unite ? ` ${unite}` : '', h('span', { class: 'bf-ruban__sep', 'aria-hidden': 'true' }, '✦'));
   if (user.sousTraitantId) {
     ruban.hidden = true;
+    // Partenariat (ADR-096) : depuis quand, compte créé, liste de prix active (version du registre, mise à jour à chaque changement)
+    try {
+      const p = await api.get('partenariat');
+      const date = (d) => new Date(d.length === 10 ? `${d}T12:00:00` : d).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' });
+      const zone = document.getElementById('partenariat');
+      zone.replaceChildren(...[
+        p.partenaire_depuis ? h('span', {}, 'Partenaire Belleflamme depuis le ', h('strong', {}, date(p.partenaire_depuis))) : null,
+        p.compte_cree_le ? h('span', {}, 'Compte créé le ', h('strong', {}, date(p.compte_cree_le))) : null,
+        h('a', { class: 'bf-partenariat__liste', href: '/mes-prix' }, p.version ? `Liste de prix active : V${p.version}` : 'Liste de prix : aucune version encore',
+          p.version_le ? h('small', {}, `depuis le ${date(p.version_le)}`) : null),
+      ].filter(Boolean));
+      zone.hidden = false;
+    } catch { /* sans partenariat */ }
   } else {
     try {
       const leads = await api.get('leads', { vue: ['Admin tout', 'Direction', 'Gérant de succursale', 'Coordonnateur'].includes(user.role) ? 'board' : 'mes', limite: 500 });
