@@ -1,0 +1,15 @@
+body { margin: 0; font: 13px/1.45 "Segoe UI", Roboto, system-ui, sans-serif; color: #111; background: #f2f2f2; }
+.outils { text-align: center; padding: 12px; }
+.outils button { font: 700 15px inherit; padding: 10px 18px; border-radius: 999px; border: 0; background: #e2741b; color: #fff; cursor: pointer; }
+.doc { background: #fff; max-width: 8in; margin: 0 auto 24px; padding: .6in; box-sizing: border-box; }
+.demo { border: 2px solid #b4232c; color: #b4232c; font-weight: 700; text-align: center; padding: 6px; margin: 0 0 12px; }
+.tete { display: flex; justify-content: space-between; gap: 24px; border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 16px; }
+.tete h1 { font-size: 22px; margin: 0 0 4px; } .tete h2 { font-size: 18px; margin: 0 0 6px; }
+.tete p, .client p { margin: 0; } .droite { text-align: right; }
+.client { margin-bottom: 16px; } h3 { font-size: 14px; margin: 0 0 4px; text-transform: uppercase; letter-spacing: .05em; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid #ccc; text-align: left; } th { font-size: 11px; text-transform: uppercase; }
+.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.totaux { width: auto; margin-left: auto; min-width: 3.5in; } .totaux .fort td { font-weight: 700; border-top: 2px solid #111; }
+.pre { white-space: pre-wrap; } .pied { margin-top: 24px; font-size: 11px; color: #333; } .signature { margin-top: 28px; font-size: 13px; }
+@media print { body { background: #fff; } .outils { display: none; } .doc { margin: 0; padding: 0; max-width: none; } @page { margin: .5in; } }

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>HVAC | Groupe Belleflamme</title>
+  <meta name="theme-color" content="#1fa64a">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/bf.css?v=0.4.0">
+  <script src="/js/bf-theme-init.js?v=0.4.0"></script>
+  <script type="module" src="/js/accueil.js?v=0.4.0"></script>
+</head>
+<body class="bf-accueil">
+  <div class="bf-filet" aria-hidden="true"></div>
+  <!-- Couverture : photo d'équipe ou de chantier à remplacer (bf-entete-photo chez Mike) -->
+  <header class="bf-couverture">
+    <button id="deconnexion" class="bf-couverture__sortie" type="button">Déconnexion</button>
+    <div class="bf-couverture__logo" aria-hidden="true"><img src="/icons/icon.svg" alt="" width="64" height="64"><span>BelleFlamme</span></div>
+  </header>
+  <section class="bf-accueil__titre">
+    <h1>Ventilation <span>|</span> Climatisation</h1>
+    <p id="date" class="bf-accueil__date"></p>
+    <p id="qui" class="bf-accueil__qui"></p>
+  </section>
+  <div id="ruban" class="bf-ruban" aria-label="Statistiques des leads"></div>
+  <div id="partenariat" class="bf-partenariat" aria-label="Partenariat avec Belleflamme" hidden></div>
+  <main class="bf-page">
+    <p class="bf-note">Données de démonstration : tout ce qui est marqué FICTIF n'est pas réel.</p>
+    <nav id="tuiles" class="bf-tuiles" aria-label="Modules"></nav>
+  </main>
+  <footer class="bf-pied">Groupe Belleflamme | Division HVAC | v0.4.1</footer>
+</body>
+</html>

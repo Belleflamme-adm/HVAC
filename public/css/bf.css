@@ -1,0 +1,655 @@
+/* Style de l'app de Mike (v0.4.1) : vert Belleflamme, titres condensés (Bebas Neue), texte DM Sans,
+   tuiles en liste avec icône sur fond menthe, ruban de stats vert, barre du bas (recherche + cloche). */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap');
+:root {
+  --bg: #f3f5f4; --surface: #ffffff; --ink: #14201a; --muted: #56635b; --line: #e1e6e3;
+  --vert: #1fa64a; --vert-fonce: #158a3b; --vert-texte: #157a36; --menthe: #d8f1e0; --vert-ink: #ffffff;
+  --accent: #1fa64a; --accent-ink: #ffffff; --bad: #c62828; --r: 14px;
+  --f: "DM Sans", "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+  --f-titre: "Bebas Neue", "Oswald", "Arial Narrow", Impact, sans-serif;
+  --ombre: 0 1px 2px rgba(20, 32, 26, .06), 0 4px 14px rgba(20, 32, 26, .05);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1410; --surface: #141f19; --ink: #e6efe9; --muted: #9fb0a5; --line: #24332b;
+    --vert: #22b452; --vert-fonce: #1a9443; --vert-texte: #5fd98a; --menthe: #183826; --vert-ink: #04120a;
+    --accent: #22b452; --accent-ink: #04120a; --bad: #ff8a80; --ombre: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1410; --surface: #141f19; --ink: #e6efe9; --muted: #9fb0a5; --line: #24332b;
+  --vert: #22b452; --vert-fonce: #1a9443; --vert-texte: #5fd98a; --menthe: #183826; --vert-ink: #04120a;
+  --accent: #22b452; --accent-ink: #04120a; --bad: #ff8a80; --ombre: none; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 var(--f); }
+h1, h2 { font-family: var(--f-titre); font-weight: 400; letter-spacing: .02em; text-wrap: balance; }
+h1 { font-size: 34px; line-height: 1.05; margin: 0 0 6px; }
+.bf-entete { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left));
+  background: var(--vert); color: var(--vert-ink); }
+.bf-entete__marque { display: inline-flex; align-items: center; gap: 10px; font-family: var(--f-titre); font-size: 24px; letter-spacing: .03em; }
+.bf-entete__marque img { border-radius: 50%; box-shadow: 0 0 0 2px #ffffff55; }
+.bf-entete__marque span { font-weight: 400; }
+.bf-entete__sortie, .bf-couverture__sortie { font: 600 14px var(--f); padding: 6px 14px; border-radius: 999px; border: 1.5px solid currentColor;
+  background: transparent; color: inherit; cursor: pointer; }
+.bf-bandeau { padding: 6px 16px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.bf-bandeau strong { color: var(--ink); }
+.bf-bandeau__imp { color: var(--vert-texte); font-weight: 700; }
+.bf-page { max-width: 1120px; margin: 0 auto; padding: 22px max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left)); }
+.bf-note { color: var(--muted); margin: 0 0 14px; font-size: 14px; }
+
+/* Accueil : filet vert, couverture, logo rond, titre, ruban */
+.bf-filet { height: 10px; background: var(--vert); }
+.bf-couverture { position: relative; height: clamp(150px, 26vw, 300px);
+  background:
+    radial-gradient(circle at 30% 40%, #ffffff22 0 2px, transparent 3px) 0 0 / 26px 26px,
+    linear-gradient(135deg, #0f3d24 0%, #1fa64a 55%, #7dd3a0 100%); }
+.bf-couverture__sortie { position: absolute; top: 12px; right: max(16px, env(safe-area-inset-right)); color: #ffffff; background: #00000033; }
+.bf-couverture__logo { position: absolute; left: 50%; bottom: -58px; transform: translateX(-50%); width: 116px; height: 116px; border-radius: 50%;
+  background: #0d1f14; border: 4px solid var(--surface); box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+  display: grid; place-items: center; align-content: center; gap: 0; color: #ffffff; font-size: 11px; }
+.bf-couverture__logo img { width: 64px; height: 64px; }
+.bf-accueil__titre { text-align: center; padding: 70px 16px 10px; background: var(--surface); }
+.bf-accueil__titre h1 { color: var(--vert-texte); font-size: clamp(30px, 5vw, 40px); margin: 0; }
+.bf-accueil__titre h1 span { opacity: .45; }
+.bf-accueil__date { margin: 2px 0 0; font-weight: 500; }
+.bf-accueil__qui { margin: 0; color: var(--muted); font-size: 14px; }
+/* Partenariat du sous-traitant (ADR-096) : entre le titre et les tuiles */
+.bf-partenariat { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px 18px; padding: 12px 16px 14px;
+  background: var(--surface); border-bottom: 1px solid var(--line); font-size: 14px; color: var(--muted); text-align: center; }
+.bf-partenariat strong { color: var(--ink); }
+.bf-partenariat__liste { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 999px; background: var(--vert);
+  color: var(--vert-ink); font-weight: 700; text-decoration: none; box-shadow: 0 0 0 3px var(--menthe); }
+.bf-partenariat__liste small { font-weight: 400; opacity: .9; }
+.bf-ruban { background: var(--vert); color: #ffffff; overflow: hidden; white-space: nowrap; font-weight: 700; font-size: 14px; padding: 7px 0; }
+.bf-ruban__piste { display: inline-flex; gap: 18px; padding-left: 16px; animation: bf-defile 45s linear infinite; }
+.bf-ruban:hover .bf-ruban__piste { animation-play-state: paused; }
+.bf-ruban__item { display: inline-flex; align-items: center; gap: 6px; }
+.bf-ruban__chiffre { background: #ffffff; color: #14201a; border-radius: 7px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+.bf-ruban__sep { margin-left: 12px; opacity: .8; }
+@keyframes bf-defile { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .bf-ruban { white-space: normal; } .bf-ruban__piste { animation: none; flex-wrap: wrap; } }
+
+/* Tuiles en liste (comme chez Mike) */
+.bf-tuiles { display: grid; gap: 12px; max-width: 1120px; margin: 0 auto; }
+.bf-tuile { display: grid; grid-template-columns: 56px minmax(0, 1fr) 24px; align-items: center; gap: 14px; width: 100%;
+  padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--ombre);
+  color: var(--ink); text-decoration: none; text-align: left; font: inherit; cursor: pointer; }
+.bf-tuile:hover { border-color: var(--vert); }
+.bf-tuile__icone { width: 56px; height: 56px; border-radius: 12px; background: var(--menthe); display: grid; place-items: center; font-size: 28px; line-height: 1; }
+.bf-tuile__texte { display: grid; gap: 2px; min-width: 0; }
+.bf-tuile__titre { font-family: var(--f-titre); font-size: 22px; letter-spacing: .03em; line-height: 1.1; text-transform: uppercase; }
+.bf-tuile__desc { font-size: 13px; color: var(--muted); }
+.bf-tuile__fleche { font-size: 22px; color: var(--muted); text-align: center; }
+.bf-tuile--bientot, .bf-tuile--construction { opacity: .75; border-style: dashed; cursor: default; }
+.bf-tuile--veille { opacity: .45; filter: grayscale(1); cursor: not-allowed; box-shadow: none; }
+.bf-tuile--veille-groupe { opacity: .7; }
+.bf-tuile--veille-groupe .bf-tuile__icone { filter: grayscale(1); }
+.bf-tuile__etat { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+
+/* Fenêtre flottante (bf-windows chez Mike) */
+.bf-fenetre-fond { position: fixed; inset: 0; z-index: 50; background: rgba(10, 20, 14, .25); display: grid; place-items: center;
+  padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left)); }
+.bf-fenetre { width: min(640px, 100%); max-height: min(80vh, 760px); display: flex; flex-direction: column; background: var(--bg);
+  border: 1px solid var(--line); border-top: 3px solid var(--vert); border-radius: 12px; box-shadow: 0 18px 50px rgba(0, 0, 0, .25); overflow: hidden; }
+.bf-fenetre--grande { width: min(1100px, 100%); max-height: 92vh; }
+.bf-fenetre__barre { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px 8px 14px;
+  background: var(--surface); border-bottom: 1px solid var(--line); font-weight: 700; }
+.bf-fenetre__boutons { display: flex; gap: 6px; }
+.bf-fenetre__boutons button { width: 32px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; }
+.bf-fenetre__corps { padding: 14px; overflow-y: auto; }
+
+/* Barre du bas : recherche + cloche */
+body.bf-avec-barre { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+.bf-barre { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; gap: 10px; align-items: center;
+  padding: 8px max(12px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: var(--surface); border-top: 1px solid var(--line); }
+.bf-barre__recherche { flex: 1; display: flex; min-width: 0; border: 1.5px solid var(--line); border-radius: 999px; background: var(--bg); overflow: hidden; }
+.bf-barre__recherche input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: 15px var(--f); padding: 9px 14px; }
+.bf-barre__recherche input:focus { outline: none; }
+.bf-barre__recherche:focus-within { border-color: var(--vert); }
+.bf-barre__loupe { border: 0; background: transparent; padding: 0 14px; cursor: pointer; font-size: 16px; }
+.bf-barre__cloche { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; background: var(--line);
+  color: var(--ink); text-decoration: none; font-weight: 700; font-size: 14px; }
+.bf-barre__cloche--alerte { background: #e53935; color: #ffffff; }
+
+.bf-bouton { font: 700 15px var(--f); padding: 11px 18px; border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.bf-bouton[disabled] { opacity: .6; cursor: progress; }
+.bf-bouton--discret { background: transparent; color: inherit; border: 1.5px solid currentColor; padding: 7px 14px; }
+.bf-centre { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.bf-carte { width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-top: 4px solid var(--vert); border-radius: var(--r); padding: 28px; }
+.bf-carte form { display: grid; gap: 14px; }
+.bf-carte label { display: grid; gap: 4px; font-weight: 600; font-size: 14px; }
+.bf-carte input { font: 16px var(--f); padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
+.bf-erreur { color: var(--bad); min-height: 1.5em; margin: 0; }
+.bf-pied { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 16px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--vert); outline-offset: 2px; }
+
+/* Module Clients + Devis (v0.3.0) */
+.bf-nav { display: flex; gap: 4px; flex: 1; justify-content: center; flex-wrap: wrap; }
+.bf-nav a { color: inherit; text-decoration: none; padding: 6px 12px; border-radius: 999px; opacity: .85; }
+.bf-nav a[aria-current="page"], .bf-nav a:hover { background: rgba(255,255,255,.2); opacity: 1; }
+a.bf-entete__marque { color: inherit; text-decoration: none; }
+h2 { font-size: 24px; margin: 0 0 10px; }
+.bf-titre { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.bf-muet { color: var(--muted); font-size: 14px; }
+.bf-message { min-height: 0; margin: 8px 0; }
+.bf-message--erreur { color: var(--bad); }
+.bf-message--alerte { background: #fff3e4; color: #7a3a04; padding: 10px 14px; border-radius: 10px; }
+.bf-message--ok { color: #11734a; }
+.bf-page input[type="search"], .bf-page input:not([type]), .bf-page input[type="text"], .bf-page input[type="tel"],
+.bf-page input[type="email"], .bf-page input[type="number"], .bf-page select, .bf-page textarea {
+  font: 16px var(--f); padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); max-width: 100%; }
+.bf-page input[type="search"], .bf-page textarea { width: 100%; }
+.bf-court { width: 6.5em; text-align: right; }
+.bf-liste { display: grid; gap: 6px; margin: 12px 0; }
+.bf-ligne { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 12px 14px; background: var(--surface);
+  border: 1px solid var(--line); border-radius: 12px; color: var(--ink); text-decoration: none; text-align: left; font: inherit; cursor: pointer; width: 100%; }
+a.bf-ligne:hover, button.bf-ligne:hover { border-color: var(--accent); }
+.bf-form { display: grid; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; margin: 12px 0; }
+.bf-form label { display: grid; gap: 4px; font-weight: 600; font-size: 14px; }
+.bf-form label.bf-case, label.bf-case { display: flex; gap: 8px; align-items: center; font-weight: 400; }
+.bf-grille2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.bf-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0; }
+.bf-filtres { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 10px 0; }
+.bf-carte-section { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; margin: 14px 0; }
+.bf-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; }
+.bf-dl dt { color: var(--muted); }
+.bf-dl dd { margin: 0; }
+.bf-simple { margin: 0; padding-left: 18px; }
+.bf-lien { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+.bf-table-zone { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); margin: 12px 0; }
+.bf-table { width: 100%; border-collapse: collapse; min-width: 640px; font-size: 15px; }
+.bf-table th, .bf-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
+.bf-table th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.fort { font-weight: 700; }
+.bf-totaux { display: flex; justify-content: flex-end; margin: 12px 0; }
+.bf-totaux .bf-dl { min-width: min(360px, 100%); }
+.bf-pastille { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--line); color: var(--ink); }
+.bf-pastille--envoye { background: #e3ecff; color: #1d47c2; }
+.bf-pastille--accepte { background: #e3f5ec; color: #11734a; }
+.bf-pastille--refuse, .bf-pastille--annule { background: #fdecec; color: #b4232c; }
+.bf-pastille--expire { background: #eceff3; color: #4a5672; }
+.bf-pastille--attente { background: #fff3e4; color: #a24b05; }
+.bf-bouton { text-decoration: none; display: inline-block; }
+@media (max-width: 640px) { .bf-nav { order: 3; width: 100%; justify-content: flex-start; } .bf-entete { flex-wrap: wrap; } }
+[hidden] { display: none !important; }
+.bf-form input:not([type="checkbox"]), .bf-form select { width: 100%; min-width: 0; }
+.bf-form--compact { padding: 12px 14px; gap: 8px; }
+.bf-interne { font-size: 12px; margin-top: 2px; }
+@media print { .bf-interne { display: none; } }
+.bf-form--compact .bf-filtres select, .bf-form--compact .bf-filtres input:not([type="checkbox"]) { width: auto; flex: 1 1 200px; }
+.bf-form--compact .bf-filtres .bf-court { flex: 0 1 9em; }
+
+/* Lot A : carte, calendrier (v0.4.0) */
+.bf-carte-mise { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+@media (max-width: 860px) { .bf-carte-mise { grid-template-columns: 1fr; } }
+.bf-carte-zone { background: #eef3f8; border: 1px solid var(--line); border-radius: var(--r); height: min(70vh, 640px); overflow: hidden; touch-action: none; }
+@media (max-width: 860px) { .bf-carte-zone { height: min(58vh, 520px); } }
+.bf-geo { width: 100%; height: 100%; display: block; cursor: grab; }
+.bf-geo path { stroke: #ffffff; stroke-width: .6; }
+@media (hover: hover) { .bf-geo path:hover { stroke: var(--ink); stroke-width: 1.4; stroke-dasharray: 3 2; } }
+.bf-geo path.selection { stroke: var(--ink); stroke-width: 3; stroke-dasharray: none; filter: brightness(.82); }
+.bf-geo path.bf-geo__region { fill: none; stroke: #0f1a33; stroke-width: 1.8; stroke-opacity: .55; pointer-events: none; }
+.bf-geo__etiquettes { pointer-events: none; }
+.bf-geo__etiquette { text-anchor: middle; dominant-baseline: central; paint-order: stroke; stroke: #ffffff; stroke-opacity: .85;
+  stroke-linejoin: round; fill: #0f1a33; font-family: var(--f); }
+.bf-geo__etiquette--ville1 { font-weight: 700; }
+.bf-geo__etiquette--ville2 { font-weight: 600; }
+.bf-geo__etiquette--region { font-weight: 700; letter-spacing: .12em; fill: #3b4766; }
+.bf-geo__etiquette--mrc { font-style: italic; letter-spacing: .06em; fill: #4a5672; }
+.bf-carte-panneau { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.bf-legende { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--muted); }
+.bf-legende__item { display: inline-flex; align-items: center; gap: 6px; }
+.bf-lien-fort { font-weight: 700; color: var(--ink); font-size: 16px; }
+.bf-lien-fort:hover, .bf-lien-fort:focus-visible { color: var(--vert, #1fa64a); }
+.bf-pastille-couleur { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.bf-c-accepte, .bf-cal-disponible { background: #2e9d63; }
+.bf-c-supplement { background: #e2a01b; }
+.bf-c-refuse, .bf-cal-indisponible { background: #c9483f; }
+.bf-c-aucun { background: #d9dee6; }
+.bf-pastille-contour { background: transparent; border: 2.5px solid var(--ink); box-sizing: border-box; }
+.bf-ligne .bf-pastille-couleur { flex: none; }
+.bf-attribution { font-size: 12px; margin-top: 8px; }
+.bf-calendrier { display: grid; gap: 6px; margin: 12px 0; }
+.bf-cal-entete, .bf-cal-semaine { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.bf-cal-entete span { text-align: center; font-size: 12px; text-transform: uppercase; color: var(--muted); }
+.bf-cal-jour { min-height: 58px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink);
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; padding: 6px 8px; font: inherit; cursor: pointer; }
+.bf-cal-jour small { font-size: 11px; font-weight: 700; }
+.bf-cal-disponible, .bf-cal-indisponible { color: #fff; border-color: transparent; }
+.bf-cal-aucun { background: var(--surface); }
+.bf-cal-passe { opacity: .45; cursor: default; }
+.bf-cal-jour[disabled] { cursor: default; }
+.bf-cal-jour.bf-cal-disponible { background: #2e9d63; color: #fff; }
+.bf-cal-jour.bf-cal-indisponible { background: #c9483f; color: #fff; }
+.bf-carte-panneau .bf-bouton[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* CRM des leads (ADR-056) */
+.bf-retard { color: var(--bad); font-weight: 700; }
+.bf-ligne--retard { border-left: 4px solid var(--bad); }
+.bf-pastille--lead-nouveau { background: #fff3e4; color: #a24b05; }
+.bf-pastille--lead-pris_en_charge, .bf-pastille--lead-contacte { background: #e3ecff; color: #1d47c2; }
+.bf-pastille--lead-inspection_planifiee, .bf-pastille--lead-converti { background: #e3f5ec; color: #11734a; }
+.bf-pastille--lead-perdu { background: #eceff3; color: #4a5672; }
+.bf-pastille--cote-bon { background: #e3f5ec; color: #11734a; }
+.bf-pastille--cote-moyen { background: #fff3e4; color: #a24b05; }
+.bf-pastille--cote-a_ameliorer { background: #fdecec; color: #b4232c; }
+.bf-pastille--cote-non_evalue { background: #eceff3; color: #4a5672; }
+.bf-journal { list-style: none; padding: 0; display: grid; gap: 8px; }
+.bf-journal li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.bf-seuil { width: 6.5em; font: inherit; padding: 4px 6px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.bf-fiche { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0 0 8px; }
+.bf-fiche dt { color: var(--muted); font-size: 14px; }
+.bf-fiche dd { margin: 0; overflow-wrap: anywhere; }
+.bf-pastille--type { background: var(--menthe); color: var(--vert-texte); }
+.bf-centre-cel { text-align: center; }
+
+/* Liste de prix des sous-traitants (ADR-060), au style de la liste de prix de Mike */
+.bf-prix-section { display: grid; gap: 8px; margin: 18px 0; }
+.bf-prix-section__titre { color: var(--vert-texte); font-size: 20px; margin: 0; }
+.bf-prix { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px 14px; align-items: center;
+  padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.bf-prix__texte { display: grid; gap: 2px; min-width: 0; font-size: 15px; }
+.bf-prix__inclus { font-size: 13px; color: var(--muted); }
+.bf-prix__meta { font-size: 13px; }
+.bf-prix__client { font-weight: 600; }
+.bf-prix__saisie { display: flex; align-items: center; gap: 8px; }
+.bf-prix__champ { width: 7.5em; text-align: right; font: 16px var(--f); padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 10px;
+  background: var(--bg); color: var(--ink); font-variant-numeric: tabular-nums; }
+.bf-prix__champ--modifie { border-color: var(--vert); background: var(--menthe); }
+.bf-prix__unite { font-size: 12px; color: var(--muted); min-width: 5.5em; }
+.bf-prix-barre { position: sticky; bottom: calc(70px + env(safe-area-inset-bottom)); z-index: 5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--ombre); }
+@media (max-width: 560px) { .bf-prix { grid-template-columns: 22px minmax(0, 1fr); } .bf-prix__droite { grid-column: 2; } }
+.bf-prix__coche { width: 20px; height: 20px; accent-color: var(--vert); }
+.bf-prix__droite { display: grid; justify-items: end; gap: 4px; }
+.bf-prix__form { display: grid; gap: 6px; min-width: 0; }
+.bf-prix__edit { font: inherit; padding: 6px 8px; border: 1.5px solid var(--vert); border-radius: 8px; background: var(--bg); color: var(--ink); width: 100%; }
+.bf-prix-barre input { flex: 1 1 220px; min-width: 0; font: inherit; padding: 9px 12px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--bg); color: var(--ink); }
+.bf-lien-demande { width: 100%; font: 14px ui-monospace, Menlo, monospace; padding: 10px 12px; border: 1.5px solid var(--vert); border-radius: 10px; background: var(--bg); color: var(--ink); }
+.bf-demande-ok { border-color: var(--vert); }
+.bf-pastille--demande-envoyee { background: #e3ecff; color: #1d47c2; }
+.bf-pastille--demande-recue { background: #fff3e4; color: #a24b05; }
+.bf-pastille--demande-approuvee { background: #e3f5ec; color: #11734a; }
+.bf-pastille--demande-annulee { background: #eceff3; color: #4a5672; }
+.bf-signature { margin: 12px 0 0; display: grid; gap: 4px; justify-items: start; }
+.bf-signature img { max-width: 320px; width: 100%; background: #ffffff; border: 1px solid var(--line); border-radius: 8px; }
+.bf-pave { display: block; width: 100%; max-width: 600px; aspect-ratio: 600 / 180; height: auto; background: #ffffff; border: 1.5px dashed var(--vert); border-radius: 10px; touch-action: none; cursor: crosshair; }
+.bf-prix__note { font: 13px var(--f); padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); margin-top: 4px; max-width: 420px; }
+.bf-prix--public { grid-template-columns: minmax(0, 1fr) auto; }
+@media (max-width: 560px) { .bf-prix--public { grid-template-columns: 1fr; } .bf-prix--public .bf-prix__droite { grid-column: 1; justify-items: start; } }
+.bf-attestation { font-weight: 600; align-items: flex-start; }
+.bf-avis-engagement { border-color: #e2a01b; border-left: 4px solid #e2a01b; }
+
+/* Registre des versions de la liste de prix (ADR-065) */
+.bf-registre__liste { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bf-registre__version { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; background: var(--surface); }
+.bf-registre__version--courante { border-color: var(--vert); box-shadow: inset 4px 0 0 var(--vert); }
+.bf-registre__tete { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.bf-registre__details ul { margin: 4px 0; padding-left: 20px; }
+.bf-registre__empreinte { font-size: 12px; overflow-wrap: anywhere; }
+
+/* Étampes des leads (ADR-066) : statut et type de système, à la manière du « ✓ PRÉPARÉ » de l'app de Mike.
+   Couleurs foncées : texte blanc lisible (contraste 4,5:1 ou plus). */
+.bf-etampes { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.bf-etampe { --c: #4b5563; display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 2px; border-radius: 6px;
+  background: var(--c); color: #ffffff; font-family: var(--f-titre); font-size: 15px; line-height: 1.15; letter-spacing: .06em;
+  text-transform: uppercase; white-space: nowrap; vertical-align: middle;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .3), 0 1px 2px rgba(0, 0, 0, .18); }
+.bf-etampe svg { width: 14px; height: 14px; flex: none; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.bf-etampe--nouveau { --c: #7c3aed; }
+.bf-etampe--pris_en_charge { --c: #4338ca; }
+.bf-etampe--contacte { --c: #0f766e; }
+.bf-etampe--qualifie { --c: #0369a1; }
+.bf-etampe--inspection_planifiee { --c: #b45309; }
+.bf-etampe--converti { --c: #15803d; }
+.bf-etampe--perdu { --c: #c62828; font-size: 19px; padding: 4px 12px 3px; letter-spacing: .1em;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .45), 0 1px 3px rgba(0, 0, 0, .25); }
+.bf-etampe--perdu svg { width: 17px; height: 17px; stroke-width: 3; }
+.bf-etampe--mural_simple { --c: #155e75; }
+.bf-etampe--mural_multi { --c: #1e3a8a; }
+.bf-etampe--central { --c: #374151; }
+.bf-etampe--bienergie { --c: #9a3412; }
+.bf-etampe--a_preciser { --c: #6b7280; }
+
+/* « PERDU » en diagonale sur la fiche du lead */
+.bf-fiche-perdue { position: relative; overflow: hidden; }
+.bf-filigrane-perdu { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 1; }
+.bf-filigrane-perdu span { transform: rotate(-16deg); font-family: var(--f-titre); font-size: clamp(64px, 14vw, 132px); line-height: 1;
+  letter-spacing: .12em; text-transform: uppercase; color: #c62828; border: 7px solid #c62828; border-radius: 16px; padding: .06em .3em 0;
+  background: color-mix(in srgb, var(--surface) 55%, transparent); opacity: .88; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bf-filigrane-perdu span { color: #f05252; border-color: #f05252; } }
+:root[data-theme="dark"] .bf-filigrane-perdu span { color: #f05252; border-color: #f05252; }
+
+/* Contact du client (ADR-067) : boutons ronds en haut à droite, comme l'app de Mike */
+.bf-titre__droite { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; }
+.bf-contact { display: inline-flex; gap: 8px; }
+.bf-contact__bouton { --c: #1fa64a; width: 40px; height: 40px; border-radius: 10px; border: 0; display: inline-grid; place-items: center;
+  background: var(--c); color: #ffffff; cursor: pointer; box-shadow: 0 2px 4px rgba(0, 0, 0, .18), inset 0 0 0 1.5px rgba(255, 255, 255, .25); }
+.bf-contact__bouton svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bf-contact__bouton--courriel, .bf-contact__bouton--texto { --c: #15803d; }
+.bf-contact__bouton--appel { --c: #0369a1; }
+.bf-contact__bouton--carte { --c: #c62828; }
+.bf-contact__bouton:hover:not(:disabled) { filter: brightness(1.1); }
+.bf-contact__bouton:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.bf-contact__bouton:disabled { --c: #9ca3af; cursor: not-allowed; box-shadow: none; }
+
+/* Historique des communications */
+.bf-comms__filtres { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.bf-puce { font: inherit; font-size: 14px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.bf-puce--active { background: var(--vert); border-color: var(--vert); color: #ffffff; font-weight: 700; }
+.bf-comms .bf-filtres input[type="search"] { flex: 1 1 240px; }
+.bf-comms__liste { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 10px; }
+.bf-comms__item { border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: grid; gap: 6px; background: var(--surface); }
+.bf-comms__tete { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.bf-comms__icone { width: 28px; height: 28px; border-radius: 8px; display: inline-grid; place-items: center; color: #ffffff; background: #15803d; }
+.bf-comms__icone--appel { background: #0369a1; }
+.bf-comms__icone svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bf-comms__resume { margin: 0; }
+.bf-comms__texte { white-space: pre-wrap; margin: 6px 0 0; }
+.bf-comms__bulle { margin: 0; padding: 8px 12px; border-radius: 14px; max-width: 60ch; background: var(--menthe); }
+.bf-comms__bulle--entrant { background: color-mix(in srgb, var(--line) 60%, var(--surface)); }
+.bf-comms__audio audio { width: 100%; max-width: 480px; }
+
+/* Tableau exécutif des machines (ADR-068) : panneau sombre « vue exécutive », lisible sur un téléviseur.
+   Couleurs des séries validées sur la surface #182036 (catégories : 4 types ; séquentiel : une teinte bleue). */
+.bf-dash { --d-bg: #0f1524; --d-carte: #182036; --d-ligne: #2a3550; --d-texte: #eef2f8; --d-texte2: #b6c0d4; --d-muet: #8e9ab3;
+  --d-s1: #3987e5; --d-s2: #d95926; --d-s3: #199e70; --d-s4: #c98500; --d-vide: #2b3448; --d-bon: #0ca30c; --d-mauvais: #e66767;
+  color-scheme: dark; background: var(--d-bg); color: var(--d-texte); border-radius: 18px; padding: 20px; display: grid; gap: 16px;
+  margin-inline: calc(50% - min(50vw, 720px) + 16px); }
+.bf-dash:fullscreen { margin: 0; border-radius: 0; overflow: auto; }
+.bf-dash h1 { font-size: clamp(26px, 3.4vw, 38px); margin: 0; color: var(--d-texte); }
+.bf-dash h2 { font-size: 20px; margin: 0; color: var(--d-texte); letter-spacing: .03em; }
+.bf-dash p { margin: 0; }
+.bf-dash__entete { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.bf-dash__entete > div:first-child p { color: var(--d-texte2); margin-top: 4px; }
+.bf-dash__entete-droite { display: flex; gap: 10px; align-items: center; }
+.bf-dash__fictif { font-family: var(--f-titre); letter-spacing: .08em; font-size: 15px; padding: 3px 10px 2px; border-radius: 6px; background: #b45309; color: #ffffff; text-transform: uppercase; }
+.bf-dash__bouton { font: inherit; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--d-ligne); background: var(--d-carte); color: var(--d-texte); cursor: pointer; }
+.bf-dash__bouton:focus-visible, .bf-dash select:focus-visible, .bf-dash [tabindex]:focus-visible { outline: 2px solid var(--d-s1); outline-offset: 2px; }
+.bf-dash__filtres { display: flex; flex-wrap: wrap; gap: 8px; }
+.bf-dash__filtres select { font: inherit; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--d-ligne); background: var(--d-carte); color: var(--d-texte); flex: 1 1 180px; max-width: 260px; }
+.bf-dash__corps { display: grid; gap: 16px; }
+.bf-dash__tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 10px; }
+.bf-dash__tuile { background: var(--d-carte); border: 1px solid var(--d-ligne); border-radius: 14px; padding: 12px; display: flex; gap: 12px; align-items: flex-start; }
+.bf-dash__tuile-icone { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: #23314f; color: #9ec5f4; flex: none; }
+.bf-dash__tuile-icone svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bf-dash__tuile-libelle { color: var(--d-texte2); font-size: 14px; }
+.bf-dash__tuile-valeur { font-size: clamp(22px, 1.9vw, 28px); font-weight: 700; line-height: 1.15; white-space: nowrap; }
+.bf-dash__delta { font-size: 13px; color: var(--d-texte2); margin-top: 2px; }
+.bf-dash__delta--bon { color: var(--d-bon); }
+.bf-dash__delta--mauvais { color: var(--d-mauvais); }
+.bf-dash__delta span { color: var(--d-muet); }
+.bf-dash__rangee { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 16px; }
+@media (min-width: 980px) { .bf-dash__rangee--2-1 { grid-template-columns: 2fr 1fr; } }
+.bf-dash__carte { background: var(--d-carte); border: 1px solid var(--d-ligne); border-radius: 14px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.bf-dash__carte-tete p { color: var(--d-muet); font-size: 13px; margin-top: 2px; }
+.bf-dash__muet { color: var(--d-muet); }
+.bf-dash__svg { width: 100%; height: auto; display: block; }
+.bf-dash__grille { stroke: var(--d-ligne); stroke-width: 1; }
+.bf-dash__axe { stroke: #3a4767; stroke-width: 1; }
+.bf-dash__tick { fill: var(--d-muet); font-size: 12px; font-variant-numeric: tabular-nums; font-family: var(--f); }
+.bf-dash__col--hors { opacity: .35; }
+.bf-dash__cible { cursor: pointer; }
+.bf-dash__cible:hover, .bf-dash__cible:focus { fill: rgba(255, 255, 255, .06); outline: none; }
+.bf-dash__legende { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--d-texte2); font-size: 13px; align-items: center; }
+.bf-dash__legende > span { display: inline-flex; gap: 6px; align-items: center; }
+.bf-dash__cle { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex: none; margin-right: 6px; vertical-align: middle; }
+.bf-dash__legende .bf-dash__cle { margin-right: 0; }
+.bf-dash__cle--large { width: 22px; }
+.bf-dash__anneau-zone { display: grid; gap: 12px; justify-items: center; }
+.bf-dash__anneau { width: min(220px, 100%); height: auto; }
+.bf-dash__anneau-total { fill: var(--d-texte); font-size: 30px; font-weight: 700; font-family: var(--f); }
+.bf-dash__seg { cursor: pointer; }
+.bf-dash__seg:hover, .bf-dash__seg:focus { filter: brightness(1.2); outline: none; }
+.bf-dash__parts { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; gap: 6px; }
+.bf-dash__parts li { display: grid; grid-template-columns: auto 1fr auto 3.5em; gap: 8px; align-items: center; font-size: 14px; }
+.bf-dash__parts strong, .bf-dash__parts .bf-dash__muet { text-align: right; font-variant-numeric: tabular-nums; }
+.bf-dash__barres { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.bf-dash__barres li { display: grid; grid-template-columns: 1.4em minmax(0, 1.2fr) minmax(60px, 1fr) 3.2em; gap: 10px; align-items: center; border-radius: 8px; padding: 2px 4px; cursor: default; }
+.bf-dash__barres li:hover, .bf-dash__barres li:focus { background: rgba(255, 255, 255, .05); outline: none; }
+.bf-dash__rang { color: var(--d-muet); font-variant-numeric: tabular-nums; text-align: right; }
+.bf-dash__barre-libelle { display: grid; font-size: 14px; min-width: 0; }
+.bf-dash__barre-libelle span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf-dash__barre-libelle .bf-dash__muet { font-size: 12px; }
+.bf-dash__barre-piste { height: 14px; display: block; }
+.bf-dash__barre { display: block; height: 14px; border-radius: 0 4px 4px 0; }
+.bf-dash__barres strong { text-align: right; font-variant-numeric: tabular-nums; }
+.bf-dash__carte-geo { height: clamp(260px, 38vw, 420px); border-radius: 10px; overflow: hidden; background: #121a2c; }
+.bf-dash .bf-geo path { stroke: var(--d-carte); stroke-width: .4; }
+.bf-dash .bf-geo path.bf-geo__region { stroke: #6a7898; stroke-opacity: .7; }
+.bf-dash .bf-geo__etiquette { fill: var(--d-texte); stroke: #0f1524; stroke-opacity: .9; }
+.bf-dash .bf-geo__etiquette--region, .bf-dash .bf-geo__etiquette--mrc { fill: var(--d-muet); }
+.bf-dash__jauge { height: 12px; border-radius: 999px; background: #2b4a7a; overflow: hidden; }
+.bf-dash__jauge-plein { height: 100%; background: var(--d-s1); border-radius: 999px 4px 4px 999px; }
+.bf-dash__table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.bf-dash__table th { text-align: left; color: var(--d-muet); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; padding: 6px 8px; border-bottom: 1px solid var(--d-ligne); }
+.bf-dash__table td { padding: 8px; border-bottom: 1px solid var(--d-ligne); }
+.bf-dash__table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.bf-dash__defile { overflow-x: auto; }
+.bf-dash__matrice td.bf-dash__cellule { color: #ffffff; font-weight: 600; border: 2px solid var(--d-carte); border-radius: 6px; }
+.bf-dash__matrice td.bf-dash__cellule--claire { color: #0b0b0b; }
+.bf-dash__donnees summary { color: var(--d-texte2); cursor: pointer; font-size: 13px; }
+.bf-dash__donnees table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+.bf-dash__donnees th, .bf-dash__donnees td { padding: 4px 6px; border-bottom: 1px solid var(--d-ligne); text-align: left; }
+.bf-dash__donnees .num { text-align: right; font-variant-numeric: tabular-nums; }
+.bf-dash__bulle { position: fixed; z-index: 50; pointer-events: none; background: #0b1020; color: var(--d-texte); border: 1px solid var(--d-ligne);
+  border-radius: 10px; padding: 8px 10px; font-size: 13px; box-shadow: 0 6px 20px rgba(0, 0, 0, .4); display: grid; gap: 3px; max-width: 280px; }
+.bf-dash__bulle-ligne { display: flex; align-items: center; gap: 4px; }
+.bf-dash__bulle-ligne span:last-child { color: var(--d-texte2); }
+.bf-dash__bulle .bf-dash__cle { width: 12px; height: 3px; border-radius: 2px; margin-right: 4px; }
+@media (max-width: 640px) { .bf-dash { padding: 14px; margin-inline: 0; border-radius: 12px; } .bf-dash__tuile-valeur { font-size: 24px; } }
+/* Vendeurs et stock (ADR-069) */
+.bf-dash__barre-piste--empilee { display: flex; gap: 2px; align-items: stretch; }
+.bf-dash__seg-h { display: block; height: 14px; min-width: 2px; }
+.bf-dash__seg-h:last-child { border-radius: 0 4px 4px 0; }
+.bf-dash__vendeurs .bf-dash__vendeur td { font-weight: 700; border-top: 2px solid var(--d-ligne); }
+.bf-dash__vendeurs .bf-dash__territoire td { color: var(--d-texte2); font-size: 13px; padding-top: 5px; padding-bottom: 5px; }
+.bf-dash__vendeurs .bf-dash__territoire td:first-child { padding-left: 22px; }
+.bf-dash__vendeurs th .bf-dash__cle { margin-right: 5px; }
+.bf-dash__tuile-icone { width: 34px; height: 34px; }
+@media (min-width: 900px) { .bf-dash__tuiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+/* Marge par mois (ADR-071) : deux lignes, couleurs validées sur #182036, distinctes des types de système */
+.bf-dash { --d-m1: #9085e9; --d-m2: #d55181; }
+.bf-dash__cle--ligne { width: 16px; height: 3px; border-radius: 2px; }
+.bf-dash__bande { fill: rgba(255, 255, 255, .05); }
+.bf-dash__reticule { stroke: var(--d-texte2); stroke-width: 1; }
+.bf-dash__etiquette-fin { fill: var(--d-texte); font-size: 13px; font-weight: 700; font-family: var(--f); }
+.bf-dash__cible--ligne:hover, .bf-dash__cible--ligne:focus { fill: transparent; }
+.bf-dash__cible--ligne:focus-visible { outline: none; stroke: var(--d-s1); stroke-width: 2; }
+
+/* Tableau marketing (ADR-072) : 6 sources, palette validée sur #182036 (bleu, orange, vert d'eau, ocre, magenta, violet) */
+.bf-dash { --d-s5: #d55181; --d-s6: #9085e9; }
+.bf-dash__entonnoir { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.bf-dash__entonnoir li { display: grid; grid-template-columns: minmax(0, 1fr) minmax(80px, 1.4fr) 3.6em; gap: 10px; align-items: center; border-radius: 8px; padding: 2px 4px; }
+.bf-dash__entonnoir li:hover, .bf-dash__entonnoir li:focus { background: rgba(255, 255, 255, .05); outline: none; }
+.bf-dash__entonnoir strong { text-align: right; font-variant-numeric: tabular-nums; }
+.bf-dash__entonnoir .bf-dash__barre, .bf-dash__entonnoir .bf-dash__barre-piste { height: 18px; }
+.bf-dash__alerte { color: #f0a35e; font-weight: 700; }
+.bf-dash__pistes { margin: 0; padding-left: 18px; display: grid; gap: 10px; color: var(--d-texte); line-height: 1.45; }
+.bf-dash__note { font-size: 13px; padding: 0 4px; }
+.bf-dash__chaleur td.bf-dash__cellule { min-width: 54px; }
+/* Rendement sur la marge et budget (ADR-073) */
+@media (min-width: 1100px) { .bf-dash__tuiles--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+@media (min-width: 980px) { .bf-dash__rangee--1-2 { grid-template-columns: 1fr 2fr; } }
+.bf-dash__budget { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.bf-dash__budget li { display: grid; gap: 6px; border-radius: 8px; padding: 2px 4px; }
+.bf-dash__budget li:hover, .bf-dash__budget li:focus { background: rgba(255, 255, 255, .05); outline: none; }
+.bf-dash__budget .bf-dash__barre-libelle span:first-child { white-space: normal; }
+.bf-dash__jauge-budget { position: relative; height: 14px; display: block; }
+.bf-dash__jauge-prevu { position: absolute; inset: 0 auto 0 0; border: 1.5px solid #b6c0d4; border-radius: 0 4px 4px 0; box-sizing: border-box; }
+.bf-dash__jauge-depense { position: absolute; top: 3px; bottom: 3px; left: 0; border-radius: 0 3px 3px 0; }
+.bf-dash__saisie { display: inline-flex; gap: 6px; align-items: center; color: var(--d-texte2); font-size: 13px; }
+.bf-dash__saisie input { width: 110px; font: inherit; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--d-ligne); background: var(--d-bg); color: var(--d-texte); }
+.bf-dash__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Vendeurs : performance et rémunération (ADR-074) */
+.bf-dash__champ { width: 86px; font: inherit; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--d-ligne); background: var(--d-bg); color: var(--d-texte); text-align: right; }
+.bf-dash__paie td { white-space: nowrap; }
+.bf-dash__paie td:first-child { white-space: normal; min-width: 150px; }
+.bf-dash__point { cursor: pointer; }
+.bf-dash__point:focus { outline: none; }
+.bf-dash__point:focus circle:last-of-type, .bf-dash__point:hover circle:last-of-type { stroke: var(--d-texte); }
+.bf-dash__etiquette-point { fill: var(--d-texte2); font-size: 12px; font-family: var(--f); paint-order: stroke; stroke: #182036; stroke-width: 3px; }
+.bf-dash input.bf-dash__champ, .bf-dash__saisie input { height: auto; min-height: 0; background: var(--d-bg); color: var(--d-texte); border: 1px solid var(--d-ligne); box-shadow: none; padding: 4px 6px; font-size: 14px; }
+.bf-dash__barres li { grid-template-columns: 1.4em minmax(0, 1.2fr) minmax(60px, 1fr) minmax(3.2em, max-content); }
+/* Bouton par vendeur : commission sur les ventes ou la marge (ADR-075) */
+.bf-dash__bascule { display: inline-flex; border: 1px solid var(--d-ligne); border-radius: 999px; overflow: hidden; }
+.bf-dash__bascule button { font: inherit; font-size: 13px; font-weight: 600; padding: 5px 11px; border: 0; background: transparent; color: var(--d-texte2); cursor: pointer; }
+.bf-dash__bascule button.actif { background: var(--d-s1); color: #ffffff; }
+.bf-dash__bascule button:focus-visible { outline: 2px solid var(--d-texte); outline-offset: -2px; }
+.bf-dash__avis { background: #1f2d4d; border: 1px solid #2f4778; border-radius: 10px; padding: 8px 12px; color: var(--d-texte); }
+.bf-dash__avis { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.bf-dash__tuile-valeur { font-variant-numeric: normal; }
+/* Écran de code d'accès (ADR-078) */
+.bf-dash--verrou { display: grid; place-items: center; min-height: 420px; }
+.bf-dash__verrou { display: grid; gap: 12px; justify-items: center; text-align: center; max-width: 360px; width: 100%; padding: 24px; }
+.bf-dash__verrou h1 { font-size: 28px; }
+.bf-dash__verrou p { color: var(--d-texte2); }
+.bf-dash__cadenas { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; background: #23314f; color: #9ec5f4; }
+.bf-dash__cadenas svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.bf-dash input.bf-dash__code { width: 180px; text-align: center; font-size: 28px; letter-spacing: .4em; padding: 10px; border-radius: 12px;
+  border: 1px solid var(--d-ligne); background: var(--d-bg); color: var(--d-texte); height: auto; }
+.bf-dash__bouton--plein { background: var(--vert); border-color: var(--vert); color: #ffffff; min-width: 180px; }
+.bf-dash__erreur-code { color: #f0a35e; min-height: 1.4em; font-weight: 600; }
+
+/* Macro HVAC (ADR-079) : colonnes par étape, défilement horizontal sur téléphone */
+.bf-macro { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(250px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.bf-macro__colonne { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px; display: grid; gap: 10px; align-content: start; min-height: 200px; border-top: 4px solid var(--vert); }
+.bf-macro__colonne--attente_paiement { border-top-color: #7c3aed; }
+.bf-macro__colonne--a_planifier { border-top-color: #b45309; }
+.bf-macro__colonne--planifie { border-top-color: #0369a1; }
+.bf-macro__colonne--en_cours { border-top-color: #0f766e; }
+.bf-macro__colonne--termine { border-top-color: #15803d; }
+.bf-macro__colonne--facture { border-top-color: #4b5563; }
+.bf-macro__entete { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.bf-macro__entete h2 { font-size: 20px; margin: 0; }
+.bf-macro__compte { background: var(--menthe); color: var(--vert-texte); font-weight: 700; border-radius: 999px; padding: 0 9px; }
+.bf-macro__carte { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 4px; }
+.bf-macro__carte p { margin: 0; }
+.bf-macro__carte--nouveau { border-color: #15803d; box-shadow: inset 4px 0 0 #15803d; }
+.bf-macro__tete { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.bf-macro__client { font-weight: 600; }
+.bf-macro__ligne { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.bf-macro__lien { font-size: 13px; }
+.bf-macro__actions { display: flex; gap: 6px; align-items: center; margin-top: 4px; }
+.bf-macro__fleche { font: inherit; width: 40px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+.bf-macro__fleche:not(:disabled):hover { background: var(--menthe); }
+.bf-macro__fleche:disabled { opacity: .35; cursor: not-allowed; }
+.bf-macro__annuler { margin-left: auto; font-size: 13px; }
+.bf-macro__vide { text-align: center; padding: 16px 0; }
+.bf-bouton--signe { background: #15803d; border-color: #15803d; color: #ffffff; }
+.bf-projet-lie { border-left: 4px solid #15803d; }
+.bf-macro { margin-inline: calc(50% - min(50vw, 800px) + 16px); grid-auto-columns: minmax(230px, 1fr); }
+@media (max-width: 640px) { .bf-macro { margin-inline: 0; grid-auto-columns: 82%; scroll-snap-type: x mandatory; } .bf-macro__colonne { scroll-snap-align: start; } }
+
+/* Mes jobs du sous-traitant (ADR-080) */
+.bf-jobs { display: grid; gap: 14px; }
+.bf-jobs__resume { display: flex; flex-wrap: wrap; gap: 8px 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; }
+.bf-jobs__resume strong { font-size: 20px; color: var(--vert-texte); }
+.bf-jobs__section { font-size: 20px; margin: 10px 0 0; }
+.bf-jobs__carte { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; display: grid; gap: 6px; border-left: 5px solid var(--vert); }
+.bf-jobs__carte--attente_paiement { border-left-color: #7c3aed; }
+.bf-jobs__carte--a_planifier { border-left-color: #b45309; }
+.bf-jobs__carte p { margin: 0; }
+.bf-jobs__tete { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; align-items: flex-start; }
+.bf-jobs__tete h2 { margin: 0; font-size: 20px; }
+.bf-jobs__etape--attente_paiement { background: #efe7fd; color: #5b21b6; }
+.bf-jobs__etape--a_planifier { background: #fdf0dc; color: #92400e; }
+.bf-jobs__table { min-width: 0; }
+.bf-jobs__table tfoot th { border-bottom: 0; font-size: 16px; }
+.bf-jobs__groupe td { background: var(--bg); font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.bf-jobs__machine td { color: var(--muted); }
+.bf-macro__st { font-size: 13px; }
+.bf-signe__lignes { display: grid; gap: 6px; }
+.bf-signe__ligne { display: grid; grid-template-columns: 1fr 80px auto; gap: 6px; align-items: end; }
+@media (max-width: 640px) { .bf-signe__ligne { grid-template-columns: 1fr 64px auto; } }
+
+/* Feuille d'extra (ADR-081) */
+.bf-extra--brouillon { background: #eceff3; color: #4a5672; }
+.bf-extra--soumis { background: #fdf0dc; color: #92400e; }
+.bf-extra--approuve { background: #e3f5ec; color: #11734a; }
+.bf-extra--refuse { background: #fdecec; color: #b4232c; }
+.bf-extra--hors { background: #efe7fd; color: #5b21b6; }
+.bf-jobs__extras { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.bf-jobs__extras h3 { margin: 0; }
+.bf-jobs__refuse td { text-decoration: line-through; text-decoration-color: var(--muted); }
+.bf-jobs__refuse td:nth-child(5), .bf-jobs__refuse td:first-child div { text-decoration: none; }
+.bf-jobs__raison { color: var(--bad); font-size: 14px; text-decoration: none; }
+.bf-jobs__totaux { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; margin: 0; max-width: 520px; margin-left: auto; width: 100%; }
+.bf-jobs__totaux dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.bf-jobs__final { font-weight: 700; font-size: 17px; border-top: 1px solid var(--line); padding-top: 4px; }
+.bf-jobs__facturee { color: var(--vert-texte); font-weight: 600; }
+.bf-jobs__form { background: var(--bg); border-radius: 12px; padding: 12px; }
+.bf-pleine { grid-column: 1 / -1; }
+.bf-jobs__refus { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; width: 100%; }
+.bf-jobs__refus input { flex: 1 1 220px; }
+.bf-extra-ligne { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; padding: 10px 0; border-top: 1px solid var(--line); align-items: start; }
+.bf-extra-ligne--hors { box-shadow: inset 3px 0 0 #7c3aed; padding-left: 10px; }
+.bf-extra-ligne__montant { display: grid; text-align: right; gap: 2px; font-variant-numeric: tabular-nums; }
+.bf-extra-ligne__actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bf-macro__extras { font-size: 13px; font-weight: 700; color: #92400e; background: #fdf0dc; border-radius: 8px; padding: 2px 8px; justify-self: start; text-decoration: none; }
+.bf-bouton--danger { background: var(--bad); border-color: var(--bad); color: #fff; }
+
+/* Photos des extras (ADR-082) */
+.bf-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.bf-photo { position: relative; display: inline-block; }
+.bf-photo__vignette { padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; width: 64px; height: 64px; cursor: zoom-in; background: var(--bg); }
+.bf-photo__vignette img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bf-photo__retirer { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: var(--bad); color: #fff; font-weight: 700; cursor: pointer; line-height: 1; }
+.bf-photo__grande { max-width: 100%; max-height: 75vh; display: block; margin: 0 auto; border-radius: 8px; }
+.bf-sans-photo { background: #eceff3; color: #4a5672; }
+
+/* Dossier de job LogisVert (ADR-084) */
+.bf-dossier { display: grid; gap: 8px; border-top: 1px dashed var(--line); padding-top: 10px; }
+.bf-dossier__tete { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bf-dossier__tete h3 { margin: 0; }
+.bf-dossier__manques { margin: 0; padding-left: 20px; color: var(--bad); font-size: 14px; }
+.bf-dossier__ahri { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.bf-dossier__ahri label { display: grid; gap: 4px; font-weight: 600; }
+.bf-dossier__appareil { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 8px; background: var(--bg); }
+.bf-dossier__appareil-tete { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.bf-dossier__photos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.bf-dossier__case { display: grid; gap: 4px; align-content: start; border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: var(--surface); }
+.bf-dossier__case--manque { border-color: var(--bad); border-style: dashed; }
+.bf-dossier__photo { padding: 6px 12px; font-size: 14px; justify-self: start; }
+.bf-macro__dossier { font-size: 13px; font-weight: 700; border-radius: 8px; padding: 2px 8px; justify-self: start; text-decoration: none; background: #e3f5ec; color: #11734a; }
+.bf-macro__dossier--manque { background: #fdecec; color: #b4232c; }
+.bf-pastille--pointage { background: #e3ecff; color: #1d47c2; margin-left: 6px; }
+.bf-macro__depot { font-size: 13px; font-weight: 700; color: #11734a; }
+.bf-pastille--auto { background: #efe7fd; color: #5b21b6; }
+
+/* Automatisations (ADR-090) */
+.bf-avertissement { background: #fff5d6; color: #6b4e00; border-radius: var(--r); padding: 10px 14px; margin: 0; }
+.bf-regle { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; display: grid; gap: 8px; border-left: 5px solid var(--vert); margin-top: 12px; }
+.bf-regle p { margin: 0; }
+.bf-regle--inactive { border-left-color: var(--line); opacity: .8; }
+.bf-regle--echec { border-left-color: var(--bad); }
+.bf-regle__tete { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.bf-regle__tete h2 { margin: 0; font-size: 20px; }
+.bf-regle__resume { margin: 0; padding-left: 22px; display: grid; gap: 2px; }
+.bf-regle__etapes { padding-left: 0; list-style: none; display: grid; gap: 10px; margin: 0; }
+.bf-regle__etape { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: grid; gap: 6px; background: var(--bg); }
+.bf-regle__editeur textarea { width: 100%; font: inherit; }
+.bf-interrupteur { display: inline-flex; gap: 6px; align-items: center; font-weight: 700; white-space: nowrap; }
+.bf-interrupteur input { width: 20px; height: 20px; accent-color: var(--vert); }
+.bf-heures { min-width: 0; }
+.bf-heures__succ { border-top: 1px solid var(--line); padding: 8px 0; display: grid; gap: 8px; }
+.bf-heures__succ summary { cursor: pointer; }
+.bf-heures__succ label { display: grid; gap: 4px; }
+/* Avis et tâches */
+.bf-avis { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.bf-avis__item { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface); }
+.bf-avis__item--lu { opacity: .65; }
+.bf-avis__item--retard { border-color: var(--bad); box-shadow: inset 4px 0 0 var(--bad); }
+.bf-macro__subv { display: flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 700; color: #11734a; }
+.bf-macro__subv select { font: inherit; font-weight: 400; padding: 2px 6px; border-radius: 8px; }
+/* Facture finale conforme LogisVert (ADR-092) */
+.bf-facture { border: 1px solid #b7e1c8; background: #f1faf4; border-radius: 10px; padding: 8px 10px; font-size: 13px; display: grid; gap: 4px; }
+.bf-facture--manque { border-color: #f1c4c4; background: #fdf3f3; }
+.bf-facture ul { margin: 0; padding-left: 16px; list-style: none; }
+.bf-facture__geste { display: flex; gap: 6px; align-items: center; }
+.bf-facture__geste input { font: inherit; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; width: 140px; }

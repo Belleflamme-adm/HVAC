@@ -1,0 +1,686 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta charset="utf-8">
+<title>Subvention LogisVert thermopompe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: dark "nuit d'hiver" hero with a heat-pump nameplate estimator, sticky step rail, then a single reading column of numbered steps with zoomable screenshots. */
+:root{
+  --bg:#f5f7fb; --surface:#ffffff; --ink:#0f1a33; --muted:#4a5672; --line:#dbe2ee;
+  --night:#0b1631; --night-2:#132550; --frost:#cfe3ff; --frost-ink:#c9d8f2;
+  --accent:#e2741b; --accent-ink:#ffffff; --accent-soft:#fdeedf;
+  --link:#1d47c2; --ok:#11734a; --ok-soft:#e3f5ec; --warn:#a24b05; --warn-soft:#fff3e4; --bad:#b4232c; --bad-soft:#fdecec;
+  --mark:#e8112d; --plate:#e9edf3; --plate-ink:#1a2233; --plate-line:#9aa6b8;
+  --f-display:"Familjen Grotesk", "Arial Narrow", Arial, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", Roboto, Arial, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0a1122; --surface:#111b33; --ink:#e8eefb; --muted:#a6b3cf; --line:#24324f;
+  --night:#060c1c; --night-2:#0f1d40; --frost:#bcd6ff; --frost-ink:#b3c4e4;
+  --accent:#f08a37; --accent-ink:#1a0d02; --accent-soft:#3a2412;
+  --link:#8fb0ff; --ok:#5fd39b; --ok-soft:#10301f; --warn:#f4b071; --warn-soft:#33220f; --bad:#ff8b8f; --bad-soft:#3a1517;
+  --plate:#1b2740; --plate-ink:#e6ecf7; --plate-line:#4b5d80; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0a1122; --surface:#111b33; --ink:#e8eefb; --muted:#a6b3cf; --line:#24324f;
+  --night:#060c1c; --night-2:#0f1d40; --frost:#bcd6ff; --frost-ink:#b3c4e4;
+  --accent:#f08a37; --accent-ink:#1a0d02; --accent-soft:#3a2412;
+  --link:#8fb0ff; --ok:#5fd39b; --ok-soft:#10301f; --warn:#f4b071; --warn-soft:#33220f; --bad:#ff8b8f; --bad-soft:#3a1517;
+  --plate:#1b2740; --plate-ink:#e6ecf7; --plate-line:#4b5d80; color-scheme:dark }
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:76px}
+@media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{animation:none!important; transition:none!important} }
+body{background:var(--bg); color:var(--ink); font:17px/1.6 var(--f-body); -webkit-font-smoothing:antialiased}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:30; background:#f6f7f9}
+a{color:var(--link); text-underline-offset:3px}
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, summary:focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:6px}
+h1,h2,h3{font-family:var(--f-display); line-height:1.12; letter-spacing:-.015em; text-wrap:balance; margin:0}
+.wrap{max-width:1080px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px))}
+.eyebrow{font:700 12px/1 var(--f-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--accent)}
+.mono{font-family:var(--f-mono)}
+
+/* ===== HERO ===== */
+.hero{--h-bg:#f2f4f7; --h-ink:#0a1226; --h-muted:#27324a; --h-line:rgba(15,26,51,.22); --h-eyebrow:#2c3954;
+  background:
+    radial-gradient(900px 420px at 50% -8%, rgba(255,255,255,.95), rgba(255,255,255,0) 70%),
+    radial-gradient(700px 500px at 100% 100%, rgba(203,214,228,.55), rgba(203,214,228,0) 70%),
+    linear-gradient(180deg, #f6f7f9 0%, #eceff3 55%, #e3e8ee 100%);
+  color:var(--h-ink); overflow:hidden; position:relative; border-bottom:1px solid var(--h-line)}
+.hero .plate{--plate:#ffffff; --plate-ink:#1a2233; --plate-line:#b6c0cd; box-shadow:0 24px 50px rgba(15,26,51,.14), 0 2px 6px rgba(15,26,51,.06), inset 0 0 0 1px rgba(15,26,51,.06)}
+.hero .wrap{padding-block:56px 64px; display:grid; grid-template-columns:1.15fr .95fr; gap:48px; align-items:center}
+.hero h1{font-size:clamp(34px, 5.2vw, 58px); font-weight:700; color:var(--h-ink)}
+.hero h1 em{font-style:normal; color:var(--accent)}
+.hero .lede{color:var(--h-muted); font-size:19px; max-width:34em; margin:18px 0 26px}
+.facts{display:grid; grid-template-columns:repeat(3, auto); gap:10px 28px; justify-content:start; margin:0 0 28px; padding:0}
+.facts div{border-left:2px solid var(--h-line); padding-left:12px}
+.facts dt{font:600 26px/1.1 var(--f-display); color:var(--h-ink)}
+.facts dd{margin:2px 0 0; color:var(--h-muted); font-size:14px; line-height:1.35}
+.cta{display:flex; flex-wrap:wrap; gap:12px}
+.btn{display:inline-flex; align-items:center; gap:8px; font:700 16px/1 var(--f-body); padding:14px 20px; border-radius:999px; text-decoration:none; border:2px solid transparent; cursor:pointer}
+.btn-hot{background:var(--accent); color:var(--accent-ink)}
+.btn-hot:hover{filter:brightness(1.08)}
+.btn-ghost{color:var(--h-ink); border-color:rgba(15,26,51,.28)}
+.btn-ghost:hover{border-color:var(--h-ink)}
+.pdfdl{display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; margin-top:16px}
+.btn-pdf{background:var(--h-ink); color:#fff; font:700 15px/1.2 var(--f-display); letter-spacing:.01em; padding:13px 20px; -webkit-font-smoothing:auto; -moz-osx-font-smoothing:auto; text-rendering:geometricPrecision}
+.btn-pdf:hover{background:#1c2a4a}
+.btn-pdf[disabled]{opacity:.6; cursor:progress}
+.pdfnote{font-size:14px; color:var(--h-muted); max-width:34ch; line-height:1.4}
+.btn svg{width:16px;height:16px}
+
+/* frost texture */
+.hero > canvas{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; opacity:.42}
+.hero .wrap{position:relative; z-index:1}
+
+#dollars3d{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+.logo3d{grid-column:1/-1; justify-self:center; width:min(620px,100%); margin:0 auto -6px}
+.logo3d img{display:block; width:100%; height:auto; margin:0 auto}
+/* nameplate estimator */
+.plate{background:var(--plate); color:var(--plate-ink); border-radius:10px; padding:22px 22px 18px; box-shadow:0 30px 60px rgba(0,0,0,.35), inset 0 0 0 1px rgba(255,255,255,.4); position:relative; font-family:var(--f-mono); font-size:13px}
+.plate::before,.plate::after{content:""; position:absolute; top:12px; width:9px; height:9px; border-radius:50%; background:var(--plate-line); box-shadow:inset 0 1px 1px rgba(0,0,0,.35)}
+.plate::before{left:12px} .plate::after{right:12px}
+.plate .ph{display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--plate-ink); padding:0 8px 8px; margin-bottom:12px}
+.plate .ph b{font-size:14px; letter-spacing:.06em; white-space:nowrap}
+.plate .ph span{white-space:nowrap}
+.plate .ph{gap:10px; flex-wrap:wrap}
+.plate .ph span{font-size:11px; opacity:.75}
+.prow{display:grid; grid-template-columns:1fr; gap:4px; padding:8px; border-bottom:1px dashed var(--plate-line)}
+.prow label{font-size:11px; letter-spacing:.1em; text-transform:uppercase; opacity:.8}
+.prow input,.prow select{font:700 17px var(--f-mono); color:var(--plate-ink); background:transparent; border:0; border-bottom:2px solid var(--plate-line); padding:4px 0; width:100%}
+.seg{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.seg button{font:600 12px/1.2 var(--f-mono); padding:9px 6px; border:1.5px solid var(--plate-line); background:transparent; color:var(--plate-ink); border-radius:6px; cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--plate-ink); color:var(--plate); border-color:var(--plate-ink)}
+.out{padding:14px 8px 4px; display:flex; justify-content:space-between; align-items:end; gap:10px}
+.out .lab{font:700 17px/1.15 var(--f-mono); letter-spacing:.06em; text-transform:uppercase}
+.out .lab sup,.disclaim sup{color:var(--accent); font-size:1.1em; margin-left:2px}
+.disclaim{margin:10px 8px 2px; padding:10px 12px; border:1.5px solid var(--plate-ink); border-radius:6px; font:700 12.5px/1.45 var(--f-body)}
+.out .amt{font:700 34px/1 var(--f-mono); font-variant-numeric:tabular-nums}
+.range{padding:2px 8px 8px; font-size:11.5px; line-height:1.4; opacity:1; border-bottom:1px dashed var(--plate-line)}
+.prow select option{font-size:15px}
+.plate .note{padding:8px 8px 0; font-size:11px; line-height:1.45; opacity:1; color:#2a3346; font-family:var(--f-body)}
+
+/* ===== STEP RAIL ===== */
+.rail{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:var(--surface); border-bottom:1px solid var(--line)}
+.rail .wrap{display:flex; gap:4px; overflow-x:auto; scrollbar-width:none; padding-block:10px}
+.rail .wrap::-webkit-scrollbar{display:none}
+.rail a{flex:0 0 auto; text-decoration:none; color:var(--muted); font:600 14px/1 var(--f-body); padding:9px 13px; border-radius:999px; white-space:nowrap; display:flex; gap:7px; align-items:center}
+.rail a .n{font:700 11px/1 var(--f-mono); width:20px; height:20px; border-radius:50%; display:grid; place-items:center; border:1.5px solid currentColor}
+.rail a:hover{color:var(--ink); background:var(--bg)}
+.rail a.on{background:var(--ink); color:var(--bg)}
+
+/* ===== CONTENT ===== */
+main{padding-block:12px 40px}
+section.block{padding-block:56px 8px; border-bottom:1px solid var(--line)}
+section.block:last-of-type{border-bottom:0}
+.shead{display:grid; grid-template-columns:auto 1fr; gap:6px 20px; align-items:end; margin-bottom:26px}
+.bignum{grid-row:span 2; font:700 clamp(64px, 9vw, 110px)/.8 var(--f-display); color:transparent; -webkit-text-stroke:2px var(--accent); letter-spacing:-.04em}
+.shead h2{font-size:clamp(28px, 3.6vw, 40px)}
+.intro{color:var(--muted); max-width:62ch; margin:0 0 22px; font-size:18px}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px}
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:22px; min-width:0}
+.panel h3{font-size:20px; margin-bottom:10px}
+.panel ul{margin:0; padding-left:20px} .panel li{margin-bottom:6px}
+.callout{border-radius:var(--r); padding:18px 20px; margin:18px 0; min-width:0}
+.callout b.t{display:block; font-family:var(--f-display); font-size:18px; margin-bottom:6px}
+.callout ul{margin:0; padding-left:20px} .callout li{margin-bottom:4px}
+.c-bad{background:var(--bad-soft)} .c-bad b.t{color:var(--bad)}
+.c-warn{background:var(--warn-soft)} .c-warn b.t{color:var(--warn)}
+.c-ok{background:var(--ok-soft)} .c-ok b.t{color:var(--ok)}
+.c-info{background:var(--surface); border:1px solid var(--line)}
+
+/* checklist */
+.check{list-style:none; padding:0; margin:0; display:grid; gap:2px}
+.check label{display:grid; grid-template-columns:24px 1fr; gap:10px; align-items:start; padding:8px 8px; border-radius:8px; cursor:pointer}
+.check label:hover{background:var(--bg)}
+.check input{appearance:none; width:22px; height:22px; border:2px solid var(--muted); border-radius:6px; margin:2px 0 0; display:grid; place-items:center; cursor:pointer; background:var(--surface)}
+.check input:checked{background:var(--ok); border-color:var(--ok)}
+.check input:checked::after{content:""; width:6px; height:11px; border:solid var(--surface); border-width:0 3px 3px 0; transform:translateY(-1px) rotate(45deg)}
+.check input:checked + span{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--ok)}
+.meter{display:flex; align-items:center; gap:12px; margin:0 0 16px; font:600 14px var(--f-mono); color:var(--muted)}
+.meter .bar{flex:1; height:8px; background:var(--line); border-radius:99px; overflow:hidden}
+.meter .bar i{display:block; height:100%; width:0; background:var(--ok); transition:width .3s}
+.reset{font:600 13px var(--f-body); background:none; border:0; color:var(--link); cursor:pointer; text-decoration:underline; padding:4px}
+
+/* steps */
+.steps{list-style:none; margin:0; padding:0; display:grid; gap:34px}
+.step{display:grid; grid-template-columns:44px 1fr; gap:16px; min-width:0}
+.step .k{width:44px; height:44px; border-radius:50%; background:var(--ink); color:var(--bg); display:grid; place-items:center; font:700 17px var(--f-mono)}
+.step h3{font-size:21px; margin:8px 0 6px}
+.step p{margin:0 0 12px; color:var(--muted); max-width:66ch}
+.step p b{color:var(--ink)}
+.shot{display:block; padding:0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface); cursor:zoom-in; max-width:760px; width:100%; position:relative; box-shadow:0 10px 30px rgba(15,26,51,.08)}
+.shot img{display:block; width:100%; height:auto}
+.shot .zoom{position:absolute; right:10px; bottom:10px; font:600 12px var(--f-body); background:var(--night); color:#fff; padding:6px 10px; border-radius:99px; opacity:.85}
+.tag{display:inline-block; font:700 10.5px/1 var(--f-mono); letter-spacing:.08em; text-transform:uppercase; background:var(--line); color:var(--muted); padding:5px 7px; border-radius:4px; vertical-align:2px; margin-left:6px}
+.go{display:inline-flex; align-items:center; gap:8px; font:700 15px var(--f-body); color:var(--accent-ink); background:var(--accent); padding:10px 16px; border-radius:999px; text-decoration:none; margin:0 0 14px}
+.go:hover{filter:brightness(1.07)}
+.legend{display:inline-flex; gap:10px; align-items:center; font-size:15px; color:var(--muted); margin-bottom:24px}
+.legend i{width:30px; height:16px; border:3px solid var(--mark); border-radius:5px}
+
+/* table */
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:16px}
+th,td{text-align:left; vertical-align:top; padding:13px 16px; border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:0}
+th{font:700 12px var(--f-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); background:var(--bg)}
+td:first-child{font-weight:700; width:34%}
+
+/* deadline tool */
+.deadline{display:grid; grid-template-columns:1fr auto; gap:16px; align-items:end; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:20px; margin:22px 0}
+.deadline label{font:700 13px var(--f-mono); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:6px}
+.deadline input{font:600 17px var(--f-mono); padding:10px 12px; border:1.5px solid var(--line); border-radius:10px; background:var(--bg); color:var(--ink)}
+.deadline .res{text-align:right}
+.deadline .res b{display:block; font:700 24px var(--f-display)}
+.deadline .res span{color:var(--muted); font-size:14px}
+
+/* contact */
+.contact{background:var(--night); color:#eef3ff; border-radius:20px; padding:30px; display:grid; grid-template-columns:1.2fr 1fr; gap:26px; margin-top:12px}
+.contact h3{font-size:26px; color:#fff; margin-bottom:8px}
+.contact p{color:var(--frost-ink); margin:0}
+.lines{display:grid; gap:10px}
+.line{display:flex; justify-content:space-between; align-items:center; gap:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:12px 14px}
+.line small{display:block; color:var(--frost-ink); font-size:12px; letter-spacing:.08em; text-transform:uppercase}
+.line b{font:700 18px var(--f-mono); color:#fff; user-select:all}
+.copy{font:700 13px var(--f-body); background:var(--accent); color:var(--accent-ink); border:0; padding:8px 12px; border-radius:99px; cursor:pointer; flex:0 0 auto}
+.links{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:16px}
+.links a{display:flex; justify-content:space-between; gap:10px; align-items:center; background:var(--surface); border:1px solid var(--line); padding:14px 16px; border-radius:12px; text-decoration:none; color:var(--ink); font-weight:700; min-width:0}
+.links a span{color:var(--muted); font-weight:400; font-size:14px; display:block}
+.links a:hover{border-color:var(--link)}
+footer{color:var(--muted); font-size:14px; padding-block:30px 50px}
+footer p{max-width:75ch}
+
+.bf{font-style:normal; color:var(--accent); font-weight:700}
+.bfcard{margin:26px 0; background:var(--surface); border:2px solid var(--ink); border-radius:18px; padding:24px; min-width:0}
+.bfhead{display:flex; justify-content:space-between; gap:18px; align-items:flex-start; flex-wrap:wrap; margin-bottom:18px}
+.bfhead h3{font-size:26px; margin:6px 0 6px}
+.bfhead p{margin:0; color:var(--muted); max-width:60ch}
+.okpill{font:700 13px var(--f-mono); background:var(--ok-soft); color:var(--ok); padding:8px 12px; border-radius:99px; white-space:nowrap}
+.bfgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+.bfline{display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:12px 14px; min-width:0}
+.bfline.wide{grid-column:span 2}
+.bfline small{display:block; color:var(--muted); font:700 11px var(--f-mono); letter-spacing:.08em; text-transform:uppercase}
+.bfline b{font:700 16px var(--f-mono); user-select:all; overflow-wrap:anywhere}
+.bfnote{margin:14px 0 0; font-size:14px; color:var(--muted)}
+@media (max-width:900px){ .bfgrid{grid-template-columns:1fr 1fr} }
+@media (max-width:560px){ .bfgrid{grid-template-columns:1fr} .bfline.wide{grid-column:auto} .okpill{white-space:normal} }
+.dlband{display:flex; flex-wrap:wrap; gap:14px 20px; align-items:center; justify-content:space-between; background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:18px 20px; margin:22px 0}
+.dlband b{display:block; font:700 19px var(--f-display)} .dlband span{color:var(--muted); font-size:15px}
+/* lightbox */
+dialog{border:0; padding:0; background:transparent; max-width:min(1200px, 96vw); max-height:94vh}
+dialog::backdrop{background:rgba(6,12,28,.86)}
+dialog img{display:block; max-width:100%; max-height:86vh; border-radius:10px}
+dialog .cap{color:#e8eefb; font-size:15px; margin-top:10px; text-align:center}
+dialog button{position:fixed; top:calc(14px + env(safe-area-inset-top,0px)); right:calc(14px + env(safe-area-inset-right,0px)); font:700 15px var(--f-body); background:#fff; color:#0b1631; border:0; border-radius:99px; padding:10px 16px; cursor:pointer}
+
+/* load-in */
+@keyframes rise{from{transform:translateY(14px)} to{transform:none}}
+.hero .wrap > *{animation:rise .7s cubic-bezier(.2,.7,.2,1) backwards}
+.hero .wrap > *:nth-child(2){animation-delay:.12s}
+
+@media (max-width: 900px){
+  .hero .wrap{grid-template-columns:1fr; gap:34px; padding-block:40px 46px}
+  .grid2,.grid3,.contact,.links{grid-template-columns:1fr}
+  .facts{grid-template-columns:1fr 1fr}
+}
+@media (max-width: 520px){
+  body{font-size:16px}
+  .step{grid-template-columns:34px 1fr; gap:12px}
+  .step .k{width:34px; height:34px; font-size:14px}
+  .bignum{-webkit-text-stroke-width:1.5px}
+  .deadline{grid-template-columns:1fr} .deadline .res{text-align:left}
+  .contact{padding:22px}
+  .line b{font-size:15px}
+}
+</style>
+
+<header class="hero" id="top">
+  <canvas id="frost" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <div class="logo3d"><img id="logoflat" src="logo-belleflamme.svg" alt="Le Groupe Belleflamme"></div>
+    <div>
+      <div class="eyebrow" style="color:var(--h-eyebrow)">Programme LogisVert d'Hydro-Québec</div>
+      <h1 style="margin-top:14px">Votre thermopompe peut vous rapporter <em>jusqu'à 6&nbsp;700&nbsp;$</em>. Voici comment la réclamer.</h1>
+      <p class="lede">Le guide complet, étape par étape, avec les vrais écrans du site et du portail LogisVert. Prévoyez environ 20 minutes une fois vos documents en main.</p>
+      <dl class="facts">
+        <div><dt>9 mois</dt><dd>après l'installation pour faire la demande</dd></div>
+        <div><dt>10 à 12 sem.</dt><dd>de traitement d'une demande complète</dd></div>
+        <div><dt>Par chèque</dt><dd>posté au propriétaire</dd></div>
+      </dl>
+      <div class="cta">
+        <a class="btn btn-hot" href="#documents">Commencer le guide</a>
+        <a class="btn btn-ghost" href="https://logisvert.ca/mesures-clientele-residentielle" target="_blank" rel="noopener">Ouvrir le portail LogisVert
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h7v7M13 3 4 12"/></svg></a>
+      </div>
+      <div class="pdfdl">
+        <button class="btn btn-pdf" type="button" id="pdfbtn">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 2v8M4.5 6.5 8 10l3.5-3.5M3 13h10"/></svg>
+          Télécharger le guide en PDF</button>
+        <span class="pdfnote" id="pdfnote">18 pages · 3 Mo · à garder sur votre ordinateur ou votre cellulaire, au cas où vous perdriez ce lien.</span>
+      </div>
+    </div>
+
+    <aside class="plate" aria-label="Estimation rapide de la subvention">
+      <div class="ph"><b>LOGISVERT · ESTIMATION</b><span>LISTE HQ · 16-10-2026</span></div>
+      <div class="prow">
+        <label for="size">Format de l'appareil (puissance nominale)</label>
+        <select id="size">
+          <option value="12000">12 000 BTU · 1 tonne</option>
+          <option value="15000">15 000 BTU · 1,25 tonne</option>
+          <option value="18000">18 000 BTU · 1,5 tonne</option>
+          <option value="24000" selected>24 000 BTU · 2 tonnes</option>
+          <option value="30000">30 000 BTU · 2,5 tonnes</option>
+          <option value="36000">36 000 BTU · 3 tonnes</option>
+          <option value="42000">42 000 BTU · 3,5 tonnes</option>
+          <option value="48000">48 000 BTU · 4 tonnes</option>
+          <option value="60000">60 000 BTU · 5 tonnes</option>
+          <option value="custom">Je connais la puissance à -8 °C</option>
+        </select>
+        <div id="customRow" hidden>
+          <label for="btu" style="display:block;margin-top:8px">Puissance de chauffage à -8 °C (BTU/h)</label>
+          <input id="btu" type="number" inputmode="numeric" min="0" step="100" placeholder="ex. 20200">
+        </div>
+      </div>
+      <div class="prow">
+        <label id="typeLab">Type d'appareil</label>
+        <div class="seg" role="group" aria-labelledby="typeLab">
+          <button type="button" data-rate="120" aria-pressed="true">Climat froid<br>120 $ / 1000</button>
+          <button type="button" data-rate="50" aria-pressed="false">ENERGY STAR<br>50 $ / 1000</button>
+        </div>
+      </div>
+      <div class="out" aria-live="polite">
+        <div class="lab">Subvention<br>estimée<sup>*</sup></div>
+        <div class="amt" id="amt">2 424 $</div>
+      </div>
+      <div class="range" id="range">Fourchette courante : 2 232 $ à 2 496 $ · puissance typique à -8 °C : 20 200 BTU/h</div>
+      <p class="disclaim"><sup>*</sup> Estimation à titre indicatif seulement, non garantie. Le montant réel est fixé par Hydro-Québec après l'analyse de votre demande complète.</p>
+      <p class="note">Montant médian des modèles admissibles de ce format dans la liste officielle d'Hydro-Québec du 16 octobre 2026. La subvention dépend de la puissance à -8 °C de votre modèle exact, pas du format, et ne dépasse pas 100 % du coût avant taxes. Un appareil extérieur de 9 000 BTU n'est pas admissible (minimum 12 000). Le montant exact de votre modèle se trouve dans l'<a href="#etape-1">outil de recherche</a> (étape 1).</p>
+    </aside>
+  </div>
+</header>
+
+<nav class="rail" aria-label="Étapes du guide">
+  <div class="wrap">
+    <a href="#admissible"><span class="n">✓</span>Admissibilité</a>
+    <a href="#documents"><span class="n">≡</span>Documents</a>
+    <a href="#etape-1"><span class="n">1</span>Vérifier le modèle</a>
+    <a href="#etape-2"><span class="n">2</span>Ouvrir le portail</a>
+    <a href="#etape-3"><span class="n">3</span>Calculer</a>
+    <a href="#etape-4"><span class="n">4</span>Créer le profil</a>
+    <a href="#etape-5"><span class="n">5</span>Envoyer</a>
+    <a href="#apres"><span class="n">→</span>Après l'envoi</a>
+    <a href="#aide"><span class="n">?</span>Aide</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ADMISSIBILITÉ -->
+<section class="block" id="admissible">
+  <div class="eyebrow">Avant de commencer</div>
+  <h2 style="font-size:clamp(28px,3.6vw,40px); margin:10px 0 12px">Êtes-vous admissible ?</h2>
+  <p class="intro">La plupart des refus viennent d'une condition manquée ici, pas d'une erreur dans le formulaire. Vérifiez ces quatre points avant d'acheter.</p>
+  <div class="grid2">
+    <div class="panel"><h3>Vous</h3><ul>
+      <li>Vous êtes <b>propriétaire</b> de l'habitation. Pour une thermopompe, les locataires ne sont pas admissibles.</li>
+      <li>Votre prénom et votre nom sont les <b>mêmes</b> sur la facture, la preuve de propriété et le profil LogisVert. La subvention est versée seulement au propriétaire.</li></ul></div>
+    <div class="panel"><h3>Votre habitation</h3><ul>
+      <li>Au Québec, résidentielle, construction terminée et habitable toute l'année.</li>
+      <li>Maison, condo, multiplex ou immeuble résidentiel.</li>
+      <li>Alimentée par Hydro-Québec, un réseau municipal ou coopératif, ou un réseau autonome.</li></ul></div>
+    <div class="panel"><h3>Votre thermopompe</h3><ul>
+      <li><b>Neuve</b>, certifiée <b>ENERGY STAR</b>, système complet (extérieur + intérieur), murale ou centrale.</li>
+      <li>Appareil extérieur d'au moins <b class="mono">12 000 BTU/h</b> (puissance nominale en climatisation).</li>
+      <li>Achetée au Québec, ou en ligne auprès d'une entreprise ayant une adresse au Québec.</li>
+      <li>Présente dans la <a href="#etape-1">liste des modèles admissibles</a> à sa date d'installation.</li></ul></div>
+    <div class="panel"><h3>L'installateur</h3><ul>
+      <li>Inscrit au Registraire des entreprises du Québec.</li>
+      <li>Titulaire de la <b>licence RBQ</b> appropriée et membre de la corporation de son secteur. <a href="https://www.pes.rbq.gouv.qc.ca/RegistreLicences/p1" target="_blank" rel="noopener">Vérifier une licence RBQ</a></li></ul></div>
+  </div>
+  <div class="callout c-bad"><b class="t">Ces situations ne sont pas admissibles</b><ul>
+    <li>Appareils intérieurs ou conduits installés hors de l'enveloppe isolée (grenier, comble).</li>
+    <li>Remplacement d'une seule pièce : un serpentin, un appareil intérieur ou seulement l'appareil extérieur.</li>
+    <li>Remplacement après un bris couvert par une garantie ou une assurance.</li>
+    <li>Thermopompe centrale dans une maison qui a un système géothermique.</li></ul></div>
+  <div class="callout c-info"><b class="t">Le bonus de 5 %</b>Vous faites aussi d'autres travaux LogisVert dans les 9 mois, comme l'isolation du toit et le calfeutrage ? Mettez-les dans la <b>même demande</b> : le total de la subvention est majoré de 5 %.</div>
+</section>
+
+<!-- DOCUMENTS -->
+<section class="block" id="documents">
+  <div class="eyebrow">Avant de commencer</div>
+  <h2 style="font-size:clamp(28px,3.6vw,40px); margin:10px 0 12px">Rassemblez vos documents</h2>
+  <p class="intro">Ayez tout en version numérique (photo nette ou PDF) avant d'ouvrir le portail. Les demandes envoyées par courriel ou par la poste ne sont pas traitées : tout se fait en ligne. Cochez au fur et à mesure, la liste reste mémorisée dans votre navigateur.</p>
+  <div class="meter"><span id="mcount">0 / 16</span><div class="bar"><i id="mbar"></i></div><button class="reset" id="reset" type="button">Tout décocher</button></div>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Facture d'achat et d'installation</h3>
+      <ul class="check" data-group="facture">
+        <li><label><input type="checkbox" id="c1"><span>Numéro et date de la facture</span></label></li>
+        <li><label><input type="checkbox" id="c2"><span>Date d'installation</span></label></li>
+        <li><label><input type="checkbox" id="c3"><span>Votre nom, identique à la preuve de propriété</span></label></li>
+        <li><label><input type="checkbox" id="c4"><span>Adresse d'installation</span></label></li>
+        <li><label><input type="checkbox" id="c5"><span>Nom de l'entreprise, numéros de TPS et de TVQ <em class="bf">(Belleflamme : voir l'encadré)</em></span></label></li>
+        <li><label><input type="checkbox" id="c6"><span>Licence RBQ <em class="bf">(Belleflamme : <span class="mono">5631-7035-01</span>)</em></span></label></li>
+        <li><label><input type="checkbox" id="c7"><span>Description de l'appareil et des travaux</span></label></li>
+        <li><label><input type="checkbox" id="c8"><span>Numéro <b>AHRI</b> ou numéro <b>ENERGY STAR</b></span></label></li>
+        <li><label><input type="checkbox" id="c9"><span>Numéro de modèle et capacité (BTU)</span></label></li>
+        <li><label><input type="checkbox" id="c10"><span>Coût des travaux et mention « <b>Payé</b> »</span></label></li>
+      </ul>
+    </div>
+    <div style="display:grid; gap:22px; align-content:start; min-width:0">
+      <div class="panel">
+        <h3>Preuve de propriété</h3>
+        <ul class="check">
+          <li><label><input type="checkbox" id="c11"><span>Compte de taxes municipales de l'année <b>ou</b> 1<sup>re</sup> page de l'acte de vente</span></label></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Photo de la plaque signalétique</h3>
+        <ul class="check">
+          <li><label><input type="checkbox" id="c12"><span>Plaque de l'<b>appareil extérieur</b>, une photo par modèle</span></label></li>
+          <li><label><input type="checkbox" id="c13"><span>Modèle et numéro de série (S/N) bien lisibles</span></label></li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>Vos numéros Hydro-Québec</h3>
+        <ul class="check">
+          <li><label><input type="checkbox" id="c14"><span><b>Numéro de client</b> : 9 chiffres commençant par 1, en haut de la facture</span></label></li>
+          <li><label><input type="checkbox" id="c15"><span><b>Numéro de compteur</b> : 11 ou 12 caractères, page 2 de la facture ou sous l'écran du compteur</span></label></li>
+          <li><label><input type="checkbox" id="c16"><span>Une adresse courriel que vous consultez (pour le code de vérification)</span></label></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="bfcard" id="belleflamme">
+    <div class="bfhead"><div><div class="eyebrow">Votre installateur</div><h3>Le Groupe Belleflamme</h3><p>Si Belleflamme a installé votre thermopompe, voici toutes ses informations officielles. Elles doivent apparaître sur votre facture ; copiez-les au besoin dans le formulaire.</p></div>
+      <div class="okpill">Licence RBQ active · membre CMMTQ</div></div>
+    <div class="bfgrid">
+      <div class="bfline"><div><small>Nom légal</small><b>9238-6051 Québec inc.</b></div><button class="copy" type="button" data-copy="9238-6051 Québec inc.">Copier</button></div>
+      <div class="bfline"><div><small>Nom commercial</small><b>Le Groupe Belleflamme</b></div><button class="copy" type="button" data-copy="Le Groupe Belleflamme">Copier</button></div>
+      <div class="bfline"><div><small>Licence RBQ</small><b>5631-7035-01</b></div><button class="copy" type="button" data-copy="5631-7035-01">Copier</button></div>
+      <div class="bfline"><div><small>NEQ</small><b>1174523895</b></div><button class="copy" type="button" data-copy="1174523895">Copier</button></div>
+      <div class="bfline"><div><small>Numéro de TPS</small><b>817286115RT0001</b></div><button class="copy" type="button" data-copy="817286115RT0001">Copier</button></div>
+      <div class="bfline"><div><small>Numéro de TVQ</small><b>1217685962TQ0001</b></div><button class="copy" type="button" data-copy="1217685962TQ0001">Copier</button></div>
+      <div class="bfline wide"><div><small>Adresse du siège</small><b>175, chemin Jean-Adam, bureau 100, Saint-Sauveur (Québec) J0R 1R6</b></div><button class="copy" type="button" data-copy="175, chemin Jean-Adam, bureau 100, Saint-Sauveur (Québec) J0R 1R6">Copier</button></div>
+      <div class="bfline"><div><small>Téléphone</small><b>514 893-1641</b></div><button class="copy" type="button" data-copy="514 893-1641">Copier</button></div>
+    </div>
+    <p class="bfnote">Licence vérifiable au <a href="https://www.pes.rbq.gouv.qc.ca/RegistreLicences/p1" target="_blank" rel="noopener">registre des licences de la RBQ</a> (sous-catégories 15.1, 15.7, 15.8 et 15.9, qui couvrent les thermopompes résidentielles). Le numéro AHRI ou ENERGY STAR, lui, est propre à votre appareil : il est sur votre facture.</p>
+  </div>
+  <div class="callout c-warn"><b class="t">Facture incomplète ?</b>Demandez une facture corrigée à l'entreprise <b>avant</b> de faire la demande. Un numéro AHRI ou une licence RBQ absents font partie des causes de refus les plus fréquentes.</div>
+  <h3 style="font-size:20px; margin:28px 0 14px">Où trouver ces numéros <span class="tag">Images Hydro-Québec</span></h3>
+  <div class="grid3">
+    <button class="shot" type="button" data-cap="Numéro de client, en haut de la facture d'électricité."><img src="img/Image_numero_facture_1308x531.jpg" alt="Emplacement du numéro de client sur la facture Hydro-Québec" loading="lazy"><span class="zoom">Agrandir</span></button>
+    <button class="shot" type="button" data-cap="Numéro de compteur, sur la facture ou sur l'étiquette du compteur."><img src="img/Image_numero_compteurs_1308x531.jpg" alt="Emplacement du numéro de compteur" loading="lazy"><span class="zoom">Agrandir</span></button>
+    <button class="shot" type="button" data-cap="Exemple de plaque signalétique : numéro de modèle et numéro de série."><img src="img/signaletique.jpg" alt="Exemple de plaque signalétique de thermopompe" loading="lazy"><span class="zoom">Agrandir</span></button>
+  </div>
+  <p style="color:var(--muted); font-size:15px; margin-top:14px">Astuce : photographiez la plaque <b>avant</b> l'installation finale. Une fois l'appareil fixé au mur ou en hauteur, c'est souvent plus difficile.</p>
+</section>
+
+<!-- ÉTAPE 1 -->
+<section class="block" id="etape-1">
+  <div class="shead"><div class="bignum">1</div><div class="eyebrow">Étape 1</div><h2>Confirmez que votre modèle est admissible</h2></div>
+  <p class="intro">Idéalement avant l'achat. L'outil d'Hydro-Québec donne aussi le montant exact prévu pour votre modèle.</p>
+  <div class="legend"><i></i>Encadré rouge : où cliquer ou quoi remplir. Touchez une image pour l'agrandir.</div>
+  <a class="go" href="https://www.hydroquebec.com/residentiel/mieux-consommer/aides-financieres/logisvert/recherche-themopompes-efficaces.html" target="_blank" rel="noopener">Ouvrir l'outil de recherche de thermopompes ↗</a>
+  <ol class="steps">
+    <li class="step"><div class="k">1.1</div><div><h3>Ouvrez l'outil de recherche</h3><p>Le bouton orange ci-dessus y mène directement. Depuis le site d'Hydro-Québec, il se trouve dans la section « Comment obtenir la subvention ? ».</p>
+      <button class="shot" type="button" data-cap="Le lien « outil de recherche » sur la page LogisVert d'Hydro-Québec."><img src="img/03_hq_etapes.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">1.2</div><div><h3>Indiquez la date d'installation</h3><p>Pas encore installée ? Choisissez la date d'aujourd'hui.</p>
+      <button class="shot" type="button" data-cap="Choix de la date d'installation."><img src="img/04_outil_date.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">1.3</div><div><h3>Choisissez « Propriétaire, habitation existante », puis « Afficher la liste »</h3>
+      <button class="shot" type="button" data-cap="Votre situation, puis Afficher la liste."><img src="img/06_outil_afficher.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">1.4</div><div><h3>Cherchez votre numéro</h3><p>Choisissez « Numéro de modèle unique ENERGY STAR » (7 chiffres) ou « Numéro AHRI du modèle », entrez le numéro de votre facture, puis cliquez sur « Rechercher ce numéro ».</p>
+      <button class="shot" type="button" data-cap="Recherche par numéro ENERGY STAR ou AHRI."><img src="img/07_outil_recherche.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">1.5</div><div><h3>Lisez le montant dans la colonne « Subvention »</h3><p>C'est le montant prévu pour ce modèle à la date choisie. Votre modèle n'apparaît pas ? Il n'est pas admissible à cette date : parlez-en à votre conseiller avant d'acheter.</p>
+      <button class="shot" type="button" data-cap="Exemple de résultats. Une recherche par numéro n'affiche que votre modèle."><img src="img/09_outil_resultats.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+  </ol>
+  <div class="callout c-info"><b class="t">Le numéro de modèle de la facture diffère de celui de la liste ?</b>C'est fréquent, les fabricants ajoutent parfois des lettres ou des chiffres. Cherchez avec le numéro <b>AHRI</b> ou <b>ENERGY STAR</b> : il identifie la combinaison exacte d'appareils.</div>
+</section>
+
+<!-- ÉTAPE 2 -->
+<section class="block" id="etape-2">
+  <div class="shead"><div class="bignum">2</div><div class="eyebrow">Étape 2</div><h2>Ouvrez le portail et choisissez « Thermopompe »</h2></div>
+  <a class="go" href="https://logisvert.ca/mesures-clientele-residentielle" target="_blank" rel="noopener">Ouvrir le portail LogisVert ↗</a>
+  <ol class="steps">
+    <li class="step"><div class="k">2.1</div><div><h3>Arrivez sur le portail</h3><p>Le bouton orange ci-dessus ouvre directement la bonne page. Depuis le site d'Hydro-Québec, c'est le bouton « Faire une demande ».</p>
+      <button class="shot" type="button" data-cap="Le bouton « Faire une demande » sur hydroquebec.com."><img src="img/01_hq_residentiel.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">2.2</div><div><h3>Question 1 : choisissez « Propriétaire »</h3>
+      <button class="shot" type="button" data-cap="Propriétaire ou locataire."><img src="img/10_portail_proprio.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">2.3</div><div><h3>Question 2 : votre type d'habitation</h3><p>Exemple : « Maison ».</p>
+      <button class="shot" type="button" data-cap="Type d'habitation."><img src="img/11_portail_maison.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">2.4</div><div><h3>Question 3 : « Choisir » sous Thermopompe</h3><p>D'autres travaux admissibles en même temps ? Choisissez-les aussi maintenant pour obtenir la majoration de 5 %.</p>
+      <button class="shot" type="button" data-cap="Choisir la mesure Thermopompe."><img src="img/12_portail_choisir.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">2.5</div><div><h3>Cliquez sur « Continuer »</h3><p>En bas à droite, dans la barre bleu foncé.</p>
+      <button class="shot" type="button" data-cap="Le bouton Continuer."><img src="img/13_portail_continuer.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+  </ol>
+</section>
+
+<!-- ÉTAPE 3 -->
+<section class="block" id="etape-3">
+  <div class="shead"><div class="bignum">3</div><div class="eyebrow">Étape 3</div><h2>Calculez votre aide financière</h2></div>
+  <p class="intro">Le formulaire compte cinq sections, affichées à gauche de l'écran. Cette étape remplit la première : « Renseignements sur les mesures ».</p>
+  <ol class="steps">
+    <li class="step"><div class="k">3.1</div><div><h3>Répondez aux questions d'admissibilité</h3><p>Type de maison, type de propriétaire (<b>Occupant ou occupante</b> si vous habitez la maison, <b>Exploitant ou exploitante</b> si vous la louez), type d'occupation et code postal du lieu d'installation.</p>
+      <button class="shot" type="button" data-cap="Questions d'admissibilité (valeurs d'exemple)."><img src="img/15_form_admissibilite.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">3.2</div><div><h3>Cliquez sur « Ajouter un modèle »</h3>
+      <button class="shot" type="button" data-cap="Ajouter un modèle, sous Mesures choisies."><img src="img/16_form_ajouter_modele.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">3.3</div><div><h3>Décrivez votre appareil</h3><p>Une fenêtre s'ouvre en deux étapes : la date d'installation (identique à la facture), puis le type d'installation, le numéro AHRI ou ENERGY STAR et le nombre d'appareils. Cliquez ensuite sur « Ajouter l'appareil ».</p>
+      <button class="shot" type="button" data-cap="Type d'installation et numéro de la thermopompe (exemple tiré de la liste officielle)."><img src="img/17_form_modele.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">3.4</div><div><h3>Vérifiez le modèle extérieur, puis « Calculer l'aide financière »</h3><p>Le portail affiche le modèle extérieur associé à votre numéro. Comparez-le à la plaque signalétique : s'il ne correspond pas, le numéro saisi est probablement erroné.</p>
+      <button class="shot" type="button" data-cap="Vérification du modèle extérieur et bouton Calculer."><img src="img/18_form_calculer.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">3.5</div><div><h3>Lisez le montant estimé</h3><p>Le montant final est confirmé par Hydro-Québec après l'analyse de votre demande complète.</p>
+      <button class="shot" type="button" data-cap="Montant de l'aide financière estimé."><img src="img/19_form_resultat.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">3.6</div><div><h3>Cochez « Je ne suis pas un robot », puis « Continuer »</h3><p>Le bouton reste gris tant que la case n'est pas cochée.</p>
+      <button class="shot" type="button" data-cap="Vérification reCAPTCHA puis Continuer."><img src="img/20_form_captcha.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+  </ol>
+</section>
+
+<!-- ÉTAPE 4 -->
+<section class="block" id="etape-4">
+  <div class="shead"><div class="bignum">4</div><div class="eyebrow">Étape 4</div><h2>Créez votre profil LogisVert</h2></div>
+  <div class="callout c-warn"><b class="t">Ce n'est pas votre compte Hydro-Québec</b>Le portail LogisVert a son propre profil, distinct de l'Espace client d'Hydro-Québec. À la première visite, créez un profil LogisVert même si vous avez déjà un compte Hydro-Québec.</div>
+  <ol class="steps">
+    <li class="step"><div class="k">4.1</div><div><h3>Première visite : « Créer mon profil »</h3><p>Vous avez déjà un profil ? Entrez votre courriel et votre mot de passe, cochez la case reCAPTCHA, puis « Me connecter ».</p>
+      <button class="shot" type="button" data-cap="Page de connexion du portail LogisVert." style="max-width:520px"><img src="img/21_connexion.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">4.2</div><div><h3>Confirmez votre courriel, puis « Envoyer le code »</h3><p>Entrez le code reçu par courriel pour continuer. Il tarde ? Regardez dans les courriels indésirables.</p>
+      <button class="shot" type="button" data-cap="Création du profil : vérification du courriel." style="max-width:520px"><img src="img/22_creation_profil.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">4.3</div><div><h3>Complétez votre profil <span class="tag">Image Hydro-Québec</span></h3><p>Choisissez « Particulier ou particulière ». Entrez votre prénom et votre nom <b>exactement comme sur le compte de taxes ou l'acte de vente</b>, votre téléphone, acceptez les conditions, puis « Terminer mon profil ».</p>
+      <button class="shot" type="button" data-cap="Création du profil (image du guide officiel d'Hydro-Québec)."><img src="img/connexion.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+  </ol>
+  <p style="color:var(--muted); font-size:15px; margin-top:20px">Le calcul de l'étape 3 n'a pas été conservé après la création du profil ? Refaites simplement l'étape 3 une fois connecté.</p>
+</section>
+
+<!-- ÉTAPE 5 -->
+<section class="block" id="etape-5">
+  <div class="shead"><div class="bignum">5</div><div class="eyebrow">Étape 5</div><h2>Remplissez et envoyez le formulaire</h2></div>
+  <p class="intro">Une fois connecté, vous complétez les sections 2 à 5.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Section</th><th>Ce que vous fournissez</th></tr></thead>
+    <tbody>
+      <tr><td>1. Renseignements sur les mesures</td><td>Fait à l'étape 3.</td></tr>
+      <tr><td>2. Adresse d'installation</td><td>Choisie dans la liste ou entrée à la main. La même que sur la facture et la preuve de propriété.</td></tr>
+      <tr><td>3. Pièces justificatives</td><td>Téléversez le compte de taxes (ou l'acte de vente), la photo de la plaque signalétique et la facture. Si on vous demande les informations de l'installateur, elles sont dans l'<a href="#belleflamme">encadré Belleflamme</a>.</td></tr>
+      <tr><td>4. Informations sur le profil</td><td>Vos renseignements, votre numéro de client et votre numéro de compteur Hydro-Québec, l'adresse où poster le chèque.</td></tr>
+      <tr><td>5. Consentement et soumission</td><td>Relisez tout, donnez votre consentement et envoyez.</td></tr>
+    </tbody></table></div>
+  <div style="margin-top:22px"><button class="shot" type="button" data-cap="Le formulaire une fois connecté (image du guide officiel d'Hydro-Québec)."><img src="img/soumission.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button>
+  <p style="color:var(--muted); font-size:14px; margin-top:8px"><span class="tag" style="margin-left:0">Image Hydro-Québec</span> Les libellés peuvent différer légèrement du portail actuel.</p></div>
+  <div class="callout c-bad"><b class="t">Avant d'envoyer, vérifiez ces 5 points</b><ul>
+    <li>Prénom, nom et adresse identiques sur la facture, le compte de taxes et le profil.</li>
+    <li>La facture affiche le numéro AHRI ou ENERGY STAR, la licence RBQ, la date d'installation et « Payé ».</li>
+    <li>La photo de la plaque est nette et le numéro de série se lit facilement.</li>
+    <li>La date d'installation saisie est celle de la facture, et date de moins de 9 mois.</li>
+    <li>Tous les documents sont joints. Une demande avec une erreur ou un document manquant est rejetée.</li></ul></div>
+  <div class="deadline">
+    <div><label for="inst">Votre date d'installation</label><input type="date" id="inst"></div>
+    <div class="res" aria-live="polite"><b id="dl">Choisissez une date</b><span id="dlsub">pour connaître votre date limite</span></div>
+  </div>
+</section>
+
+<!-- APRÈS -->
+<section class="block" id="apres">
+  <div class="eyebrow">Après l'envoi</div>
+  <h2 style="font-size:clamp(28px,3.6vw,40px); margin:10px 0 22px">Suivi, vérification et versement</h2>
+  <ol class="steps">
+    <li class="step"><div class="k">A</div><div><h3>Suivez votre demande dans votre profil <span class="tag">Image Hydro-Québec</span></h3><p>« Mes demandes » montre l'état du traitement. « Messages » contient les communications d'Hydro-Québec : consultez-la régulièrement.</p>
+      <button class="shot" type="button" data-cap="Tableau de bord du profil LogisVert (données de test d'Hydro-Québec)." style="max-width:620px"><img src="img/sommaire_reclamation.jpg" alt="" loading="lazy"><span class="zoom">Agrandir</span></button></div></li>
+    <li class="step"><div class="k">B</div><div><h3>Évaluation</h3><p>Demande incomplète ou inadmissible ? Hydro-Québec vous avise par courriel ou par téléphone environ <b>20 jours ouvrables</b> après la réception. Le traitement prend <b>10 à 12 semaines</b> à partir d'une demande complète.</p></div></li>
+    <li class="step"><div class="k">C</div><div><h3>Vérification possible</h3><p>Hydro-Québec peut demander d'autres documents ou visiter l'habitation. Vous devez permettre l'accès dans les 6 mois suivant la demande.</p></div></li>
+    <li class="step"><div class="k">D</div><div><h3>Le chèque arrive par la poste</h3><p>Envoyé à l'adresse de correspondance de la demande. Vous déménagez ? Avisez le Soutien au programme LogisVert.</p></div></li>
+  </ol>
+  <div class="callout c-info"><b class="t">Vous louez des logements ? (relevé 27)</b>Si vous recevez la subvention pour un bien que vous louez, Hydro-Québec doit produire un relevé 27 et vous demandera votre NEQ, votre numéro de TVQ ou votre NAS. Pour le NAS, elle vous envoie un courriel avec une méthode sécuritaire : ne le transmettez jamais autrement.</div>
+</section>
+
+<!-- AIDE -->
+<section class="block" id="aide">
+  <div class="eyebrow">Besoin d'aide</div>
+  <h2 style="font-size:clamp(28px,3.6vw,40px); margin:10px 0 22px">Les erreurs à éviter et qui appeler</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Erreur</th><th>Comment l'éviter</th></tr></thead>
+    <tbody>
+      <tr><td>Noms ou adresses différents</td><td>Identiques sur la facture, le compte de taxes et le profil. Le nom de la facture doit figurer sur la preuve de propriété.</td></tr>
+      <tr><td>AHRI ou RBQ absent de la facture</td><td>Exigez une facture complète avant de faire la demande.</td></tr>
+      <tr><td>Photo de plaque floue ou coupée</td><td>De près, bien éclairée, toute la plaque dans l'image.</td></tr>
+      <tr><td>Modèle non admissible</td><td>Vérifiez-le dans l'outil avant l'achat (étape 1).</td></tr>
+      <tr><td>Délai dépassé</td><td>Au plus tard 9 mois après l'installation. Avec plusieurs mesures, le délai part de la première.</td></tr>
+      <tr><td>Facture non acquittée</td><td>Elle doit indiquer « Payé ».</td></tr>
+      <tr><td>Mauvais compte</td><td>Le profil LogisVert est distinct de l'Espace client Hydro-Québec.</td></tr>
+    </tbody></table></div>
+
+  <div class="dlband">
+    <div><b>Gardez une copie du guide</b><span>Le même guide en PDF, à garder sur votre ordinateur ou votre cellulaire.</span></div>
+    <button class="btn btn-hot" type="button" data-pdf>Télécharger le PDF</button>
+  </div>
+  <div class="contact">
+    <div><h3>Soutien au programme LogisVert</h3><p>Prestataire officiel d'Hydro-Québec (Groupe Marketing International), du lundi au vendredi, de 8 h à 20 h. Hydro-Québec ne sollicite jamais par téléphone ni de porte-à-porte pour LogisVert : une offre non demandée en son nom est probablement une fraude.</p></div>
+    <div class="lines">
+      <div class="line"><div><small>Téléphone</small><b>1 833 396-1888</b></div><button class="copy" type="button" data-copy="1 833 396-1888">Copier</button></div>
+      <div class="line"><div><small>Courriel</small><b>info@logisvert.ca</b></div><button class="copy" type="button" data-copy="info@logisvert.ca">Copier</button></div>
+    </div>
+  </div>
+
+  <div class="links">
+    <a href="https://logisvert.ca/mesures-clientele-residentielle" target="_blank" rel="noopener"><div>Portail LogisVert<span>Faire ou suivre une demande</span></div>↗</a>
+    <a href="https://www.hydroquebec.com/residentiel/mieux-consommer/aides-financieres/logisvert/recherche-themopompes-efficaces.html" target="_blank" rel="noopener"><div>Outil de recherche de thermopompes<span>Modèles admissibles et montants</span></div>↗</a>
+    <a href="https://www.hydroquebec.com/data/logisvert/logisvert-guide-participation-residentiel-fr.pdf?v=20260910" target="_blank" rel="noopener"><div>Guide de participation (PDF)<span>Les règles officielles, qui font foi</span></div>↗</a>
+    <a href="https://www.hydroquebec.com/data/logisvert/Demande-LogisVert-Aide-memoire.pdf?v=20260218" target="_blank" rel="noopener"><div>Aide-mémoire officiel (PDF)<span>Les documents à avoir en main</span></div>↗</a>
+    <a href="https://logisvert.ca/faq" target="_blank" rel="noopener"><div>FAQ LogisVert<span>Questions fréquentes du portail</span></div>↗</a>
+    <a href="https://www.pes.rbq.gouv.qc.ca/RegistreLicences/p1" target="_blank" rel="noopener"><div>Registre des licences RBQ<span>Vérifier votre installateur</span></div>↗</a>
+  </div>
+</section>
+</main>
+
+<footer class="wrap">
+  <p>Information vérifiée le 16 octobre 2026 sur hydroquebec.com et logisvert.ca. Captures d'écran prises le même jour ; les images marquées « Image Hydro-Québec » viennent du guide en ligne d'Hydro-Québec, car ces écrans exigent une connexion. Le 8 octobre 2026, le gouvernement fédéral a annoncé des subventions pour thermopompes à compter de 2027 ; LogisVert reste en vigueur. Ce guide est un aide-mémoire : le Guide de participation d'Hydro-Québec fait foi et les modalités peuvent changer.</p>
+</footer>
+
+<dialog id="lb" aria-label="Image agrandie"><button type="button" id="lbx">Fermer ✕</button><img id="lbimg" alt=""><div class="cap" id="lbcap"></div></dialog>
+
+<script>
+(function(){
+  // Estimator: medians from Hydro-Quebec eligible list (2026-10-16). [h17 median, subsidy median, p25, p75]
+  var D={"12000":{"es":[8900,445,420,495],"cf":[10000,1200,1116,1236]},"15000":{"es":[12000,600,575,600],"cf":[14200,1704,1572,1800]},"18000":{"es":[10900,545,540,550],"cf":[15000,1800,1680,1860]},"24000":{"es":[14600,730,725,745],"cf":[20200,2424,2232,2496]},"30000":{"es":[18400,920,905,1050],"cf":[25600,3072,2544,3720]},"36000":{"es":[23000,1150,1100,1260],"cf":[30400,3648,3216,3936]},"42000":{"es":[26000,1300,1270,1620],"cf":[39500,4740,4176,4860]},"48000":{"es":[31400,1570,1530,1630],"cf":[43000,5160,4800,5460]},"60000":{"es":[38000,1900,1840,2425],"cf":[49000,5880,5760,6660]}};
+  var size=document.getElementById('size'), btu=document.getElementById('btu'), amt=document.getElementById('amt'), rng=document.getElementById('range'), cr=document.getElementById('customRow'), type='cf';
+  var fmt=new Intl.NumberFormat('fr-CA',{maximumFractionDigits:0});
+  function calc(){
+    if(size.value==='custom'){ cr.hidden=false; var v=Math.max(0, parseFloat(btu.value)||0), rate=type==='cf'?120:50;
+      amt.textContent=fmt.format(Math.round(v/1000*rate))+' $'; rng.textContent=v?('Calcul : '+fmt.format(v)+' BTU/h x '+rate+' $ / 1 000'):'Entrez la puissance à -8 °C (fiche technique ou outil de recherche).'; return }
+    cr.hidden=true; var d=D[size.value]&&D[size.value][type];
+    if(!d){ amt.textContent='n. d.'; rng.textContent='Aucun modèle de ce type dans la liste.'; return }
+    amt.textContent=fmt.format(d[1])+' $';
+    rng.textContent='Fourchette courante : '+fmt.format(d[2])+' $ à '+fmt.format(d[3])+' $ · puissance typique à -8 °C : '+fmt.format(d[0])+' BTU/h';
+  }
+  document.querySelectorAll('.seg button').forEach(function(b){ b.addEventListener('click',function(){
+    document.querySelectorAll('.seg button').forEach(function(x){x.setAttribute('aria-pressed', x===b?'true':'false')});
+    type=b.dataset.rate==='120'?'cf':'es'; calc(); }); });
+  size.addEventListener('change',calc); btu.addEventListener('input',calc); calc();
+
+  // Checklist with per-viewer memory
+  var KEY='lv-check-v1', boxes=[].slice.call(document.querySelectorAll('.check input'));
+  var saved={}; try{ saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{} }catch(e){}
+  boxes.forEach(function(b){ if(saved[b.id]) b.checked=true; b.addEventListener('change',upd) });
+  function upd(){ var n=0,s={}; boxes.forEach(function(b){ if(b.checked){n++; s[b.id]=1} });
+    document.getElementById('mcount').textContent=n+' / '+boxes.length;
+    document.getElementById('mbar').style.width=(n/boxes.length*100)+'%';
+    try{ localStorage.setItem(KEY, JSON.stringify(s)) }catch(e){} }
+  document.getElementById('reset').addEventListener('click',function(){ boxes.forEach(function(b){b.checked=false}); upd() });
+  upd();
+
+  // Deadline: install date + 9 months
+  var inst=document.getElementById('inst'), dl=document.getElementById('dl'), dls=document.getElementById('dlsub');
+  inst.addEventListener('input',function(){
+    if(!inst.value){ dl.textContent='Choisissez une date'; dls.textContent='pour connaître votre date limite'; return }
+    var p=inst.value.split('-').map(Number), d=new Date(p[0], p[1]-1+9, p[2]);
+    if(d.getDate()!==p[2]) d=new Date(p[0], p[1]-1+10, 0); // fin de mois
+    dl.textContent=d.toLocaleDateString('fr-CA',{day:'numeric',month:'long',year:'numeric'});
+    var today=new Date(); today.setHours(0,0,0,0);
+    var days=Math.round((d-today)/864e5);
+    dls.textContent= days<0 ? 'Délai dépassé de '+(-days)+' jours' : 'date limite pour envoyer la demande ('+days+' jours restants)';
+  });
+
+  // Lightbox
+  var lb=document.getElementById('lb'), li=document.getElementById('lbimg'), lc=document.getElementById('lbcap');
+  document.querySelectorAll('.shot').forEach(function(s){ s.addEventListener('click',function(){
+    li.src=s.querySelector('img').src; lc.textContent=s.dataset.cap||''; li.alt=s.dataset.cap||'';
+    if(lb.showModal) lb.showModal(); }); });
+  document.getElementById('lbx').addEventListener('click',function(){ lb.close() });
+  lb.addEventListener('click',function(e){ if(e.target===lb) lb.close() });
+
+  // Copy
+  document.querySelectorAll('.copy').forEach(function(b){ b.addEventListener('click',function(){
+    var t=b.dataset.copy, done=function(){ b.textContent='Copié'; setTimeout(function(){b.textContent='Copier'},1600) };
+    try{ navigator.clipboard.writeText(t).then(done, function(){ sel(b) }) }catch(e){ sel(b) } }); });
+  function sel(b){ var el=b.parentNode.querySelector('b'); var r=document.createRange(); r.selectNodeContents(el); var s=getSelection(); s.removeAllRanges(); s.addRange(r); }
+
+  // Rail highlight
+  var links=[].slice.call(document.querySelectorAll('.rail a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){
+      links.forEach(function(a){ var on=a.getAttribute('href')==='#'+e.target.id; a.classList.toggle('on',on); if(on && a.scrollIntoView) a.parentNode.scrollTo({left:a.offsetLeft-20, behavior:'smooth'}) }); } }) },{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('section.block').forEach(function(s){ io.observe(s) });
+  }
+
+  // Frost: drifting cold particles in the hero
+  var c=document.getElementById('frost'); if(!c||!c.getContext) return;
+  var x=c.getContext('2d'), P=[], W=0, H=0, still=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function fitCanvas(){ var r=c.getBoundingClientRect(), d=Math.min(2,devicePixelRatio||1); W=r.width; H=r.height; c.width=W*d; c.height=H*d; x.setTransform(d,0,0,d,0,0) }
+  fitCanvas(); addEventListener("resize",fitCanvas);
+  for(var i=0;i<46;i++){ var z=Math.random(); P.push({x:Math.random(), y:Math.random(), f:10+Math.pow(z,1.6)*44, a:.10+z*.32, v:.00035+z*.0013, s:Math.random()*6, rot:(Math.random()-.5)*.5}); }
+  function draw(t){ x.clearRect(0,0,W,H);
+    P.forEach(function(p){ if(!still){ p.y+=p.v; if(p.y>1.02){p.y=-.02; p.x=Math.random()} }
+      var px=(p.x+Math.sin(t/4000+p.s)*.01)*W, py=p.y*H;
+      x.save(); x.translate(px,py); x.rotate(p.rot+Math.sin(t/3000+p.s)*.12); x.font='700 '+p.f+'px "Familjen Grotesk", Arial, sans-serif'; x.textAlign='center'; x.fillStyle=(['rgba(31,157,92,','rgba(63,207,138,','rgba(15,107,63,'][Math.floor(p.s)%3])+Math.min(.85,p.a*1.6)+')'; x.fillText('$',0,0); x.restore(); });
+    if(!still) requestAnimationFrame(draw); }
+  requestAnimationFrame(draw);
+})();
+</script>
+<script>
+(function(){
+  var FILE='Guide-LogisVert-thermopompe.pdf', note=document.getElementById('pdfnote'), btns=[document.getElementById('pdfbtn')].concat([].slice.call(document.querySelectorAll('[data-pdf]')));
+  var dl=null; if(window.claude && claude.use){ claude.use('downloads').then(function(d){ dl=d }).catch(function(){}) }
+  function say(t){ if(note) note.textContent=t }
+  async function go(b){
+    var label=b.innerHTML; b.disabled=true;
+    try{
+      var res=await fetch(FILE); if(!res.ok) throw new Error('fetch');
+      var blob=await res.blob();
+      if(dl){ try{ await dl.save({filename:FILE, data:blob}); say('Guide enregistré. Vous pouvez le consulter sans connexion.') }
+        catch(e){ if(e && e.code==='declined'){ say('Téléchargement annulé.') } else if(e && e.code==='rate_limited'){ say('Une fenêtre de téléchargement est déjà ouverte.') } else { open(blob) } } }
+      else { open(blob) }
+    }catch(e){ say('Le téléchargement a échoué. Réessayez dans un instant.') }
+    finally{ b.disabled=false; b.innerHTML=label }
+  }
+  function open(blob){ var u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=FILE; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(u)},4000); say('Guide téléchargé.') }
+  btns.forEach(function(b){ if(b) b.addEventListener('click',function(){ go(b) }) });
+})();
+</script>
+
+
+
+
+</body></html>

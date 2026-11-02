@@ -1,0 +1,39 @@
+# Site statique + Netlify Functions, comme l'app de Mike.
+# Netlify sert /login à partir de public/login.html : les liens n'ont jamais de « .html ».
+
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Tâches planifiées EN PAUSE (ADR-097) : site belleflammehvac déployé sans base Supabase. Sans base, elles échoueraient
+# à chaque passe (43 000 appels par mois pour regles-cron, sur le forfait de l'équipe de Mike).
+# À réactiver une fois SUPABASE_URL, SUPABASE_ANON_KEY et SUPABASE_SERVICE_ROLE_KEY saisies :
+# Moteur de règles (ADR-090) : étapes dues, chaque minute
+# [functions."regles-cron"]
+#   schedule = "* * * * *"
+# Purge des photos 5 ans après « Terminé » (Loi 25, ADR-084) : chaque jour à 7 h 17 UTC
+# [functions."photos-purge-cron"]
+#   schedule = "17 7 * * *"
+
+[dev]
+  publish = "public"
+  functions = "netlify/functions"
+  port = 8888
+
+# Le service worker ne doit jamais être mis en cache par le CDN.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    X-Frame-Options = "DENY"
+    Permissions-Policy = "camera=(self), geolocation=(self), microphone=()"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: blob: https://*.supabase.co; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
