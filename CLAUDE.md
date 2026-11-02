@@ -58,6 +58,8 @@ Les modules déjà bâtis qui doublent Mike sont **en veille** : visibles, gris�
 7. La clé `service_role` de Supabase ne sort **jamais** des fonctions serverless. Le navigateur n'utilise que la clé publique + RLS.
 8. Pas de `git push --force`, pas de réécriture d'historique sur `main`.
 
+**Exception autorisée par Simon (2 nov. 2026, par écrit dans la session : « Je te donne le droit de le faire pour ce projet. GO! ») :** Claude peut créer et déployer **un seul site, `belleflammehvac`**, dans l'équipe Netlify `michealmaisonneuve`. Rien d'autre dans cette équipe : aucun autre site de Mike n'est lu, modifié ni supprimé, aucune variable d'équipe n'est touchée. Les secrets du site sont saisis par Simon.
+
 **Exception autorisée par Simon (22 oct. 2026, par écrit dans la session) :** Claude peut **lire** Monday directement (`belleflamme-team.monday.com`) pour étudier le catalogue, les kits et la structure des boards, en priorité les boards Catalogue et Kits. **Lecture seule** : aucune création, modification ou suppression dans Monday. Rien n'est lu dans Netlify ni dans le Supabase de Mike. Les données réelles lues (prix, clients) ne sont jamais copiées telles quelles dans le repo : on ne garde que la structure et des données rendues fictives.
 
 ---

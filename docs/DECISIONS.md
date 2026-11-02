@@ -1049,3 +1049,11 @@ Format : contexte | décision | conséquences. Statut : `Acceptée`, `À confirm
   - version active = la plus récente du registre des listes de prix (ADR-065). Chaque changement de prix, ajout ou retrait crée une version, donc l'accueil suit sans rien faire de plus.
 - **Fonction** `hvac_partenariat` (le sous-traitant reçoit toujours le sien, la planification passe le fournisseur), servie par `partenariat`.
 - La pastille de la liste active ouvre « Ma liste de prix ».
+
+## ADR-097 | Site belleflammehvac dans l'équipe Netlify de Mike
+- **Date** : 2026-11-02 | **Statut** : Déployé, sans base.
+- **Autorisation écrite de Simon** : « Je te donne le droit de le faire pour ce projet. GO! » L'exception est inscrite dans `CLAUDE.md`, limitée à ce seul site.
+- **Site** : `belleflammehvac` dans l'équipe `michealmaisonneuve` (plan Pro). Aucun autre site de l'équipe n'a été touché.
+- **Sans base Supabase pour l'instant** : les pages se chargent, mais la connexion et les données répondent 503 (`config_manquante`) tant que `SUPABASE_URL` et `SUPABASE_ANON_KEY` ne sont pas saisies.
+- **Tâches planifiées en pause** (`regles-cron`, `photos-purge-cron`), pour ne pas facturer d'appels inutiles à l'équipe de Mike. On les réactive dans `netlify.toml` avec la base.
+- **Déploiement** : à partir d'une copie propre des fichiers commités (`git archive`). `.env` et les fichiers locaux ne partent jamais.
