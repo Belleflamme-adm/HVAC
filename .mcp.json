@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ultimate-web-scraper": {
+      "type": "http",
+      "url": "https://mcp.ultimatewebscraper.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${ULTIMATE_WEB_SCRAPER_TOKEN}"
+      }
+    }
+  }
+}
